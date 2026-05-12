@@ -15,3 +15,6 @@ import CollatzLean4.Concatenation
 import CollatzLean4.CylinderStability
 import CollatzLean4.PotentialBarrier
 import CollatzLean4.InverseGraph
+import CollatzLean4.Cert_m1_Q3
+import CollatzLean4.Cert_m1_Q5
+import CollatzLean4.PathWordCorrespondence

@@ -129,6 +129,39 @@ theorem S202_barrier_from_cert (m : Nat) (Φ : InvVertex → Int)
     (m : Int) ≤ w :=
   (mkS202Cert m Φ h_edge h_goal h_start).barrier h_g h_path
 
+/-! ### Computable edge generator
+
+Concrete enumeration of outgoing inverse-edges from a vertex. Uses
+the closed-form inverse `(M+1)/2` of `2` modulo odd `M = 3^k`. -/
+
+/-- Inverse of `2` modulo an odd `M`: `(M+1)/2`. -/
+@[inline] def invMod2 (M : Nat) : Nat := (M + 1) / 2
+
+/-- Inverse of `2^τ` modulo an odd `M`. -/
+@[inline] def invMod2Pow (τ M : Nat) : Nat := (invMod2 M) ^ τ % M
+
+/-- Generated inverse-edges from vertex `v` at base precision `R` with
+zero-budget `Q`. Matches the Python `S202Engine.outgoing_edges`:
+  * one-edges always generated.
+  * zero-edges only when `v.j < Q` (budget not exhausted).
+-/
+def outgoingEdges (R Q : Nat) (v : InvVertex) : List (InvVertex × Int) :=
+  let oneEdges :=
+    let M := 3 ^ (R + v.j)
+    [1, 2, 4, 5, 7, 8].filterMap (fun α =>
+      let τ := tau α
+      let y := invMod2Pow τ M * v.c % M
+      if y % 9 = α then some (⟨v.j, y⟩, (τ : Int)) else none)
+  let zeroEdges :=
+    if v.j < Q then
+      let M' := 3 ^ (R + v.j + 1)
+      [1, 2, 4, 5, 7, 8].filterMap (fun α =>
+        let τ := tau α
+        let y := invMod2Pow τ M' * (3 * v.c + 1) % M'
+        if y % 9 = α then some (⟨v.j + 1, y⟩, (τ : Int) - 2) else none)
+    else []
+  oneEdges ++ zeroEdges
+
 /-! ### Trivial m = 0 case
 
 For m = 0, the cylinder is `[aS202]_9`, and `aS202 mod 9 = 1`, so

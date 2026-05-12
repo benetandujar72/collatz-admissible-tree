@@ -27,7 +27,10 @@ a CONDITIONAL criterion under which the asymptotic slope satisfies
   [TranslationSets.lean](CollatzLean4/CollatzLean4/TranslationSets.lean)).
 - **S202 counterexample** (`not_forall_admissible_triple_high_slope`):
   the rigid auxiliary `A ≥ 2q` is FALSE, witnessed by
-  `(A, q, B) = (43, 22, 919447060349)` ([Defect.lean](CollatzLean4/CollatzLean4/Defect.lean)).
+  `(A, q, B) = (43, 22, 919447060349)`. The concrete word
+  `wS202 = 10100000001000010000000000` from `initState` produces
+  exactly this triple via `evalWord`
+  ([Defect.lean](CollatzLean4/CollatzLean4/Defect.lean)).
 - **S204-A slope bounds**: `3^q ≤ 2^A` and `q ≤ A` along every admissible
   run, plus `defect ≥ −q`.
 - **S203-C/D negative-run framework**: `L^k(n) ∈ ℤ ⇔ n ≡ −1 (mod 3^k)`,
@@ -59,11 +62,11 @@ a CONDITIONAL criterion under which the asymptotic slope satisfies
 ```bash
 cd CollatzLean4
 lake exe cache get          # pull precompiled Mathlib (recommended)
-lake build                  # builds all 10 modules
+lake build                  # builds all 12 modules
 ```
 
 Toolchain: `leanprover/lean4:v4.30.0-rc2`, Mathlib pinned in
-`lake-manifest.json`. Current build: **8405 jobs, 0 `sorry`s, 0 axioms.**
+`lake-manifest.json`. Current build: **8407 jobs, 0 `sorry`s, 0 axioms.**
 
 ## Module map
 
@@ -71,14 +74,16 @@ Toolchain: `leanprover/lean4:v4.30.0-rc2`, Mathlib pinned in
 |---|---|
 | [AdmissibleBasic](CollatzLean4/CollatzLean4/AdmissibleBasic.lean) | Definitions, translation identity, resonance |
 | [TranslationSets](CollatzLean4/CollatzLean4/TranslationSets.lean) | `B_adm`, `B_free`, coverage equivalence |
-| [Defect](CollatzLean4/CollatzLean4/Defect.lean) | Defect dynamics, S202, S204-A bounds |
+| [Defect](CollatzLean4/CollatzLean4/Defect.lean) | Defect dynamics, S202 (n=251, A=43, q=22, D=−1), S204-A bounds |
 | [NegativeRuns](CollatzLean4/CollatzLean4/NegativeRuns.lean) | `L^k` framework, S203-C/D |
 | [PeriodicBlocks](CollatzLean4/CollatzLean4/PeriodicBlocks.lean) | S206 mod 3^24 identity |
 | [ThreeAdic](CollatzLean4/CollatzLean4/ThreeAdic.lean) | S206 lifted to all `ZMod (3^k)` |
 | [Reachability](CollatzLean4/CollatzLean4/Reachability.lean) | Computational `InImageTheta` table |
 | [BinaryTensor](CollatzLean4/CollatzLean4/BinaryTensor.lean) | 2-adic coordinates, Terras, TBD |
-| [S202Cylinders](CollatzLean4/CollatzLean4/S202Cylinders.lean) | S202 cylinder access, alternative conjecture |
+| [S202Cylinders](CollatzLean4/CollatzLean4/S202Cylinders.lean) | S202 cylinder access, ladder `aS202 = 1 + 3^22`, alternative conjecture |
 | [Concatenation](CollatzLean4/CollatzLean4/Concatenation.lean) | S210/S211 concatenation criterion |
+| [CylinderStability](CollatzLean4/CollatzLean4/CylinderStability.lean) | S213: τ-trajectory stability, `runWord_cong` |
+| [PotentialBarrier](CollatzLean4/CollatzLean4/PotentialBarrier.lean) | S214: abstract potential framework + `LocalPotentialCertificate` |
 
 ## Honest scope statement
 

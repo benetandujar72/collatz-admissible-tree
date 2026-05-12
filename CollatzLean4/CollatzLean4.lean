@@ -14,3 +14,4 @@ import CollatzLean4.S202Cylinders
 import CollatzLean4.Concatenation
 import CollatzLean4.CylinderStability
 import CollatzLean4.PotentialBarrier
+import CollatzLean4.InverseGraph

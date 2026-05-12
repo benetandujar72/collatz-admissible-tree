@@ -138,6 +138,48 @@ theorem aS202_mod_pow_eq_one (k : Nat) (hk1 : 1 ≤ k) (hk22 : k ≤ 22) :
       _ ≤ 3 ^ k := Nat.pow_le_pow_right (by norm_num) hk1
   exact Nat.mod_eq_of_lt h3k
 
+/-! ### Ladder calculation: `aS202 - 1 = 3^22` exactly
+
+This is the formal content of "ν₃(aS202 − 1) = 22", which drives the
+S214 potential framework: the cylinder defect
+
+  δ_+(aS202, R_m) = R_m − min(ν₃(aS202 − 1), R_m) = R_m − 22 = 22m − 20
+
+for `m ≥ 1`. The lemmas here are the dvd/non-dvd facts; the
+δ_+ calculation follows directly.
+-/
+
+/-- `aS202 − 1 = 3^22` exactly. -/
+theorem aS202_sub_one : aS202 - 1 = 3 ^ 22 := by
+  rw [aS202_decomp]; omega
+
+/-- `3^22` divides `aS202 − 1`. -/
+theorem aS202_sub_one_dvd : (3 : Nat) ^ 22 ∣ (aS202 - 1) := by
+  rw [aS202_sub_one]
+
+/-- `3^23` does NOT divide `aS202 − 1` (the valuation is exactly 22). -/
+theorem aS202_sub_one_not_higher_dvd : ¬ ((3 : Nat) ^ 23 ∣ (aS202 - 1)) := by
+  rw [aS202_sub_one]
+  intro h
+  have hpos : (0 : Nat) < 3 ^ 22 := by positivity
+  have hle := Nat.le_of_dvd hpos h
+  have hlt : (3 : Nat) ^ 22 < 3 ^ 23 :=
+    Nat.pow_lt_pow_right (by norm_num) (by norm_num)
+  omega
+
+/-- **S214 ladder theorem**: for `m ≥ 1`, the 3-adic distance from
+`aS202` to `1` at precision `R_m = 22m + 2` is exactly `22m − 20`.
+
+Encoded as: `3^22 ∣ (aS202 − 1)` and `¬ 3^23 ∣ (aS202 − 1)`, with
+`22 ≤ 22m + 2 = R_m`. This is the structural calculation underlying
+the S214 conjecture: `δ_+(aS202, R_m) = R_m − 22 = 22m − 20`. -/
+theorem cylinder_ladder_S202 (m : Nat) (hm : 1 ≤ m) :
+    ∃ k, k = 22 ∧ k ≤ 22 * m + 2 ∧
+         (3 : Nat) ^ k ∣ (aS202 - 1) ∧
+         ¬ ((3 : Nat) ^ (k + 1) ∣ (aS202 - 1)) := by
+  refine ⟨22, rfl, ?_, aS202_sub_one_dvd, aS202_sub_one_not_higher_dvd⟩
+  omega
+
 /-! ### Empirical exploration of m = 1 (mod 3^24)
 
 The m=1 cylinder is the FIRST genuinely non-trivial case (k = 24 ≥ 23).

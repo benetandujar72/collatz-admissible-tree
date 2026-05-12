@@ -1,0 +1,9 @@
+.lake/
+build/
+*.olean
+*.ilean
+*.c
+.DS_Store
+*~
+.idea/
+.vscode/

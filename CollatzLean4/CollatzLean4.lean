@@ -18,3 +18,4 @@ import CollatzLean4.InverseGraph
 import CollatzLean4.Cert_m1_Q3
 import CollatzLean4.Cert_m1_Q5
 import CollatzLean4.PathWordCorrespondence
+import CollatzLean4.Potential

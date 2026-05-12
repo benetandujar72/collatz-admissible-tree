@@ -7,3 +7,5 @@ import CollatzLean4.TranslationSets
 import CollatzLean4.Defect
 import CollatzLean4.NegativeRuns
 import CollatzLean4.PeriodicBlocks
+import CollatzLean4.Reachability
+import CollatzLean4.ThreeAdic

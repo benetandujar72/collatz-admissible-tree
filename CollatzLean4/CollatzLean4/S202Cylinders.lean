@@ -93,17 +93,65 @@ theorem accessible_S202_m0_defect_zero :
   refine ⟨[], ?_, rfl, rfl⟩
   native_decide
 
+/-! ### Algebraic structure of `aS202`
+
+`a_S202 = 1 + 3^22` exactly. This decomposition explains why the
+sequence of cylinders splits into TWO regimes:
+
+  * For `k ≤ 22`: `a_S202 ≡ 1 (mod 3^k)`, so the trivial `n = 1`
+    witness places `initState` in the cylinder. Accessibility is FREE.
+
+  * For `k ≥ 23`: `a_S202 ≡ 1 + 3^22 (mod 3^k) ≠ 1`. A non-trivial
+    witness `u` with `(evalWord u).n ≡ 1 + 3^22 (mod 3^k)` is required.
+
+The user's parametrization `22m + 2`:
+  - m = 0  →  k = 2   ≤ 22, trivially accessible.
+  - m = 1  →  k = 24  ≥ 23, FIRST non-trivial cylinder.
+  - m ≥ 2  →  k ≥ 46, deeper non-trivial cylinders.
+
+So `m = 1` is the genuine entry point to the alternative theorem. -/
+
+/-- The S202 fixed point has the closed form `a_S202 = 1 + 3^22`. -/
+theorem aS202_decomp : aS202 = 1 + 3 ^ 22 := by native_decide
+
+/-- **Trivial regime** (k ≤ 22): for every modulus `3^k` with `k ≤ 22`,
+the empty word reaches the S202 cylinder, since `aS202 ≡ 1 (mod 3^k)`
+and `(evalWord []).n = 1`. -/
+theorem accessible_via_empty_at_low_k (k : Nat) (hk : k ≤ 22) :
+    ∃ u : Word, (evalWord u).n % (3 ^ k) = aS202 % (3 ^ k) := by
+  refine ⟨[], ?_⟩
+  show (1 : Nat) % (3 ^ k) = aS202 % (3 ^ k)
+  rw [aS202_decomp]
+  obtain ⟨c, hc⟩ : (3 : Nat) ^ k ∣ 3 ^ 22 := pow_dvd_pow 3 hk
+  rw [hc, Nat.add_mul_mod_self_left]
+
+/-- The trivial regime extends to `aS202 % 3^k = 1` for `1 ≤ k ≤ 22`. -/
+theorem aS202_mod_pow_eq_one (k : Nat) (hk1 : 1 ≤ k) (hk22 : k ≤ 22) :
+    aS202 % (3 ^ k) = 1 := by
+  rw [aS202_decomp]
+  obtain ⟨c, hc⟩ : (3 : Nat) ^ k ∣ 3 ^ 22 := pow_dvd_pow 3 hk22
+  rw [hc, Nat.add_mul_mod_self_left]
+  have h3k : 1 < (3 : Nat) ^ k := by
+    calc (1 : Nat) < 3 := by norm_num
+      _ = 3 ^ 1 := (pow_one 3).symm
+      _ ≤ 3 ^ k := Nat.pow_le_pow_right (by norm_num) hk1
+  exact Nat.mod_eq_of_lt h3k
+
 /-! ### Empirical exploration of m = 1 (mod 3^24)
 
-The m=1 cylinder requires `(evalWord u).n ≡ aS202 (mod 3^24)`. Since
-`aS202 < 3^24`, this requires `n ≥ aS202 ≈ 3.14 × 10^10`. Such an `n`
-is reachable in principle but needs words of substantial length.
+The m=1 cylinder is the FIRST genuinely non-trivial case (k = 24 ≥ 23).
+Bounded DFS at increasing depths finds no witness. Heuristic: the
+target residue `1 + 3^22 ≈ 3.14 × 10^10` requires `n` of order `10^10`,
+which needs word length `≥ 9` *just to reach the magnitude*, and then
+the specific residue mod `3^24` has density `≈ 10^-11`. Brute search
+is unlikely to find a witness; an algebraic / structural construction
+is the path forward. -/
 
-Bounded DFS at depth 8 (256 paths) finds NO short witness. This is
-empirical data, NOT a proof of non-accessibility. -/
-
-theorem no_short_witness_S202_m1 :
+theorem no_short_witness_S202_m1_d8 :
     checkS202Accessibility 1 8 = false := by native_decide
+
+theorem no_witness_S202_m1_d12 :
+    checkS202Accessibility 1 12 = false := by native_decide
 
 /-! ### Statement of the S202 alternative theorem (NOT proven)
 

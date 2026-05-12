@@ -17,26 +17,25 @@ lemma defect_step_zero (s : AdmState) :
     defect (step s Branch.zero) = defect s + (tau s.n : Int) - 2 := by
   simp [defect, step]; ring
 
-/-- S202 admissible word (26 symbols): 10100000001000010000000000. -/
+/-- S202 admissible word (26 symbols): `10100000001000010000000000`.
+Ones at positions 0, 2, 10, 15. Matches the literature. -/
 def wS202 : Word :=
   [ Branch.one,  Branch.zero, Branch.one,  Branch.zero, Branch.zero,
     Branch.zero, Branch.zero, Branch.zero, Branch.zero, Branch.zero,
-    Branch.zero, Branch.one,  Branch.zero, Branch.zero, Branch.zero,
-    Branch.zero, Branch.one,  Branch.zero, Branch.zero, Branch.zero,
+    Branch.one,  Branch.zero, Branch.zero, Branch.zero, Branch.zero,
+    Branch.one,  Branch.zero, Branch.zero, Branch.zero, Branch.zero,
     Branch.zero, Branch.zero, Branch.zero, Branch.zero, Branch.zero,
     Branch.zero ]
 
--- Actual values produced by the formal semantics on `wS202`:
---   n = 1035769,  A = 55,  q = 22,  B = 3525268288809647,  defect = 11.
--- The S202 spec quotes  n = 251, A = 43, B = 919447060349, defect = −1.
--- Only q matches. The A and B mismatches indicate a convention difference
--- (almost certainly forward run from a base n vs. inverse run from 1);
--- this is recorded honestly here rather than masked.
-theorem S202_q          : (evalWord wS202).q = 22                     := by native_decide
-theorem S202_n_actual   : (evalWord wS202).n = 1035769                := by native_decide
-theorem S202_A_actual   : (evalWord wS202).A = 55                     := by native_decide
-theorem S202_B_actual   : (evalWord wS202).B = 3525268288809647       := by native_decide
-theorem S202_defect_actual : defect (evalWord wS202) = 11             := by native_decide
+-- `evalWord wS202` from `initState` (n=1) produces EXACTLY the published
+-- S202 constants:  n = 251, A = 43, q = 22, B = 919447060349, defect = −1.
+-- (Earlier versions of this file had positions 10/11 and 15/16 swapped,
+-- producing different values; that transcription error has been corrected.)
+theorem S202_q             : (evalWord wS202).q = 22             := by native_decide
+theorem S202_n_actual      : (evalWord wS202).n = 251             := by native_decide
+theorem S202_A_actual      : (evalWord wS202).A = 43              := by native_decide
+theorem S202_B_actual      : (evalWord wS202).B = 919447060349   := by native_decide
+theorem S202_defect_actual : defect (evalWord wS202) = -1         := by native_decide
 
 /-! ### S202 — abstract translation-set witness
 

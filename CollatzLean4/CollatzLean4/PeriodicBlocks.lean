@@ -30,8 +30,8 @@ theorem S206_a_mod9 : aS202 % 9 = 1 := by native_decide
 theorem S206_repeat_from_251_q : (evalWordFrom 251 wS202).q = 22 := by
   native_decide
 
-/-- …but A is 68 (not 60 as in the spec, nor 43 as in the central run). -/
-theorem S206_repeat_from_251_A : (evalWordFrom 251 wS202).A = 68 := by
+/-- …but A is 60 (not 43 as for the canonical run from `1`). -/
+theorem S206_repeat_from_251_A : (evalWordFrom 251 wS202).A = 60 := by
   native_decide
 
 theorem S206_not_direct_repeat_low_slope :

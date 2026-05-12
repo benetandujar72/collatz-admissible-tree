@@ -86,14 +86,44 @@ lemma step_one_good {s : AdmState} (h : GoodState s) :
            = 2 ^ tau s.n * (3 ^ s.q * s.n + s.B) := by ring
   rw [key, h, pow_add, Nat.mul_comm]
 
-/-- "zero" branch preserves the identity ONLY when 3 ∣ 2^τ(n)·n − 1,
-    i.e. for n ∈ X (case analysis on n % 9). Left open pending that
-    integrality lemma — the lemma as stated for arbitrary `s` is false
-    in `Nat` because of truncated subtraction. -/
+/-- For n ∈ X, `2^τ(n) · n ≡ 1 (mod 3)`. Case analysis on `n % 9`. -/
+lemma psiZero_mul_mod {n : Nat} (h : InX n) : (2 ^ tau n * n) % 3 = 1 := by
+  have hmul : (2 ^ tau n * n) % 3 = ((2 ^ tau n) % 3 * (n % 3)) % 3 :=
+    Nat.mul_mod _ _ _
+  have hn3 : n % 3 = (n % 9) % 3 :=
+    (Nat.mod_mod_of_dvd n (by norm_num : (3 : Nat) ∣ 9)).symm
+  -- tau_mod was defined earlier in this file
+  have htau : tau n = tau (n % 9) := by unfold tau; rw [Nat.mod_mod]
+  unfold InX at h
+  rcases h with h | h | h | h | h | h <;>
+    (rw [hmul, hn3, h, htau, h]; unfold tau; decide)
+
+/-- For n ∈ X, the Ψ₀ numerator `2^τ(n)·n − 1` is divisible by 3. -/
+lemma psiZero_integrality {n : Nat} (h : InX n) : 3 ∣ (2 ^ tau n * n - 1) := by
+  have hmod := psiZero_mul_mod h
+  refine ⟨(2 ^ tau n * n) / 3, ?_⟩
+  have := Nat.div_add_mod (2 ^ tau n * n) 3
+  omega
+
+/-- "zero" branch preserves the translation identity for `n ∈ X`. -/
 lemma step_zero_good {s : AdmState}
     (hX : InX s.n) (h : GoodState s) :
     GoodState (step s Branch.zero) := by
-  sorry
+  unfold GoodState step at *
+  simp only
+  have hmod := psiZero_mul_mod hX
+  have hdm := Nat.div_add_mod (2 ^ tau s.n * s.n) 3
+  have hk : (2 ^ tau s.n * s.n - 1) / 3 = (2 ^ tau s.n * s.n) / 3 := by omega
+  rw [hk]
+  set k := (2 ^ tau s.n * s.n) / 3 with hkdef
+  have hk_eq : 2 ^ tau s.n * s.n = 3 * k + 1 := by omega
+  have key : 3 ^ s.q * (3 * k + 1) + 2 ^ tau s.n * s.B = 2 ^ (s.A + tau s.n) := by
+    have h_assoc : 3 ^ s.q * (2 ^ tau s.n * s.n) + 2 ^ tau s.n * s.B
+                 = 2 ^ tau s.n * (3 ^ s.q * s.n + s.B) := by ring
+    rw [← hk_eq] at *
+    rw [h_assoc, h, ← pow_add, Nat.add_comm]
+  have expand : 3 ^ s.q * (3 * k + 1) = 3 ^ (s.q + 1) * k + 3 ^ s.q := by ring
+  omega
 
 /-- Joint invariant carried along admissible runs. -/
 def Inv (s : AdmState) : Prop := GoodState s ∧ InX s.n

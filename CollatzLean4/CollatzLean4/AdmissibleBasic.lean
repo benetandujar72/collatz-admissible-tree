@@ -148,10 +148,59 @@ lemma step_one_preserves_X {s : AdmState} (hX : InX s.n) :
   rcases hX with h | h | h | h | h | h <;>
     (rw [h, tau_mod, h]; unfold tau; decide)
 
-/-- The "zero" branch preserves InX. Case analysis on n % 9 left as sorry. -/
+/-- Brute-force table over `Fin 27`: for every admissible residue mod 27,
+    the Ψ₀ image lands in X. Decidable by `decide`. -/
+private lemma psiZero_mod27_table :
+    ∀ r : Fin 27,
+      (r.val % 9 = 1 ∨ r.val % 9 = 2 ∨ r.val % 9 = 4 ∨
+       r.val % 9 = 5 ∨ r.val % 9 = 7 ∨ r.val % 9 = 8) →
+      (((2 ^ (tau r.val) * r.val - 1) / 3) % 9 = 1 ∨
+       ((2 ^ (tau r.val) * r.val - 1) / 3) % 9 = 2 ∨
+       ((2 ^ (tau r.val) * r.val - 1) / 3) % 9 = 4 ∨
+       ((2 ^ (tau r.val) * r.val - 1) / 3) % 9 = 5 ∨
+       ((2 ^ (tau r.val) * r.val - 1) / 3) % 9 = 7 ∨
+       ((2 ^ (tau r.val) * r.val - 1) / 3) % 9 = 8) := by
+  decide
+
+/-- The "zero" branch preserves InX: reduce to the `Fin 27` table. -/
 lemma step_zero_preserves_X {s : AdmState} (hX : InX s.n) :
     InX (step s Branch.zero).n := by
-  sorry
+  show InX ((2 ^ tau s.n * s.n - 1) / 3)
+  set n := s.n
+  have hr_lt : n % 27 < 27 := Nat.mod_lt _ (by norm_num)
+  have h_n9_r9 : n % 9 = (n % 27) % 9 :=
+    (Nat.mod_mod_of_dvd n (by norm_num : (9 : Nat) ∣ 27)).symm
+  have h_tau : tau n = tau (n % 27) := by
+    unfold tau; rw [h_n9_r9]
+  have hr_inX : InX (n % 27) := by
+    unfold InX at hX ⊢
+    rw [← h_n9_r9]; exact hX
+  have htable := psiZero_mod27_table ⟨n % 27, hr_lt⟩ hr_inX
+  unfold InX
+  have hpos_r : 1 ≤ 2 ^ tau n * (n % 27) := by
+    have hmod := psiZero_mul_mod hr_inX
+    rw [← h_tau] at hmod
+    omega
+  have hge : n % 27 ≤ n := Nat.mod_le _ _
+  have hpos_n : 1 ≤ 2 ^ tau n * n :=
+    Nat.le_trans hpos_r (Nat.mul_le_mul_left _ hge)
+  have hk_def : n = 27 * (n / 27) + n % 27 := (Nat.div_add_mod n 27).symm
+  have h_decomp :
+      2 ^ tau n * n - 1
+        = (2 ^ tau n * (n % 27) - 1) + 3 * (9 * 2 ^ tau n * (n / 27)) := by
+    have h1 : 2 ^ tau n * n = 2 ^ tau n * (27 * (n / 27) + n % 27) := by rw [← hk_def]
+    have h2 : 2 ^ tau n * (27 * (n / 27) + n % 27)
+            = 2 ^ tau n * (n % 27) + 27 * (2 ^ tau n * (n / 27)) := by ring
+    have h3 : 27 * (2 ^ tau n * (n / 27)) = 3 * (9 * 2 ^ tau n * (n / 27)) := by ring
+    omega
+  rw [h_decomp, Nat.add_mul_div_left _ _ (by norm_num : 0 < 3)]
+  have heq9 :
+      ((2 ^ tau n * (n % 27) - 1) / 3 + 9 * 2 ^ tau n * (n / 27)) % 9
+    = ((2 ^ tau n * (n % 27) - 1) / 3) % 9 := by
+    have : 9 ∣ 9 * 2 ^ tau n * (n / 27) := ⟨2 ^ tau n * (n / 27), by ring⟩
+    omega
+  rw [heq9, h_tau]
+  exact htable
 
 lemma step_inv {s : AdmState} (h : Inv s) :
     ∀ b, Inv (step s b)

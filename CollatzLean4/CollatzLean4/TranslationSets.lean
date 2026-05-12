@@ -70,12 +70,9 @@ not an extra constraint on `B_adm` but a free corollary. -/
 theorem B_adm_resonance {A q B : Nat} (h : B_adm A q B) :
     B % (3 ^ q) = (2 ^ A) % (3 ^ q) := by
   obtain ⟨w, hA, hq, hB⟩ := h
-  have hid := evalWord_translation_identity w
-  unfold GoodState at hid
-  rw [hA, hq, hB] at hid
-  have hle : B ≤ 2 ^ A := by omega
-  have hdvd : (3 ^ q : Nat) ∣ 2 ^ A - B := ⟨(evalWord w).n, by omega⟩
-  exact (Nat.modEq_iff_dvd' hle).mpr hdvd
+  have hres := evalWord_resonance_mod w
+  rw [hA, hq, hB] at hres
+  exact hres
 
 /-- `R_adm` is just `B_adm` — the resonance is automatic. -/
 theorem R_adm_iff_B_adm (A q B : Nat) : R_adm A q B ↔ B_adm A q B :=

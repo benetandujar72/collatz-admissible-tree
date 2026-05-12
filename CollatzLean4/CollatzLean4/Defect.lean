@@ -82,4 +82,53 @@ theorem not_forall_admissible_triple_high_slope :
   have hlow := S202_low_slope
   omega
 
+/-! ### S204-A: lower slope bound
+
+Every admissible state satisfies `3^q ≤ 2^A`. Direct from `GoodState`
+and `n ≥ 1` (which follows from `InX`). The sharp counterexample S202
+shows we cannot strengthen this to `A ≥ 2q`, but we always get
+`q ≤ A` (corollary).
+-/
+
+/-- `n ∈ X` forces `n ≥ 1` (since `0 % 9 = 0 ∉ X`). -/
+lemma one_le_of_InX {n : Nat} (h : InX n) : 1 ≤ n := by
+  unfold InX at h; omega
+
+/-- Fundamental admissible bound: `3^q ≤ 2^A` for every state with `Inv`. -/
+theorem three_pow_q_le_two_pow_A (s : AdmState) (h : Inv s) :
+    3 ^ s.q ≤ 2 ^ s.A := by
+  have hgood : 3 ^ s.q * s.n + s.B = 2 ^ s.A := h.1
+  have hn : 1 ≤ s.n := one_le_of_InX h.2
+  calc 3 ^ s.q
+      = 3 ^ s.q * 1 := (Nat.mul_one _).symm
+    _ ≤ 3 ^ s.q * s.n := Nat.mul_le_mul_left _ hn
+    _ ≤ 3 ^ s.q * s.n + s.B := Nat.le_add_right _ _
+    _ = 2 ^ s.A := hgood
+
+/-- Corollary: every admissible run satisfies `3^q ≤ 2^A`. -/
+theorem evalWord_three_pow_le (w : Word) :
+    3 ^ (evalWord w).q ≤ 2 ^ (evalWord w).A :=
+  three_pow_q_le_two_pow_A _ (runWord_preserves_inv w init_inv)
+
+/-- Weak slope bound: `q ≤ A` along every admissible run. Sharp
+counterexamples (S202: `A = 43, q = 22`) prevent strengthening
+to `A ≥ 2q`. -/
+theorem evalWord_q_le_A (w : Word) : (evalWord w).q ≤ (evalWord w).A := by
+  by_contra hlt
+  have hlt' : (evalWord w).A < (evalWord w).q := Nat.lt_of_not_le hlt
+  have hpow := evalWord_three_pow_le w
+  have h1 : 2 ^ (evalWord w).A < 2 ^ (evalWord w).q :=
+    Nat.pow_lt_pow_right (by norm_num : 1 < 2) hlt'
+  have h2 : 2 ^ (evalWord w).q ≤ 3 ^ (evalWord w).q :=
+    Nat.pow_le_pow_left (by norm_num : 2 ≤ 3) _
+  omega
+
+/-- Defect lower bound: `defect (evalWord w) ≥ -q` along every
+admissible run (since `q ≤ A`, so `A - 2q ≥ -q`). -/
+theorem evalWord_defect_ge_neg_q (w : Word) :
+    defect (evalWord w) ≥ -(((evalWord w).q : Int)) := by
+  have hqA : (evalWord w).q ≤ (evalWord w).A := evalWord_q_le_A w
+  unfold defect
+  omega
+
 end CollatzLean4.Admissible

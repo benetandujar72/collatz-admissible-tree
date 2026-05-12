@@ -218,4 +218,23 @@ theorem evalWord_translation_identity (w : Word) :
     GoodState (evalWord w) :=
   (runWord_preserves_inv w init_inv).1
 
+/-- S192-A (per-word resonance): `B(w) ≡ 2^A(w) (mod 3^q(w))`. Direct
+consequence of `evalWord_translation_identity`: subtracting `B` from both
+sides of `3^q · n + B = 2^A` yields `3^q ∣ 2^A − B`. -/
+theorem evalWord_resonance_mod (w : Word) :
+    (evalWord w).B % (3 ^ (evalWord w).q)
+      = (2 ^ (evalWord w).A) % (3 ^ (evalWord w).q) := by
+  have hgood : 3 ^ (evalWord w).q * (evalWord w).n + (evalWord w).B
+             = 2 ^ (evalWord w).A :=
+    evalWord_translation_identity w
+  have hle : (evalWord w).B ≤ 2 ^ (evalWord w).A := by omega
+  have hdvd : 3 ^ (evalWord w).q ∣ 2 ^ (evalWord w).A - (evalWord w).B :=
+    ⟨(evalWord w).n, by omega⟩
+  exact (Nat.modEq_iff_dvd' hle).mpr hdvd
+
+/-- Same fact wrapped in `Nat.ModEq` notation. -/
+theorem evalWord_resonance_modEq (w : Word) :
+    (evalWord w).B ≡ 2 ^ (evalWord w).A [MOD 3 ^ (evalWord w).q] :=
+  evalWord_resonance_mod w
+
 end CollatzLean4.Admissible

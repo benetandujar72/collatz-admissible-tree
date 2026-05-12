@@ -38,6 +38,7 @@ NOT closed:
 -/
 
 import CollatzLean4.ThreeAdic
+import CollatzLean4.Concatenation
 
 namespace CollatzLean4.Admissible
 
@@ -179,5 +180,33 @@ above holds. Resolving this is the keystone of the asymptotic slope
 program. -/
 def S202_alternative_conjecture : Prop :=
   SubcriticalAccessFamily ∨ SlopeBarrier
+
+/-! ### S211.2 specialized to `wS202`
+
+If `u` lands in the m-th S202 cylinder, with `D(u) < m`, and the
+S202 word `wS202` has uniform defect change `−1` along the iterated
+trajectory from `evalWord u`, then `u ++ wS202^m` is an admissible
+word with `A < 2q` — a concrete subcritical witness.
+
+The `h_uniform` hypothesis is the formal content of the S209
+cylinder-stability lemma. Establishing it for `wS202` reduces to
+proving that running `wS202` from any state with
+`n ≡ aS202 (mod 3^(22m+2))` produces τ-trajectory identical to the
+trajectory from `aS202` itself, which by S210 has defect change −1.
+
+This module supplies the implication; closing `h_uniform` is the
+S213 frontier. -/
+
+theorem S211_S202_subcritical
+    (u : Word) (m : Nat)
+    (_ : (evalWord u).n % (3 ^ (22 * m + 2))
+           = aS202 % (3 ^ (22 * m + 2)))
+    (h_defect_below_m : defect (evalWord u) < (m : Int))
+    (h_uniform : ∀ k, k < m →
+        defectChange wS202 (runWord (Word.repeat' wS202 k) (evalWord u))
+          = -1) :
+    ((evalWord (u ++ Word.repeat' wS202 m)).A : Int)
+      < 2 * ((evalWord (u ++ Word.repeat' wS202 m)).q : Int) :=
+  S211_A_lt_two_q u wS202 m h_defect_below_m h_uniform
 
 end CollatzLean4.Admissible

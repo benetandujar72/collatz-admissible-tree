@@ -31,15 +31,20 @@ Toolchain: `leanprover/lean4:v4.30.0-rc2`, Mathlib pinned in `lake-manifest.json
 
 ## Status
 
-5 modules compile. **4 `sorry`s remain**, all quarantined and documented in
-[HANDOFF.md](HANDOFF.md) with proof plans and time estimates. None are used
-as axioms; the proven theorems above stand independently.
+5 modules compile. **0 `sorry`s remain.** Extensions beyond the initial
+S189–S207 scope:
+- `B_adm_resonance`: resonance `B ≡ 2^A (mod 3^q)` is automatic for every
+  admissible triple (corollary of the translation identity).
+- `B_adm_imp_B_free` (S192–S195, forward): every admissible `B` has the
+  strictly-decreasing exponent representation
+  `B = Σ_{i=1}^{q} 3^{i-1} · 2^{c_i}` with `A > c_1 > … > c_q ≥ 0`.
 
 ## Contributing
 
-Start with [HANDOFF.md](HANDOFF.md). The recommended first PR closes
-`psiZero_integrality` + `step_zero_good` — these unblock the
-unconditional form of `evalWord_translation_identity`.
+See [HANDOFF.md](HANDOFF.md) for the next research lines — `L^k` iteration
+in `NegativeRuns`, computational accessibility tables, 3-adic limit
+construction lifting `S206_fixed_point_mod` to `ℤ_3`, and defect/slope
+bounds.
 
 For programmatic proof checking, see [AXLE_USAGE.md](AXLE_USAGE.md)
 (uses the Axiom Lean Engine).

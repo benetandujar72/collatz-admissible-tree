@@ -1,10 +1,19 @@
 # Handoff — Collatz Admissible Tree (S189–S207)
 
-**Branch:** `master` (last commit `e72c8d0`)
-**Toolchain:** `leanprover/lean4:v4.30.0-rc2`, Mathlib `master`
-**Build:** `cd CollatzLean4 && lake build CollatzLean4.AdmissibleBasic CollatzLean4.TranslationSets CollatzLean4.Defect CollatzLean4.NegativeRuns CollatzLean4.PeriodicBlocks`
+**Branch:** `main` (commit `824cf54`)
+**Toolchain:** `leanprover/lean4:v4.30.0-rc2`, Mathlib pinned in `lake-manifest.json`
+**Build:** `cd CollatzLean4 && lake exe cache get && lake build`
 
-All five new modules compile. Four `sorry`s remain, each scoped and documented below.
+All five new modules compile. **2 `sorry`s remain** (down from 4 in initial
+commit `e72c8d0`):
+  - `step_zero_preserves_X` (AdmissibleBasic) — 18-case mod-27 analysis
+  - `coverage_translation_equiv` (TranslationSets) — unblocked, ~30 min
+
+Both `step_zero_good` and `psiZero_integrality` are now proven, so
+`evalWord_translation_identity` (S189–S191) is unconditional modulo
+`step_zero_preserves_X` (which only enters via the joint `Inv` invariant).
+
+`negative_run_integrality_iff` (S203-C) is also fully proven.
 
 ## What's proven (no `sorry`)
 

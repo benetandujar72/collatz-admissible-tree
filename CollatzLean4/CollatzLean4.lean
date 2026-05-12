@@ -9,3 +9,4 @@ import CollatzLean4.NegativeRuns
 import CollatzLean4.PeriodicBlocks
 import CollatzLean4.Reachability
 import CollatzLean4.ThreeAdic
+import CollatzLean4.BinaryTensor

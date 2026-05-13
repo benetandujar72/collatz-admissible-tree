@@ -59,6 +59,34 @@ theorem nu3_le_cap (n c : Nat) : nu3 n c ≤ c := by
       · have := ih (n / 3); omega
       · omega
 
+/-- **ν₃ ladder**: for `cap ≥ k`, the capped 3-adic valuation of `3^k`
+equals exactly `k`. The base case `k = 0` returns `0` (since `1 % 3 ≠ 0`),
+and each successive `3^k = 3 · 3^(k−1)` contributes one to the count. -/
+theorem nu3_three_pow (k cap : Nat) (h : k ≤ cap) : nu3 (3 ^ k) cap = k := by
+  induction k generalizing cap with
+  | zero =>
+      -- 3 ^ 0 = 1; nu3 1 cap = 0 since 1 % 3 = 1 ≠ 0.
+      cases cap with
+      | zero => simp [nu3]
+      | succ c =>
+          show nu3 1 (c + 1) = 0
+          unfold nu3
+          simp
+  | succ k ih =>
+      cases cap with
+      | zero => omega
+      | succ c =>
+          have h_pos : (3 : Nat) ^ (k + 1) ≠ 0 := by positivity
+          have h_div3 : (3 : Nat) ^ (k + 1) % 3 = 0 := by
+            rw [pow_succ]; exact Nat.mul_mod_left _ _
+          have h_quot : (3 : Nat) ^ (k + 1) / 3 = 3 ^ k := by
+            rw [pow_succ]; exact Nat.mul_div_cancel _ (by decide : 0 < 3)
+          unfold nu3
+          rw [if_neg h_pos, if_pos h_div3, h_quot]
+          have hkc : k ≤ c := by omega
+          rw [ih c hkc]
+          omega
+
 /-! ### Distance functions -/
 
 /-- `ρ_+(c, r)`: 3-adic proximity to `1`, capped at `r`. Returns `r`
@@ -84,6 +112,17 @@ theorem deltaPlus_aS202_m1 : deltaPlus aS202 24 = 2 := by native_decide
 theorem deltaPlus_aS202_m2 : deltaPlus aS202 46 = 24 := by native_decide
 
 theorem deltaPlus_aS202_m3 : deltaPlus aS202 68 = 46 := by native_decide
+
+/-- **S214 δ₊ ladder, general form**: for every `m ≥ 1`, the 3-adic
+distance from `aS202` to `1` at base precision `R_m = 22m + 2` equals
+`22m − 20`. Follows from `aS202 − 1 = 3^22` (i.e., `ν₃(aS202 − 1) = 22`)
+and `nu3_three_pow`. -/
+theorem deltaPlus_aS202_general (m : Nat) (hm : 1 ≤ m) :
+    deltaPlus aS202 (22 * m + 2) = 22 * m - 20 := by
+  unfold deltaPlus rhoPlus
+  rw [if_neg (by decide : aS202 ≠ 1), aS202_sub_one,
+      nu3_three_pow 22 (22 * m + 2) (by omega)]
+  omega
 
 /-! ### S215 over-cover warning: `aS202` distinguished from `1` only at `h ≥ 23` -/
 

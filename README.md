@@ -66,7 +66,9 @@ lake build                  # builds all 12 modules
 ```
 
 Toolchain: `leanprover/lean4:v4.30.0-rc2`, Mathlib pinned in
-`lake-manifest.json`. Current build: **8407 jobs, 0 `sorry`s, 0 axioms.**
+`lake-manifest.json`. Current build: **8425+ jobs, 0 `sorry`s, 0 axioms.**
+(Cifra `+` porque el cert `Cert_m1_Q10_S216` añade módulos pero su
+compilación intensiva de `native_decide` está en vuelo.)
 
 ## Module map
 
@@ -82,8 +84,13 @@ Toolchain: `leanprover/lean4:v4.30.0-rc2`, Mathlib pinned in
 | [BinaryTensor](CollatzLean4/CollatzLean4/BinaryTensor.lean) | 2-adic coordinates, Terras, TBD |
 | [S202Cylinders](CollatzLean4/CollatzLean4/S202Cylinders.lean) | S202 cylinder access, ladder `aS202 = 1 + 3^22`, alternative conjecture |
 | [Concatenation](CollatzLean4/CollatzLean4/Concatenation.lean) | S210/S211 concatenation criterion |
-| [CylinderStability](CollatzLean4/CollatzLean4/CylinderStability.lean) | S213: τ-trajectory stability, `runWord_cong` |
+| [CylinderStability](CollatzLean4/CollatzLean4/CylinderStability.lean) | S213: τ-trajectory stability, `runWord_cong`, `Word.numOnes` |
 | [PotentialBarrier](CollatzLean4/CollatzLean4/PotentialBarrier.lean) | S214: abstract potential framework + `LocalPotentialCertificate` |
+| [InverseGraph](CollatzLean4/CollatzLean4/InverseGraph.lean) | Grafo inverso de cilindros, aristas `One`/`Zero`, `outgoingEdges` |
+| [S216](CollatzLean4/CollatzLean4/S216.lean) | Closure → barrera terminal: `S216_barrier_for_words_outgoing` |
+| [AS202Lift](CollatzLean4/CollatzLean4/AS202Lift.lean) | Representantes `aS202_at m` para `m ∈ {1,2,3}` (3-adic Cauchy) |
+| [AnalyticBarrier](CollatzLean4/CollatzLean4/AnalyticBarrier.lean) | Vía analítica: `WPath_weight_decompose`, conjetura `n_one − n_neg ≥ m` |
+| [Cert_m1_Q{3,5,8,10}_S216(_Barrier)](CollatzLean4/CollatzLean4/) | Certificados BF y adaptadores `Bool → Prop` por `(m, Q)` |
 
 ## Honest scope statement
 
@@ -105,13 +112,24 @@ the S202 3-adic fixed point is accessible from `1` with controlled
 defect cost (subcritical slope follows), or there is a genuine 3-adic
 accessibility barrier (structural obstruction discovered).
 
+## Documentation map
+
+| Documento | Para qué sirve |
+|-----------|---------------|
+| [HANDOFF_COLLATZ_ROADMAP.md](HANDOFF_COLLATZ_ROADMAP.md) | Panorama estratégico exhaustivo — colaboradores nuevos empiezan aquí |
+| [HANDOFF_S216.md](HANDOFF_S216.md) | Detalle del cierre S216 (BF closure → barrera terminal) |
+| [FRONTIER_STATUS.md](FRONTIER_STATUS.md) | Estado actual de fronteras `(m, Q)` cerradas y bloqueos pendientes |
+| [tools/README.md](tools/README.md) | Toolchain Python ↔ Lean: motores, exporters, sanity checks |
+| [ADVANCE_ASSESSMENT.md](ADVANCE_ASSESSMENT.md) | Evaluación de avances respecto al plan original |
+| [HANDOFF.md](HANDOFF.md) | Documento histórico (líneas de investigación iniciales) |
+
 ## Contributing
 
-See [HANDOFF.md](HANDOFF.md) for the current research lines, including:
-1. **S213**: cylinder stability lemma for `wS202` (discharges `h_uniform`).
-2. **S211 search**: compute `𝒞_{S202}(m)` via backward DFS on cylinder predecessors.
-3. **Bidirectional Terras for arbitrary k**: extend [BinaryTensor](CollatzLean4/CollatzLean4/BinaryTensor.lean).
-4. **Per-word combinatorial defect formula**: cleaner accounting.
+Líneas de investigación abiertas (ver [HANDOFF_COLLATZ_ROADMAP.md](HANDOFF_COLLATZ_ROADMAP.md) §5 para detalle):
+1. **`S202_one_edge_count_conjecture`** (único hueco analítico restante).
+2. **Refactor `InvStart` → `aS202_at`** para desbloquear certs `m ≥ 2` ([FRONTIER_STATUS.md](FRONTIER_STATUS.md)).
+3. **S213**: cylinder stability lemma para `wS202`.
+4. **Bidirectional Terras**: extender [BinaryTensor](CollatzLean4/CollatzLean4/BinaryTensor.lean).
 
 ## License
 

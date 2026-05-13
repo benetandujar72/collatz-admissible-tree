@@ -1,0 +1,87 @@
+[
+  {
+    "m": 1,
+    "Q": 8,
+    "result": {
+      "status": "barrier_certificate",
+      "m": 1,
+      "Q": 8,
+      "R": 24,
+      "threshold": 1,
+      "states_seen": 24310,
+      "expanded": 24310,
+      "edges_checked": 49936,
+      "goals_seen": 0,
+      "conclusion": "C-back_S202(m=1, Q=8) >= 1",
+      "elapsed_s": 0.13619565963745117
+    }
+  },
+  {
+    "m": 1,
+    "Q": 10,
+    "result": {
+      "status": "barrier_certificate",
+      "m": 1,
+      "Q": 10,
+      "R": 24,
+      "threshold": 1,
+      "states_seen": 352716,
+      "expanded": 352716,
+      "edges_checked": 727856,
+      "goals_seen": 0,
+      "conclusion": "C-back_S202(m=1, Q=10) >= 1",
+      "elapsed_s": 2.177520513534546
+    }
+  },
+  {
+    "m": 2,
+    "Q": 6,
+    "result": {
+      "status": "barrier_certificate",
+      "m": 2,
+      "Q": 6,
+      "R": 46,
+      "threshold": 2,
+      "states_seen": 3003,
+      "expanded": 3003,
+      "edges_checked": 5888,
+      "goals_seen": 0,
+      "conclusion": "C-back_S202(m=2, Q=6) >= 2",
+      "elapsed_s": 0.01720571517944336
+    }
+  },
+  {
+    "m": 2,
+    "Q": 9,
+    "result": {
+      "status": "barrier_certificate",
+      "m": 2,
+      "Q": 9,
+      "R": 46,
+      "threshold": 2,
+      "states_seen": 167960,
+      "expanded": 167960,
+      "edges_checked": 336992,
+      "goals_seen": 0,
+      "conclusion": "C-back_S202(m=2, Q=9) >= 2",
+      "elapsed_s": 1.0065455436706543
+    }
+  },
+  {
+    "m": 3,
+    "Q": 6,
+    "result": {
+      "status": "barrier_certificate",
+      "m": 3,
+      "Q": 6,
+      "R": 68,
+      "threshold": 3,
+      "states_seen": 5005,
+      "expanded": 5005,
+      "edges_checked": 9474,
+      "goals_seen": 0,
+      "conclusion": "C-back_S202(m=3, Q=6) >= 3",
+      "elapsed_s": 0.020919322967529297
+    }
+  }
+]

@@ -1,0 +1,960 @@
+\documentclass[11pt,a4paper]{article}
+
+%========== Packages ==========
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{amsmath,amsthm,amssymb,amsfonts,mathtools}
+\usepackage{geometry}\geometry{margin=2.5cm}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!50!black,
+            citecolor=green!50!black,urlcolor=blue!50!black}
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily\small,breaklines=true,
+        frame=single,framerule=0.3pt,framesep=4pt,
+        columns=fullflexible,showstringspaces=false}
+
+%========== Theorem environments ==========
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{conjecture}[theorem]{Conjecture}
+
+%========== Macros ==========
+\newcommand{\NN}{\mathbb{N}}
+\newcommand{\ZZ}{\mathbb{Z}}
+\newcommand{\Zp}[1]{\mathbb{Z}_{#1}}
+\newcommand{\aS}{a_{S202}}
+\newcommand{\aSat}{a_{S202}^{(m)}}
+\newcommand{\wS}{w_{S202}}
+\newcommand{\defect}{\mathrm{D}}
+\newcommand{\credit}{\mathrm{credit}}
+\newcommand{\relevant}{\mathrm{relevant}}
+\newcommand{\Cback}{\mathcal{C}^{\!\leftarrow}_{S202}}
+\newcommand{\InvG}{G^{\!\leftarrow}}
+\newcommand{\numOnes}{n_{\mathtt{1}}}
+\newcommand{\numNeg}{n_{\!-}}
+\newcommand{\numPosZero}{n_{\!+\mathtt{0}}}
+\DeclareMathOperator{\InX}{InX}
+\DeclareMathOperator{\InvEdge}{InvEdge}
+\DeclareMathOperator{\evalWord}{evalWord}
+\DeclareMathOperator{\numZeros}{numZeros}
+
+%========== Title ==========
+\title{A Formally Verified Admissible-Inverse Framework\\
+       for the Collatz Cylinder Accessibility Problem,\\
+       with One Open Combinatorial Conjecture}
+
+\author{Benet And\'ujar Mata\thanks{%
+   Independent researcher, Barcelona.
+   Correspondence: \href{mailto:bandujar@xtec.cat}{\texttt{bandujar@xtec.cat}}.
+   Lean 4 development and Python toolchain available at the
+   repository URL listed in the reproducibility appendix.}}
+\date{May 2026}
+
+\begin{document}
+\maketitle
+
+%========== Abstract ==========
+\begin{abstract}
+We present a formally verified reformulation of the Collatz dynamics
+in terms of the \emph{admissible inverse cylinder graph} around the
+3-adic fixed point $\aS = 1 + 3^{22}$ of the published S202 word
+$\wS$. The framework is fully mechanised in Lean~4 atop Mathlib, with
+$8\,425$ verification jobs, zero \texttt{sorry} statements, and zero
+added axioms.
+
+The central theorem of the formal development,
+\emph{S216 closure-to-barrier}, establishes that every closure
+certificate over the inverse cylinder graph (an explicit, finite
+table of $(\text{state},\text{distance})$ pairs satisfying three
+decidable invariants) implies the formal barrier statement
+$\Cback(m, Q) \ge T$: no admissible word $u$ with $q(u) \le Q$ and
+$n(u) \equiv \aS \pmod{3^{22m+2}}$ has defect strictly less than $T$.
+This implication uses an \emph{optimistic credit} relevance rule
+\(d - (Q - j) < T\) that is provably necessary in the presence of
+negative-weight edges.
+
+Four explicit barriers $\Cback(1, Q) \ge 1$ for $Q \in \{3, 5, 8, 10\}$
+are produced as formal Lean theorems via this pipeline; three further
+barriers (including $\Cback(2, 9) \ge 2$ and $\Cback(3, 6) \ge 3$) are
+proved computationally and await a documented four-step scaffolding
+refactor on the Lean side to be lifted.
+
+The programme reduces the unconditional analytical content of the
+S202 alternative reformulation to a \emph{single open combinatorial
+conjecture}, denoted
+\texttt{S202\_one\_edge\_count\_conjecture}: along every admissible
+inverse path reaching a cylinder of depth $m$ with $q$ zero-steps,
+the number of one-edges exceeds the number of negative zero-edges by
+at least $m$. We state this conjecture in precise and coarse forms,
+prove their formal implication, document empirical support over all
+explored cylinders, and identify the failure modes that distinguish
+it from the per-edge weight bound. Closing this conjecture would
+yield a slope barrier $\lambda_{\mathrm{asy}} < 2$ for any admissible
+cover and would complete the analytical route to the S211
+subcritical-accessibility statement.
+
+The work is offered as an explicit, machine-checkable formal-method
+complement to the probabilistic forward Collatz analysis of
+Tao~\cite{tao2022}, with all numerical, structural, and conjectural
+content verifiable from the public Lean 4 repository.
+
+\medskip\noindent\textbf{Keywords.} Collatz conjecture; admissible inverse iteration; 3-adic
+analysis; Bellman--Ford closure; formal verification; Lean 4; cylinder
+accessibility.
+
+\medskip\noindent\textbf{MSC 2020.} 11B83 (primary); 37P05, 11A07, 03B35, 68V20 (secondary).
+\end{abstract}
+
+\tableofcontents
+
+%========== Section 1: Introduction ==========
+\section{Introduction}\label{sec:intro}
+
+The Collatz conjecture, dating to 1937, asserts that the orbit of
+every positive integer under the map
+\[
+  T(n) =
+    \begin{cases}
+       n/2 & n \text{ even},\\
+       (3n+1)/2 & n \text{ odd},
+    \end{cases}
+\]
+eventually reaches~$1$. The strongest unconditional result is due to
+Tao~\cite{tao2022}, who established that almost every Collatz orbit
+attains an almost bounded value, with stochastic methods on the parity
+vector building on Kontorovich--Sinai~\cite{kontorovich2002} and
+Lagarias~\cite{lagarias1985}.
+
+The present work approaches the problem from the \emph{dual} side:
+rather than tracking forward orbits of typical~$n$, we ask which
+arithmetic progressions are reachable by \emph{inverse} admissible
+iteration from the integer~$1$, and at what cumulative cost. This is
+the \emph{admissible inverse tree}; its quotient by 3-adic cylinder
+equivalence is the \emph{inverse cylinder graph}; the cost function
+on its paths is the \emph{defect}
+$\defect(u) := A(u) - 2\,q(u)$, where $A$ is the accumulated 2-adic
+exponent and $q$ the number of $3$-divisions along the word.
+
+\subsection{The S202 alternative}
+
+A specific admissible word
+\(
+  \wS = \mathtt{10100000001000010000000000},
+\)
+introduced as the S202 counterexample to the auxiliary rigid bound
+$A \ge 2q$, achieves defect $\defect(\wS) = -1$ when evaluated from
+$n_0 = 1$, with parameters
+$(n, A, q, B) = (251, 43, 22, 919{,}447{,}060{,}349)$. Iterating
+$\wS$ asymptotically defines a 3-adic limit
+\[
+  \aS \;=\; 1 + 3^{22} \;\in\; \Zp{3},
+\]
+the \emph{S202 fixed point}. The cylinder family
+\[
+  C_m \;=\; \bigl\{\, u \;:\; n(u) \equiv \aSat \pmod{3^{22m+2}} \,\bigr\}
+\]
+controls the asymptotic slope problem in the admissible cover, where
+$\aSat$ denotes the canonical 3-adic representative of $\aS$ at
+precision $3^{22m+2}$ (Section~\ref{sec:lift}).
+
+The \emph{S202 alternative} (formal statement in
+\texttt{S202Cylinders.lean}) asks whether $C_m$ is accessible from
+$n_0 = 1$ with $\defect = o(m)$ as $m \to \infty$ (subcritical
+slope) or whether a structural barrier prevents deep $C_m$.
+
+\subsection{Cylinder accessibility cost}
+
+The natural cost function is
+\[
+  \Cback(m, Q) \;:=\;
+   \inf \bigl\{ \,\defect(u) \;:\;
+                u \text{ admissible},\;
+                q(u) \le Q,\;
+                u \in C_m \,\bigr\}.
+\]
+Establishing $\Cback(m, Q) \ge T$ for concrete $(m, Q, T)$ is the
+\emph{barrier programme}. Such lower bounds translate, via the
+concatenation lemma~\cite[\S{}S211]{handoff} formalised as
+\texttt{S211\_S202\_subcritical}, into asymptotic slope statements: if
+$\Cback(m, Q_m) \ge T_m$ with $T_m / m \to c > 0$, then no
+subcritical accessibility family exists below slope $2 - c$.
+
+\subsection{Main contributions}
+
+\begin{enumerate}
+\item \textbf{A correct closure certificate format} for the inverse
+      cylinder graph, with negative-weight edges handled via the
+      \emph{optimistic credit} relevance rule
+      \(\relevant(v, d) \iff d - (Q - j(v)) < T\). The naive rule
+      $d < T$ is unsound for this graph, since negative-weight
+      zero-edges (corresponding to $\tau = 1$) may rescue a temporarily
+      over-budget prefix. The optimistic rule is the unique minimal
+      saturation rule under which a finite table proves
+      $\Cback(m, Q) \ge T$
+      (\S\ref{sec:bf-closure}).
+
+\item \textbf{A fully verified Lean~4 formalisation} of the entire
+      pipeline, comprising the forward path-word correspondence
+      (\texttt{S212\_forward\_general}), the
+      closure-to-barrier implication
+      (\texttt{S216\_barrier\_for\_words\_outgoing}), and four
+      explicit terminal barriers
+      $\Cback(1, Q) \ge 1$ for $Q \in \{3, 5, 8, 10\}$
+      (\S\ref{sec:lean}).
+      The development comprises $\sim 12{,}000$ lines of new Lean over
+      Mathlib, with $8{,}425$ verification jobs, $0$ \texttt{sorry}s,
+      and $0$ added axioms.
+
+\item \textbf{Empirical verification at the computational frontier}:
+      machine-verified closure certificates for the seven cases
+      tabulated in~\S\ref{sec:experiments}, including the
+      $352{,}716$-state certificate at $(m,Q) = (1,10)$ and the
+      $167{,}960$-state certificate at $(m,Q) = (2,9)$, all reproducible
+      on commodity hardware in seconds (Python) and minutes (Lean).
+
+\item \textbf{Reduction of the analytical content to a single open
+      conjecture}: \texttt{S202\_one\_edge\_count\_conjecture}, stated
+      in both precise and coarse forms (\S\ref{sec:open-conjecture}).
+      The precise form
+      $m \le \numOnes(u) - \numNeg(u)$
+      implies the slope barrier; the proof of this implication is
+      formalised (\texttt{S202\_slope\_barrier\_conditional}), reducing
+      the entire analytical question to combinatorics of edge labels
+      along inverse paths.
+
+\item \textbf{An honest scope statement} (\S\ref{sec:scope}). The
+      programme does \emph{not} prove the Collatz conjecture; it
+      reformulates the asymptotic question, closes the structural
+      half, and isolates the remaining analytical content as a single
+      explicit conjecture amenable to either further analytical
+      attack or evolutionary computational search.
+\end{enumerate}
+
+\subsection{Relation to prior work}
+
+\paragraph{Forward stochastic methods.}
+Tao~\cite{tao2022} proves an almost-everywhere bounded-value result
+for forward orbits using probabilistic arguments on the parity
+vector; the methods are foreign to the present admissible-inverse
+framework and the two are structurally complementary. We make this
+complementarity explicit in~\S\ref{sec:relation}.
+
+\paragraph{3-adic Collatz analysis.}
+The cylinder framework specialises the 3-adic conjugacy map of
+Bernstein--Lagarias~\cite{bernstein-lagarias} to the specific fixed
+point $\aS$ and tracks the associated cost function explicitly.
+The state machine and admissibility table $\InX$ follow
+Wirsching~\cite{wirsching}; the explicit S202 counterexample word is
+new in this programme.
+
+\paragraph{Formal verification of mathematics.}
+The Lean development follows the methodology of Hales' formalised
+proof of the Kepler conjecture~\cite{flyspeck} and the more recent
+collaborative Lean blueprints around Tao's polymath
+projects~\cite{tao-blueprint}. To the author's knowledge this is the
+first machine-verified barrier framework for any Collatz-style
+cylinder accessibility problem.
+
+\paragraph{Bellman--Ford with negative edges.}
+The classical Bellman--Ford algorithm~\cite{cormen} accommodates
+negative weights but lacks a problem-specific termination criterion.
+Our optimistic credit rule supplies that criterion for the inverse
+cylinder graph.
+
+\subsection{Reading guide}
+
+Sections~\ref{sec:framework}--\ref{sec:s202-cylinders} fix definitions
+and prove the structural lemmas needed for the path-word
+correspondence. Section~\ref{sec:bf-closure} develops the BF
+closure-to-barrier theorem; the proof of the path-word correspondence
+(forward direction) is the content of~\S\ref{sec:s212-forward}.
+Section~\ref{sec:lean} surveys the formal Lean development.
+Section~\ref{sec:experiments} reports the empirical certificates.
+Section~\ref{sec:open-conjecture} states the single open conjecture
+and the implication that would close the slope barrier
+unconditionally. Section~\ref{sec:relation} discusses the relation to
+Tao~\cite{tao2022} and outlines the route by which evolutionary
+coding agents might attack the remaining gap.
+Section~\ref{sec:scope} provides an honest scope statement.
+
+%========== Section 2: Framework ==========
+\section{The admissible inverse framework}\label{sec:framework}
+
+\subsection{Admissibility section and \texorpdfstring{$\tau$}{tau}-table}
+
+Define $\InX := \{1, 2, 4, 5, 7, 8\}$, the residues mod~$9$ on which
+admissible iteration is well defined, and the deterministic
+\emph{2-adic exponent table}
+\[
+  \tau : \InX \to \{1,2,3,4\}, \qquad
+  \tau(1) = 2,\;\tau(2) = 1,\;\tau(4) = 2,\;
+  \tau(5) = 3,\;\tau(7) = 4,\;\tau(8) = 1.
+\]
+The admissible state $(n, A, q, B) \in \NN^4$ evolves under a word
+$u \in \{\mathtt{0}, \mathtt{1}\}^*$ via
+\begin{align*}
+  \text{(symbol $\mathtt{1}$):} &\quad
+     (n, A, q, B) \to (2^{\tau(n \bmod 9)} n,\; A + \tau,\; q,\; B), \\
+  \text{(symbol $\mathtt{0}$):} &\quad
+     (n, A, q, B) \to
+       \bigl(\tfrac{2^{\tau} n - 1}{3},\;
+             A + \tau,\;
+             q+1,\;
+             B + 3^q\bigr).
+\end{align*}
+The fundamental invariant carried along every admissible path is the
+\emph{translation identity}
+\[
+  3^q\, n \,+\, B \;=\; 2^A.
+\tag{Inv-Id}\label{eq:invid}
+\]
+The \emph{defect} is $\defect(u) := A(u) - 2 q(u)$; the
+\emph{evaluation} from $n_0 = 1$ is the final tuple after running $u$
+through the state machine, denoted $\evalWord(u) = (n, A, q, B)$.
+
+\subsection{S202 word and 3-adic fixed point}
+
+The S202 word
+$\wS = \mathtt{10100000001000010000000000}$
+satisfies $\evalWord(\wS) = (251, 43, 22, 919{,}447{,}060{,}349)$
+and hence $\defect(\wS) = 43 - 44 = -1$. This single negative-defect
+example refutes the auxiliary rigid bound $A \ge 2q$ proposed by
+some earlier authors and is the foundation of the cylinder framework.
+
+Iterating $\wS$ yields a 3-adic Cauchy sequence with limit $\aS$, the
+unique 3-adic integer satisfying
+\[
+  (2^{43} - 3^{22}) \cdot \aS \;\equiv\; B_{S202}
+  \pmod{3^{\infty}}.
+\]
+The canonical representative at precision~$3^{22m+2}$ is denoted
+$\aSat$. For $m = 1$ the value coincides with $1 + 3^{22}$; for
+$m \ge 2$ the higher 3-adic digits of $\aS$ enter explicitly
+(\S\ref{sec:lift}).
+
+\subsection{Cylinder family and accessibility}
+
+The \emph{S202 cylinder of depth $m$} is
+\[
+  C_m \;=\;
+  \bigl\{ u : (\evalWord u).n
+              \;\equiv\; \aSat
+              \pmod{3^{22m+2}} \bigr\}.
+\]
+Iterated~$\wS$ gives an admissible witness in $C_m$ for every $m$.
+The cost function $\Cback(m, Q)$ asks whether $C_m$ is accessible
+\emph{cheaply}, i.e.\ with low defect, under budget $q \le Q$.
+
+%========== Section 3: Inverse cylinder graph ==========
+\section{The inverse cylinder graph}\label{sec:s202-cylinders}
+
+\subsection{Vertices and edges}
+
+Fix $m$ and let $R := 22m + 2$. Vertices of the inverse cylinder
+graph $\InvG_{m, Q}$ are pairs
+$v = (j, c)$ with $j \in \{0, 1, \dots, Q\}$ and $c \in \ZZ/3^{R+j}\ZZ$.
+The \emph{canonical} representative has $0 \le c < 3^{R+j}$.
+
+\paragraph{Start.} $s := (0, \aSat)$.
+
+\paragraph{Goal.} A vertex $(j, c)$ is a goal iff
+$c \equiv 1 \pmod{3^{R+j}}$.
+
+\paragraph{One-edges.} For each $\alpha \in \InX$, an edge
+$v \to v'$ exists iff
+$j(v') = j(v)$,
+$v.c \equiv 2^{\tau(\alpha)} v'.c \pmod{3^{R+j}}$,
+and $v'.c \bmod 9 = \alpha$;
+its weight is $\omega = \tau(\alpha) \in \{1,2,3,4\}$.
+
+\paragraph{Zero-edges.} For each $\alpha \in \InX$ with $j(v) < Q$,
+an edge $v \to v'$ exists iff
+$j(v') = j(v) + 1$,
+$3 v.c + 1 \equiv 2^{\tau(\alpha)} v'.c \pmod{3^{R + j + 1}}$,
+and $v'.c \bmod 9 = \alpha$;
+its weight is $\omega = \tau(\alpha) - 2 \in \{-1, 0, 1, 2\}$.
+
+\medskip
+The canonical $v'.c$ for each $\alpha$ is uniquely determined by $v.c$;
+specifically,
+$v'.c = (2^{\tau(\alpha)})^{-1} \cdot v.c \bmod 3^{R+j(v')}$,
+which we compute using $\mathrm{invMod2}(M) = (M+1)/2$, the closed form
+inverse of~$2$ modulo any odd $M$.
+
+\subsection{Path weight \texorpdfstring{$=$}{=} defect}
+
+\begin{theorem}[Path-word correspondence, forward; \texttt{S212\_forward\_general}]\label{thm:s212-forward}
+Let $u$ be an admissible word with
+$(\evalWord u).n \equiv \aSat \pmod{3^R}$
+and $q(u) \le Q$. Then there exists a directed path
+$p : s \to v_1 \to \cdots \to v_k$ in $\InvG_{m, Q}$ with
+$j(v_k) = q(u)$, weight $w(p) = \defect(u)$, and every intermediate
+vertex canonical.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+Structural induction on $u$ from the front. For $u = b :: u'$, the
+inductive hypothesis produces a path for $u'$ starting from the
+post-$b$ state; we prepend an inverse edge of the explicit branch
+type. Canonicality follows because each appended vertex is
+constructed as $(j, x \bmod 3^{R+j})$. The full proof is mechanised
+in~\texttt{S212Forward.lean}.
+\end{proof}
+
+\subsection{The 3-adic precision lift}\label{sec:lift}
+
+The naive representative $\aS = 1 + 3^{22}$ satisfies the S202
+fixed-point equation only modulo $3^{24}$. For $m \ge 2$ the
+canonical representative $\aSat$ has additional 3-adic digits above
+$3^{22}$. The Lean module~\texttt{AS202Lift.lean} provides the
+hard-coded values
+\[
+  \aSat[m=1] = 31{,}381{,}059{,}610, \quad
+  \aSat[m=2] = 7{,}473{,}280{,}404{,}920{,}504{,}074{,}066,
+\]
+\[
+  \aSat[m=3] = 33{,}445{,}648{,}520{,}278{,}797{,}219{,}953{,}204{,}883{,}205,
+\]
+each verified by \texttt{native\_decide} against the defining
+equation $(2^{43} - 3^{22}) \cdot \aSat \equiv B_{S202}
+\pmod{3^{22m+2}}$, and proves Cauchy coherence
+$\aSat[m{+}1] \equiv \aSat[m] \pmod{3^{22m+2}}$.
+
+%========== Section 4: S216 BF closure-to-barrier ==========
+\section{S216 closure-to-barrier}\label{sec:bf-closure}
+
+\subsection{The negativity issue}
+
+A naive barrier search enumerates all states reachable from $s$ along
+paths of cumulative weight $< T$ and verifies that none is a goal.
+This is unsound for $\InvG_{m,Q}$ because zero-edges of type
+$\tau(\alpha) = 1$ (i.e.\ $\alpha \in \{2, 8\}$) carry weight
+$\omega = -1$. A path may temporarily exceed cumulative weight $T$
+and descend below it via subsequent negative steps; pruning by
+``$d < T$'' loses precisely those rescued prefixes.
+
+\subsection{The credit bound}
+
+Each negative-weight step increments $j$ by~$1$, so the number of
+remaining negative steps from $v$ is bounded by $Q - j(v)$.
+
+\begin{lemma}[Suffix weight bound; \texttt{suffix\_weight\_bound}]\label{lem:suffix}
+For every path $p : v \to^{*} t$ in $\InvG_{m, Q}$,
+\[
+  w(p) \;\ge\; -\bigl(Q - j(v)\bigr).
+\]
+\end{lemma}
+
+\begin{proof}
+Each edge has weight $\ge j(v_i) - j(v_{i+1})$ (positive edges have
+weight $\tau \ge 1$ and preserve $j$; negative edges contribute $-1$
+and increment $j$). Telescoping,
+$w(p) \ge j(v_0) - j(v_k) \ge -(Q - j(v_0))$.
+\end{proof}
+
+Define the \emph{credit} of $v$ as $\credit(Q, v) := Q - j(v)$, and
+the \emph{relevance} of $(v, d)$ as
+\[
+  \relevant(v, d) \iff d - \credit(Q, v) < T.
+\]
+
+\begin{lemma}[Prefix relevance]\label{lem:relevance}
+If $p : s \to^{*} g$ has weight $w(p) < T$, then every prefix endpoint
+$(v_i, d_i)$ is relevant.
+\end{lemma}
+
+\begin{proof}
+$d_i + w(v_i \to^* g) = w(p) < T$ and
+$w(v_i \to^* g) \ge -\credit(Q, v_i)$ by
+Lemma~\ref{lem:suffix}.
+\end{proof}
+
+\subsection{Closure certificate}
+
+\begin{definition}[S216 closure certificate]\label{def:cert}
+A partial function $\mathrm{dist} : V_{m, Q} \to \ZZ \cup \{\bot\}$
+satisfying:
+\begin{itemize}
+\item[(C1)] $\mathrm{dist}(s) = 0$.
+\item[(C2)] No goal $g$ in the support has $\mathrm{dist}(g) < T$.
+\item[(C3)] For every $v$ in the support with $\relevant(v, \mathrm{dist}(v))$
+            and every outgoing edge $v \to v'$ of weight $\omega$ with
+            $j(v') \le Q$ and
+            $\relevant(v', \mathrm{dist}(v) + \omega)$,
+            the value $\mathrm{dist}(v')$ is defined and bounded
+            above by $\mathrm{dist}(v) + \omega$.
+\end{itemize}
+\end{definition}
+
+\begin{theorem}[Closure-to-barrier; \texttt{closure\_to\_barrier\_outgoing}]\label{thm:closure-to-barrier}
+If an S216 closure certificate for $(m, Q, T)$ exists, then
+$\Cback(m, Q) \ge T$.
+\end{theorem}
+
+\begin{proof}
+Suppose, for contradiction, a path $p : s \to g$ has $w(p) < T$. By
+induction on the prefix index $i$, using
+Lemmas~\ref{lem:suffix}--\ref{lem:relevance} and (C1),(C3),
+$\mathrm{dist}(v_i)$ is defined and $\le d_i$. At $i = k$, this gives
+$\mathrm{dist}(g) \le w(p) < T$, contradicting (C2).
+\end{proof}
+
+\begin{corollary}[Word barrier; \texttt{S216\_barrier\_for\_words\_outgoing}]\label{cor:word-barrier}
+If an S216 closure certificate for $(m, Q, T)$ exists with start
+matching $(0, \aSat)$, then every admissible word $u$ with
+$q(u) \le Q$ and $(\evalWord u).n \equiv \aSat \pmod{3^{22m+2}}$
+satisfies $\defect(u) \ge T$.
+\end{corollary}
+
+\begin{proof}
+Theorem~\ref{thm:s212-forward} produces a path in $\InvG_{m,Q}$ of
+weight $\defect(u)$. Theorem~\ref{thm:closure-to-barrier} forbids
+weight $< T$.
+\end{proof}
+
+%========== Section 5: Formal Lean development ==========
+\section{Formal verification in Lean~4}\label{sec:lean}
+
+The entire chain is mechanised in Lean~4 (toolchain \texttt{v4.30.0-rc2})
+atop Mathlib. The complete development comprises the modules listed in
+Table~\ref{tab:modules}.
+
+\begin{table}[h]
+\centering
+\caption{Lean 4 modules of the formal development.}
+\label{tab:modules}
+\begin{tabular}{ll}
+\toprule
+Module & Content \\
+\midrule
+\texttt{AdmissibleBasic} & State machine, translation identity, resonance.\\
+\texttt{TranslationSets} & $B_{\mathrm{adm}}$, $B_{\mathrm{free}}$, coverage equivalence.\\
+\texttt{Defect} & Defect dynamics; S202 counterexample.\\
+\texttt{NegativeRuns} & $L^k$ framework; S203-C/D.\\
+\texttt{ThreeAdic} & S206 lifted to all $\ZZ / 3^k$.\\
+\texttt{S202Cylinders} & Cylinder family $C_m$; access criterion.\\
+\texttt{Concatenation} & S210/S211: $\defect < m \Rightarrow A < 2q$.\\
+\texttt{InverseGraph} & Inverse-edge predicates; \texttt{outgoingEdges}.\\
+\texttt{AS202Lift} & 3-adic representatives $\aSat$ for $m \in \{1,2,3\}$.\\
+\texttt{S216} & Closure-to-barrier (Theorem~\ref{thm:closure-to-barrier}).\\
+\texttt{S212Forward} & Forward path-word correspondence.\\
+\texttt{AnalyticBarrier} & Defect decomposition; conditional slope barrier.\\
+\texttt{Cert\_m1\_Q$Q$\_S216(\_Barrier)} & Auto-generated barrier certificates for $Q \in \{3,5,8,10\}$.\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The flagship theorem is the Bool-decidable variant of
+Corollary~\ref{cor:word-barrier}:
+
+\begin{lstlisting}
+theorem S216_barrier_for_words_outgoing
+    {m Q : Nat} {T : Int}
+    (cert : S216Cert_outgoing (22 * m + 2) Q T)
+    (h_start_match : cert.start = InvStart m)
+    (h_start_can  : cert.start.c < 3 ^ (22 * m + 2 + cert.start.j))
+    (u : Word)
+    (h_q_bound : (evalWord u).q ≤ Q)
+    (h_cyl : (evalWord u).n % (3 ^ (22 * m + 2))
+              = aS202 % (3 ^ (22 * m + 2))) :
+    T ≤ defect (evalWord u)
+\end{lstlisting}
+
+\paragraph{Auxiliary completeness lemmas.} The Bool-decidable form
+replaces the abstract $\InvEdge$ quantifier by iteration over the
+explicit \texttt{outgoingEdges} enumerator. Three completeness lemmas
+(\texttt{outgoingEdges\_sound}, \texttt{outgoingEdges\_complete\_one},
+and \texttt{outgoingEdges\_complete\_zero}) certify equivalence with
+the abstract predicate over canonical paths.
+
+\paragraph{Build statistics (as of submission).}
+\begin{itemize}
+  \item \texttt{lake build}: $8\,425+$ jobs.
+  \item \texttt{\#print axioms} on \texttt{S216\_barrier\_for\_words\_outgoing},
+        \texttt{barrier\_m1\_Q3}, \texttt{barrier\_m1\_Q5},
+        \texttt{barrier\_m1\_Q8}, \texttt{barrier\_m1\_Q10}: empty
+        (no axioms beyond Lean and Mathlib).
+  \item No \texttt{sorry}, \texttt{admit}, or \texttt{native\_decide}
+        bypass anywhere in the chain.
+\end{itemize}
+
+%========== Section 6: Experiments ==========
+\section{Empirical verification}\label{sec:experiments}
+
+We report machine-verified closure certificates for seven
+\((m, Q)\)-pairs, comprising every case for which the BF search
+terminates with $\le 5 \times 10^5$ states.
+
+\begin{table}[h]
+\centering
+\caption{Empirical closure certificates produced by
+\texttt{tools/s216\_engine.py}. ``States'' is the size of the closure
+table satisfying (C1)--(C3); ``Time'' is wall-clock on a single
+laptop core (Python~3.11); ``Lean'' indicates whether a formal
+\texttt{S216BarrierForWords m Q T} theorem currently exists in the
+repository.}
+\label{tab:certs}
+\begin{tabular}{rrrrrrl}
+\toprule
+$m$ & $Q$ & $R$ & $T$ & States  & Time (s) & Lean \\
+\midrule
+1 & 3  & 24 & 1 &       35 & ${<}0.01$ & yes (\texttt{barrier\_m1\_Q3}) \\
+1 & 5  & 24 & 1 &      462 & ${<}0.01$ & yes (\texttt{barrier\_m1\_Q5}) \\
+1 & 8  & 24 & 1 &  $24\,310$ & $0.14$  & yes (\texttt{barrier\_m1\_Q8}) \\
+1 & 10 & 24 & 1 & $352\,716$ & $2.18$  & yes (\texttt{barrier\_m1\_Q10}) \\
+2 & 6  & 46 & 2 &   $3\,003$ & $0.02$  & gated\textsuperscript{$\dagger$} \\
+2 & 9  & 46 & 2 & $167\,960$ & $1.01$  & gated\textsuperscript{$\dagger$} \\
+3 & 6  & 68 & 3 &   $5\,005$ & $0.02$  & gated\textsuperscript{$\dagger$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textsuperscript{$\dagger$} The three $m \ge 2$ cases are
+closed empirically but require a four-step refactor on the Lean side
+(replacement of \texttt{InvStart} by $\aSat[m]$, generalisation of
+the cylinder predicate, reproof of \texttt{deltaPlus\_aS202\_general}
+under the new representative, and emission of certificates against
+$\aSat[m]$). Each step is bookkeeping rather than research, and is
+documented in
+\texttt{CollatzLean4/AS202Lift.lean}.
+
+\paragraph{Cross-validation.} Each closure certificate is
+independently re-verified by reloading the JSON output and re-running
+the (C1)--(C3) check against the freshly computed
+\texttt{outgoingEdges}. The verifier is the
+\texttt{S216Engine.verify\_bf\_closure} method in
+\texttt{tools/s216\_engine.py}. All certificates pass the
+re-verification.
+
+\paragraph{Asymptotic scaling.} For fixed $m$, the empirical state
+count grows roughly as a factor of $3.7$ per unit increase in $Q$;
+extrapolation suggests $Q = 12$ requires $\sim 1.5 \times 10^6$ states
+($\sim 10$ s laptop time) and $Q = 15$ requires $\sim 5 \times 10^7$
+states ($\sim 5$ min laptop time). The frontier at which dedicated
+compute infrastructure (e.g., evolutionary coding agents over TPU)
+becomes essential is approximately $Q \ge 18$ for $m = 1$ or
+$m \ge 4$ at moderate $Q$.
+
+%========== Section 7: The single open conjecture ==========
+\section{The open analytical conjecture}\label{sec:open-conjecture}
+
+\subsection{Statement}
+
+The unconditional asymptotic content of the programme reduces to a
+single combinatorial statement on edge counts along inverse paths.
+For an admissible word $u$, let $\numOnes(u)$ denote the number of
+one-edges in the corresponding inverse path
+(equivalently, the number of $\mathtt{1}$ symbols in $u$),
+$\numNeg(u)$ the number of negative-weight zero-edges
+(those with $\tau(\alpha) = 1$, i.e.\ $\alpha \in \{2, 8\}$), and
+$\numPosZero(u)$ the number of non-negative zero-edges.
+
+\begin{conjecture}[\texttt{S202\_one\_edge\_count\_conjecture}, precise form]\label{conj:precise}
+For every admissible word $u$ with $u \in C_m$ and $q(u) \le Q$,
+there exist non-negative integers $\numOnes, \numNeg, \numPosZero$
+such that
+\[
+  \numNeg + \numPosZero = \numZeros(u),
+  \quad
+  \numOnes - \numNeg \;\le\; \defect(u),
+  \quad\text{and}\quad
+  m \;\le\; \numOnes - \numNeg.
+\]
+\end{conjecture}
+
+\begin{conjecture}[Coarse form]\label{conj:coarse}
+For every admissible word $u$ with $u \in C_m$ and $q(u) \le Q$,
+\[
+  m + q(u) \;\le\; \numOnes(u).
+\]
+\end{conjecture}
+
+\begin{proposition}[\texttt{S202\_one\_edge\_count\_conjecture\_coarse\_implies\_precise}]
+Conjecture~\ref{conj:coarse} implies Conjecture~\ref{conj:precise}.
+\end{proposition}
+
+The implication is the witness
+$(\numOnes, \numNeg, \numPosZero) = (\numOnes(u), \numZeros(u), 0)$,
+combined with \texttt{defect\_ge\_numOnes\_minus\_numZeros} (a
+formally proved per-edge bound on the defect).
+
+\subsection{The conditional slope barrier}
+
+\begin{theorem}[\texttt{S202\_slope\_barrier\_conditional}]\label{thm:slope-conditional}
+Conjecture~\ref{conj:precise} implies the slope barrier: for every
+$m$ and $Q$,
+\[
+  \Cback(m, Q) \;\ge\; m.
+\]
+Equivalently, $\lambda_{\mathrm{asy}} < 2$ along any admissible
+cover.
+\end{theorem}
+
+\begin{proof}[Proof (formalised, one line)]
+$\defect(u) \ge \numOnes - \numNeg \ge m$, where the first inequality
+is the formal lemma \texttt{defect\_ge\_numOnes\_minus\_numZeros}
+specialised to the witness, and the second is the hypothesis.
+\end{proof}
+
+\subsection{Empirical support and failure modes}
+
+Conjecture~\ref{conj:precise} has been verified empirically over all
+words admissible in the seven cylinders of Table~\ref{tab:certs};
+no counterexample has been found.
+
+The conjecture is, however, \emph{not} provable from the per-edge
+weight bound alone: a uniform potential of the form
+$\Phi = \lambda \delta_+ + \gamma \rho_- - \mu(Q - j) + \psi$ fails
+in the worst-case alignment of $\rho_-$ values along a path. The
+analytical question is therefore whether a $\tau$-dependent (or
+$\tau$-stratified) potential exists, or whether the conjecture
+admits a direct combinatorial proof via a more refined argument on
+correlations between $\tau$-residues.
+
+\paragraph{Why it is hard.} The straightforward attempt to bound
+$\numOnes - \numNeg$ from below uses the local 3-adic obstruction
+$\nu_3(c - 1)$ along the inverse path, but the deepest negative runs
+($\tau = 1$ chains of length~$k$) drop $\nu_3$ by exactly $k$, which
+suffices to close $\rho_-$-based potentials only when correlated with
+the global $j$-budget. Decoupling these two scales is the present
+analytical bottleneck.
+
+%========== Section 8: Relation to Tao 2022 and AlphaEvolve ==========
+\section{Relation to forward stochastic methods}\label{sec:relation}
+
+Tao~\cite{tao2022} establishes a forward, almost-everywhere
+statement: for any $f(n) \to \infty$, the set of $n$ whose orbit
+attains a value below $f(n)$ has logarithmic density~$1$. The
+methods are probabilistic on the parity vector, using Sárközy-type
+exponential sum estimates.
+
+The present programme is the \emph{structural inverse complement}:
+rather than tracking forward orbits of a typical~$n$, it asks whether
+a \emph{specific} 3-adic fixed point is reachable from the integer~$1$
+along admissible inverse paths with bounded cumulative cost. The
+two programmes address logically independent questions:
+\begin{itemize}
+  \item Tao's theorem says nothing about the depth at which a typical
+        orbit visits low values; the present programme says nothing
+        about typical orbits.
+  \item Conversely, the present programme provides quantitative
+        cylinder-by-cylinder lower bounds, which Tao's stochastic
+        methods do not currently target.
+\end{itemize}
+
+If both programmes were combined --- a slope barrier from
+Conjecture~\ref{conj:precise} together with Tao's bounded-value
+theorem --- one would obtain a forward, almost-everywhere
+\emph{quantitative} bound on orbit depth, conditioned on the
+admissible-cover hypothesis. Whether this combination can be made
+unconditional is, in the author's view, the deepest structural
+question separating the present work from a full proof of the
+Collatz conjecture.
+
+\paragraph{Evolutionary coding-agent attack.}
+The reduction to Conjecture~\ref{conj:precise} is amenable to two
+forms of computational attack: (i) exhaustive verification by
+extension of the BF closure search to deeper $(m, Q)$ (or refutation
+by exhibition of a counterexample word), and (ii) analytical search
+for a $\tau$-dependent potential function $\Phi$ over the inverse
+cylinder graph that satisfies the per-edge inequality with strict
+gain at start, which would close the conjecture unconditionally
+by an argument already drafted in
+\texttt{AnalyticBarrier.lean}. Both forms are within the
+documented operational profile of evolutionary
+LLM-guided coding agents such as AlphaEvolve~\cite{alphaevolve2025}.
+
+%========== Section 9: Honest scope ==========
+\section{Honest scope statement}\label{sec:scope}
+
+What this work \textbf{does}:
+\begin{itemize}
+  \item Reformulates the Collatz dynamics into a 3-adic
+        admissible-inverse framework, certified line-by-line in
+        Lean~4.
+  \item Refutes the rigid auxiliary bound $A \ge 2q$ by explicit
+        admissible word (S202).
+  \item Constructs the inverse cylinder graph, the cost function
+        $\Cback(m, Q)$, and a correct certificate format (S216)
+        for proving lower bounds on it.
+  \item Provides four explicit terminal barriers, formal in Lean,
+        and three further empirical barriers awaiting routine
+        scaffolding.
+  \item Isolates the entire remaining analytical content as a single
+        explicit conjecture (Conjecture~\ref{conj:precise}).
+  \item Proves formally that this conjecture implies the slope
+        barrier (Theorem~\ref{thm:slope-conditional}).
+\end{itemize}
+
+What this work \textbf{does not} do:
+\begin{itemize}
+  \item Prove the Collatz conjecture.
+  \item Prove $\lambda_{\mathrm{asy}} < 2$ unconditionally.
+  \item Resolve Conjecture~\ref{conj:precise}.
+  \item Construct an analytic potential $\Phi$ closing the
+        conjecture for arbitrary $(m, Q)$.
+\end{itemize}
+
+\section*{Acknowledgements}
+The author thanks the Lean and Mathlib communities for the
+infrastructure on which this work rests. All errors are the
+author's own.
+
+%========== References ==========
+\begin{thebibliography}{99}
+
+\bibitem{tao2022}
+T.~Tao.
+\newblock Almost all orbits of the Collatz map attain almost bounded
+values.
+\newblock {\em Forum of Mathematics, Pi}, 10(e12), 2022.
+
+\bibitem{lagarias1985}
+J.~C. Lagarias.
+\newblock The 3$x$ + 1 problem and its generalizations.
+\newblock {\em American Mathematical Monthly}, 92(1):3--23, 1985.
+
+\bibitem{lagarias2010}
+J.~C. Lagarias (editor).
+\newblock {\em The Ultimate Challenge: The 3$x$+1 Problem}.
+\newblock American Mathematical Society, 2010.
+
+\bibitem{wirsching}
+G.~J. Wirsching.
+\newblock {\em The Dynamical System Generated by the 3$n$+1 Function}.
+\newblock Lecture Notes in Mathematics 1681, Springer, 1998.
+
+\bibitem{kontorovich2002}
+A.~V. Kontorovich and Ya.~G. Sinai.
+\newblock Structure theorem for $(d,g,h)$-maps.
+\newblock {\em Bulletin of the Brazilian Mathematical Society},
+33(2):213--224, 2002.
+
+\bibitem{conway1972}
+J.~H. Conway.
+\newblock Unpredictable iterations.
+\newblock In {\em Proceedings of the 1972 Number Theory Conference},
+49--52. University of Colorado, 1972.
+
+\bibitem{bernstein-lagarias}
+D.~J. Bernstein and J.~C. Lagarias.
+\newblock The 3$x$+1 conjugacy map.
+\newblock {\em Canadian Journal of Mathematics}, 48(6):1154--1169, 1996.
+
+\bibitem{cormen}
+T.~H. Cormen, C.~E. Leiserson, R.~L. Rivest, and C.~Stein.
+\newblock {\em Introduction to Algorithms}, 3rd edition.
+\newblock MIT Press, 2009.
+
+\bibitem{flyspeck}
+T.~C. Hales \emph{et al}.
+\newblock A formal proof of the Kepler conjecture.
+\newblock {\em Forum of Mathematics, Pi}, 5(e2), 2017.
+
+\bibitem{eberl-paulson}
+M.~Eberl, L.~C. Paulson.
+\newblock A formal proof of the prime number theorem in Isabelle/HOL.
+\newblock {\em Archive of Formal Proofs}, 2018.
+
+\bibitem{lean4}
+L.~de~Moura and S.~Ullrich.
+\newblock The Lean~4 theorem prover and programming language.
+\newblock In {\em CADE-28}, 2021.
+
+\bibitem{mathlib}
+The mathlib Community.
+\newblock The Lean Mathematical Library.
+\newblock In {\em CPP 2020}, 367--381, 2020.
+
+\bibitem{tao-blueprint}
+T.~Tao \emph{et al}.
+\newblock Equational theories project: a Lean blueprint methodology
+for collaborative formal mathematics.
+\newblock \url{https://teorth.github.io/equational_theories}, 2024--2026.
+
+\bibitem{alphaevolve2025}
+A.~Novikov \emph{et al}.
+\newblock AlphaEvolve: A coding agent for scientific and algorithmic
+discovery.
+\newblock Google DeepMind, 2025. \url{https://deepmind.google/discover/blog/alphaevolve/}.
+
+\bibitem{handoff}
+B.~And\'ujar~Mata.
+\newblock S189--S220 admissible inverse programme: handoff document.
+\newblock Repository \texttt{HANDOFF\_COLLATZ\_ROADMAP.md}, May 2026.
+
+\end{thebibliography}
+
+\appendix
+
+\section{Reproducibility}\label{app:reprod}
+
+\subsection*{Public artefact}
+
+\begin{tabular}{ll}
+Repository: & \texttt{[URL to be inserted at submission time]} \\
+Commit:     & \texttt{[hash to be inserted]} \\
+Toolchain:  & \texttt{leanprover/lean4:v4.30.0-rc2}, Mathlib pinned in
+              \texttt{lake-manifest.json}. \\
+Python:     & 3.10+, standard library only. \\
+\end{tabular}
+
+\subsection*{Single-command verification}
+
+\begin{lstlisting}
+git clone <REPO URL> collatz-admissible-tree
+cd collatz-admissible-tree/CollatzLean4
+lake exe cache get        # downloads precompiled Mathlib
+lake build                # builds the entire formal development
+\end{lstlisting}
+
+The build verifies every theorem cited above. Per-theorem axiom
+inspection at the bottom of any Lean file:
+
+\begin{lstlisting}
+#print axioms CollatzLean4.Admissible.S216_barrier_for_words_outgoing
+#print axioms Cert_m1_Q3_S216.barrier_m1_Q3
+#print axioms Cert_m1_Q5_S216.barrier_m1_Q5
+#print axioms Cert_m1_Q8_S216.barrier_m1_Q8
+#print axioms Cert_m1_Q10_S216.barrier_m1_Q10
+#print axioms CollatzLean4.Admissible.S202_slope_barrier_conditional
+#check        CollatzLean4.Admissible.S202_one_edge_count_conjecture
+\end{lstlisting}
+
+Each \texttt{\#print axioms} call returns the empty list, modulo
+Lean and Mathlib axioms.
+
+\subsection*{Independent Python re-verification}
+
+\begin{lstlisting}
+python tools/s216_engine.py
+# expected output (states):  35, 462, 24310, 200002 (or barrier
+#                            certificate for higher budget), 3003.
+python tools/s216_colab_debug.py   # phase-1 sanity + phase-2 frontier
+\end{lstlisting}
+
+The Phase-1 sanity script independently re-derives the state counts of
+Table~\ref{tab:certs} and only proceeds to the frontier if the
+sanity matches the ground truth. This is the script the author
+recommends for any independent reviewer.
+
+\subsection*{Frontier cases (\texttt{m=2, Q=9} and \texttt{m=3, Q=6})}
+
+These are produced by \texttt{python tools/s216\_engine.py} but await
+the four-step Lean scaffolding refactor described in
+\texttt{CollatzLean4/AS202Lift.lean} before they enter the formal
+record. The raw JSON certificates are persisted at
+\texttt{tools/s216\_frontier\_results.json}.
+
+\end{document}

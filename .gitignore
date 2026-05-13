@@ -8,3 +8,9 @@ build/
 .idea/
 .vscode/
 tools/__pycache__/
+.claude/
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz

@@ -1,0 +1,796 @@
+% =====================================================================
+% S214-Core: 3-adic accessibility potentials
+% Standalone section fragment. \input from a host document that defines
+% the lemma/proposition/conjecture/proof environments and loads amsmath.
+% =====================================================================
+
+\section{S214-Core: 3-adic Accessibility Potentials}
+\label{sec:S214-core}
+
+The purpose of this section is to isolate the structural mechanism behind
+the accessibility barrier for the S202 block. The block S202 shows that
+local subcriticality in the admissible inverse system is possible:
+\[
+A(w_{202})-2q(w_{202})=-1.
+\]
+Thus the naive inequality \(A\ge 2q\) is false. The correct question is no
+longer whether subcritical blocks exist, but whether such blocks are
+accessible from the root with enough gain to overcome their entrance cost.
+
+The guiding principle is:
+
+\[
+\boxed{
+\text{Subcritical }3\text{-adic blocks may exist, but they may be protected
+by accessibility barriers.}
+}
+\]
+
+The first test case is the S202 block.
+
+% ---------------------------------------------------------------------
+\subsection{The S202 fixed cylinder}
+\label{subsec:S202-cylinder}
+
+Let
+\[
+w_{202}=10100000001000010000000000,
+\]
+with certified data
+\[
+A_{202}=43,\qquad q_{202}=22,\qquad D_{202}=A_{202}-2q_{202}=-1.
+\]
+The associated affine action is
+\[
+F_{202}(x)=\frac{2^{43}x-B_{202}}{3^{22}},
+\]
+where
+\[
+B_{202}=919447060349.
+\]
+Its formal fixed point in \(\mathbb Z_3\) is
+\[
+a_{202}
+=
+\frac{B_{202}}{2^{43}-3^{22}}.
+\]
+
+A direct computation gives
+\[
+a_{202}\equiv 1+3^{22}\pmod{3^{24}}.
+\]
+Therefore
+\[
+v_3(a_{202}-1)=22.
+\]
+
+For \(m\ge1\), define
+\[
+R_m=22m+2
+\]
+and the S202 target cylinder
+\[
+C_m
+=
+a_{202}+3^{R_m}\mathbb Z_3.
+\]
+
+The accessibility cost is
+\[
+\mathcal C^{\leftarrow}_{S202}(m,Q)
+=
+\inf
+\left\{
+D(u):
+q(u)\le Q,\
+n(u)\equiv a_{202}\pmod{3^{R_m}}
+\right\}.
+\]
+
+Since concatenating \(m\) copies of \(w_{202}\) decreases the defect by \(m\),
+we have
+\[
+D(u w_{202}^{m})
+=
+D(u)-m.
+\]
+Hence, if
+\[
+\mathcal C^{\leftarrow}_{S202}(m,Q)<m,
+\]
+then there exists an accessible concatenation with negative defect:
+\[
+D(u w_{202}^{m})<0.
+\]
+
+Conversely, if
+\[
+\mathcal C^{\leftarrow}_{S202}(m,Q)\ge m,
+\]
+then S202 cannot produce a net subcritical concatenation under the budget
+\(q(u)\le Q\).
+
+% ---------------------------------------------------------------------
+\subsection{Root and negative-run proximities}
+\label{subsec:rho-plus-minus}
+
+Let \([c]_r\) denote the \(3\)-adic cylinder
+\[
+[c]_r=c+3^r\mathbb Z_3.
+\]
+
+We define the root proximity
+\[
+\rho_+(c,r)
+=
+\min\{v_3(c-1),r\},
+\]
+and the root deficit
+\[
+\delta_+(c,r)
+=
+r-\rho_+(c,r).
+\]
+
+Thus
+\[
+\delta_+(c,r)=0
+\]
+if and only if
+\[
+[c]_r
+\]
+contains the root \(1\).
+
+We also define the negative-run proximity
+\[
+\rho_-(c,r)
+=
+\min\{v_3(c+1),r\}.
+\]
+
+The quantity \(\rho_-(c,r)\) measures proximity to the \(3\)-adic point
+\(-1\), which controls the possibility of long negative defect runs.
+
+% ---------------------------------------------------------------------
+\subsection{Separation between the root world and the negative-run world}
+\label{subsec:root-negative-separation}
+
+\begin{lemma}[Root/negative separation]
+\label{lem:root-negative-separation}
+For every integer \(c\) and every \(r\ge1\),
+\[
+\min\bigl(\rho_+(c,r),\rho_-(c,r)\bigr)=0.
+\]
+Equivalently, a \(3\)-adic cylinder cannot be simultaneously close to
+\(1\) and to \(-1\).
+\end{lemma}
+
+\begin{proof}
+Suppose first that \(\rho_+(c,r)>0\). Then
+\[
+v_3(c-1)>0,
+\]
+so
+\[
+c\equiv1\pmod3.
+\]
+Therefore
+\[
+c+1\equiv2\pmod3,
+\]
+and hence
+\[
+v_3(c+1)=0.
+\]
+Thus
+\[
+\rho_-(c,r)=0.
+\]
+
+Similarly, if \(\rho_-(c,r)>0\), then
+\[
+c\equiv -1\pmod3,
+\]
+so
+\[
+c-1\equiv -2\not\equiv0\pmod3.
+\]
+Hence
+\[
+v_3(c-1)=0,
+\]
+and therefore
+\[
+\rho_+(c,r)=0.
+\]
+
+Thus the two truncated valuations cannot both be positive.
+\end{proof}
+
+This elementary separation is one of the central structural facts of the
+program. It means that paths attempting to exploit negative defect gains
+must move into the \(-1\)-world, whereas paths attempting to terminate at
+the root must move into the \(1\)-world. These two regions are disjoint
+already modulo \(3\).
+
+% ---------------------------------------------------------------------
+\subsection{Negative defect steps and proximity to \(-1\)}
+\label{subsec:negative-runs}
+
+Recall that the defect is
+\[
+D=A-2q.
+\]
+Under a branch \(1\),
+\[
+D\mapsto D+\tau(n),
+\]
+while under a branch \(0\),
+\[
+D\mapsto D+\tau(n)-2.
+\]
+
+The only negative defect steps occur when
+\[
+\tau(n)=1
+\]
+and the branch is \(0\). This happens precisely for
+\[
+n\equiv2,8\pmod9.
+\]
+
+In that case the map is
+\[
+L(n)=\frac{2n-1}{3}.
+\]
+
+\begin{lemma}[Iterated negative branch]
+\label{lem:iterated-negative-branch}
+For every \(k\ge0\),
+\[
+L^k(n)
+=
+\frac{2^k n+2^k-3^k}{3^k}.
+\]
+Equivalently,
+\[
+L^k(n)+1
+=
+\frac{2^k(n+1)}{3^k}.
+\]
+\end{lemma}
+
+\begin{proof}
+For \(k=0\), the formula is immediate. Assume it holds for \(k\). Then
+\[
+L^{k+1}(n)
+=
+L(L^k(n))
+=
+\frac{2L^k(n)-1}{3}.
+\]
+Using the induction hypothesis,
+\[
+2L^k(n)-1
+=
+2\cdot
+\frac{2^k n+2^k-3^k}{3^k}
+-1.
+\]
+Thus
+\[
+2L^k(n)-1
+=
+\frac{2^{k+1}n+2^{k+1}-2\cdot3^k-3^k}{3^k}
+=
+\frac{2^{k+1}n+2^{k+1}-3^{k+1}}{3^k}.
+\]
+Dividing by \(3\), we obtain
+\[
+L^{k+1}(n)
+=
+\frac{2^{k+1}n+2^{k+1}-3^{k+1}}{3^{k+1}}.
+\]
+The equivalent formula follows by adding \(1\):
+\[
+L^k(n)+1
+=
+\frac{2^k n+2^k}{3^k}
+=
+\frac{2^k(n+1)}{3^k}.
+\]
+\end{proof}
+
+\begin{lemma}[Negative runs force proximity to \(-1\)]
+\label{lem:negative-runs-force-minus-one}
+If \(k\) consecutive negative steps are defined starting from \(n\), then
+\[
+n\equiv -1\pmod{3^k}.
+\]
+Equivalently,
+\[
+v_3(n+1)\ge k.
+\]
+\end{lemma}
+
+\begin{proof}
+If \(k\) consecutive applications of
+\[
+L(n)=\frac{2n-1}{3}
+\]
+are defined over the integers, then \(L^k(n)\in\mathbb Z\). By
+Lemma~\ref{lem:iterated-negative-branch},
+\[
+L^k(n)+1
+=
+\frac{2^k(n+1)}{3^k}.
+\]
+Since \(2^k\) is invertible modulo powers of \(3\), integrality forces
+\[
+3^k\mid n+1.
+\]
+Hence
+\[
+n\equiv -1\pmod{3^k}.
+\]
+\end{proof}
+
+The converse requires the fine admissibility condition: integrality alone
+is not sufficient to guarantee that all intermediate states remain in the
+negative classes \(2,8\pmod9\). More precisely, a genuine negative run of
+length \(k\) corresponds to two of the three classes above
+\[
+-1\pmod{3^k}.
+\]
+Equivalently, one needs
+\[
+n\equiv -1+3^k m\pmod{3^{k+1}},
+\]
+with
+\[
+m\in\{0,1,2\},
+\qquad
+m\not\equiv 2^k\pmod3.
+\]
+
+This refinement is important computationally, but the coarse implication
+\[
+\text{negative run of length }k
+\Longrightarrow
+v_3(n+1)\ge k
+\]
+is already enough to justify the appearance of \(\rho_-\) in the potential.
+
+% ---------------------------------------------------------------------
+\subsection{The S202 root-distance deficit}
+\label{subsec:S202-root-distance-deficit}
+
+\begin{lemma}[S202 root-distance deficit]
+\label{lem:S202-root-deficit}
+For the S202 fixed point and
+\[
+R_m=22m+2,
+\]
+one has
+\[
+\rho_+(a_{202},R_m)=22,
+\]
+and therefore
+\[
+\delta_+(a_{202},R_m)
+=
+R_m-22
+=
+22m-20.
+\]
+\end{lemma}
+
+\begin{proof}
+The certified computation gives
+\[
+a_{202}\equiv1+3^{22}\pmod{3^{24}}.
+\]
+Thus
+\[
+a_{202}-1
+=
+3^{22}u
+\]
+for some \(3\)-adic unit \(u\), since the coefficient of \(3^{22}\) is
+nonzero modulo \(3\). Hence
+\[
+v_3(a_{202}-1)=22.
+\]
+For \(m\ge1\),
+\[
+R_m=22m+2\ge24
+\]
+except for the minimal boundary where the same valuation conclusion remains
+valid by truncation. Therefore
+\[
+\rho_+(a_{202},R_m)
+=
+\min\{22,R_m\}
+=
+22.
+\]
+Consequently,
+\[
+\delta_+(a_{202},R_m)
+=
+R_m-\rho_+(a_{202},R_m)
+=
+22m+2-22
+=
+22m-20.
+\]
+\end{proof}
+
+This lemma is the first quantitative indication of an accessibility
+barrier. Although \(a_{202}\) is close to the root \(1\) modulo \(3^{22}\),
+the cylinder \(C_m\) requires agreement modulo
+\[
+3^{22m+2}.
+\]
+Thus the missing root precision is
+\[
+22m-20.
+\]
+
+The S202 block gives only \(m\) units of defect gain after \(m\)
+concatenations. Hence the accessibility problem asks whether the system can
+correct approximately \(22m\) missing \(3\)-adic digits while paying less
+than \(m\) units of defect.
+
+% ---------------------------------------------------------------------
+\subsection{Candidate accessibility potentials}
+\label{subsec:candidate-potentials}
+
+The previous lemmas suggest that any useful path toward the S202 cylinder
+must balance two competing mechanisms:
+
+\[
+\boxed{
+\text{approaching the root }1
+}
+\]
+and
+\[
+\boxed{
+\text{exploiting negative runs near }-1.
+}
+\]
+
+This motivates potentials of the form
+\[
+\Phi(j,c)
+=
+\lambda\,\delta_+(c,r)
++
+\gamma\,\rho_-(c,r)
+-
+\mu(Q-j)
++
+\psi(c\bmod 3^h),
+\]
+where
+\[
+r=R_m+j.
+\]
+
+Here:
+
+\begin{itemize}
+    \item \(j\) is the number of inverse zero-steps already used;
+    \item \(Q-j\) is the remaining zero budget;
+    \item \(\delta_+(c,r)\) measures distance from the root \(1\);
+    \item \(\rho_-(c,r)\) measures proximity to the negative-run region
+          around \(-1\);
+    \item \(\psi(c\bmod3^h)\) is a finite local correction.
+\end{itemize}
+
+The role of the term
+\[
+-\mu(Q-j)
+\]
+is to account for the maximum possible future defect decrease, since each
+remaining zero can reduce the defect by at most \(1\).
+
+The role of
+\[
+\gamma\rho_-(c,r)
+\]
+is to penalize excessive reliance on negative runs: long negative runs
+require proximity to \(-1\), but by
+Lemma~\ref{lem:root-negative-separation}, this is incompatible with
+proximity to the root \(1\).
+
+The finite correction
+\[
+\psi(c\bmod3^h)
+\]
+is necessary because the evolution of \(\rho_+\) and \(\rho_-\) under the
+inverse branches is not determined solely by their current values. Local
+residue data modulo \(3^h\) is required.
+
+% ---------------------------------------------------------------------
+\subsection{Dual certificate condition}
+\label{subsec:dual-certificate-condition}
+
+Let \(G_{m,Q}\) be the inverse cylinder graph associated with the S202
+target cylinder and zero budget \(Q\). A vertex is written
+\[
+v=(j,c),
+\]
+and each edge
+\[
+v\to v'
+\]
+has weight
+\[
+\omega(v,v')\in\{-1,0,1,2,3,4\}.
+\]
+
+A potential \(\Phi\) certifies a lower bound if:
+
+\[
+\Phi(g)\le0
+\]
+for every goal vertex \(g\), and
+\[
+\Phi(v)\le \omega(v,v')+\Phi(v')
+\]
+for every edge \(v\to v'\).
+
+\begin{proposition}[Dual barrier certificate]
+\label{prop:dual-barrier-certificate}
+If a potential \(\Phi\) satisfies
+\[
+\Phi(g)\le0
+\]
+for every goal vertex \(g\), and
+\[
+\Phi(v)\le \omega(v,v')+\Phi(v')
+\]
+for every edge \(v\to v'\), then every path from \(s\) to a goal has weight
+at least
+\[
+\Phi(s).
+\]
+In particular, if
+\[
+\Phi(s)\ge T,
+\]
+then
+\[
+\mathcal C^{\leftarrow}_{S202}(m,Q)\ge T.
+\]
+\end{proposition}
+
+\begin{proof}
+Let
+\[
+s=v_0\to v_1\to\cdots\to v_k=g
+\]
+be a path from the start vertex \(s\) to a goal vertex \(g\). Applying the
+edge inequality to every edge gives
+\[
+\Phi(v_i)
+\le
+\omega(v_i,v_{i+1})+\Phi(v_{i+1}).
+\]
+Summing telescopically,
+\[
+\Phi(s)
+\le
+\sum_{i=0}^{k-1}\omega(v_i,v_{i+1})+\Phi(g).
+\]
+Since \(g\) is a goal and \(\Phi(g)\le0\), we get
+\[
+\Phi(s)
+\le
+\sum_{i=0}^{k-1}\omega(v_i,v_{i+1}).
+\]
+Thus every path from \(s\) to a goal has weight at least \(\Phi(s)\).
+\end{proof}
+
+This proposition is the abstract form of the S216 closure-to-barrier
+certificate. The Bellman--Ford closure certificate is a finite,
+machine-checkable way of constructing such a potential or, equivalently,
+proving that no path of weight \(<T\) exists.
+
+% ---------------------------------------------------------------------
+\subsection{S202 accessibility barrier conjecture}
+\label{subsec:S202-barrier-conjecture}
+
+The computations for S202 suggest the following conjecture.
+
+\begin{conjecture}[S202 accessibility barrier]
+\label{conj:S202-accessibility-barrier}
+For the S202 block, there exists a constant \(K>0\) such that, for all
+sufficiently large \(m\),
+\[
+\mathcal C^{\leftarrow}_{S202}(m,Km)\ge m.
+\]
+Equivalently, no access path using at most \(Km\) inverse zero-steps can
+enter the cylinder
+\[
+a_{202}+3^{22m+2}\mathbb Z_3
+\]
+with defect smaller than the \(m\) units of defect gained by
+\(w_{202}^{m}\).
+\end{conjecture}
+
+A stronger version would assert that there exists \(\varepsilon>0\) such
+that
+\[
+\mathcal C^{\leftarrow}_{S202}(m,Km)
+\ge
+(1+\varepsilon)m
+\]
+for all sufficiently large \(m\).
+
+The meaning of the conjecture is:
+
+\[
+\boxed{
+\text{S202 is a subcritical }3\text{-adic block, but it is not cheaply
+accessible from the root.}
+}
+\]
+
+% ---------------------------------------------------------------------
+\subsection{Universal subcritical accessibility barrier}
+\label{subsec:universal-subcritical-barrier}
+
+The S202 block should be regarded as the first test case of a broader
+principle.
+
+Let \(w\) be any admissible block with data
+\[
+A(w),\qquad q(w),\qquad B(w),
+\]
+and defect
+\[
+D(w)=A(w)-2q(w).
+\]
+
+Suppose
+\[
+D(w)<0.
+\]
+Write
+\[
+\Delta(w)=-D(w)>0.
+\]
+
+If \(w\) has a \(3\)-adic fixed point
+\[
+a_w=
+\frac{B(w)}{2^{A(w)}-3^{q(w)}}\in\mathbb Z_3,
+\]
+then the natural analogue of the S202 barrier is
+\[
+\mathcal C^{\leftarrow}_{w}(m,Q)
+\ge
+m\Delta(w).
+\]
+
+\begin{conjecture}[Universal subcritical accessibility barrier]
+\label{conj:universal-subcritical-barrier}
+For every admissible subcritical block \(w\) with \(D(w)<0\), there exists a
+linear budget \(Q_m=O(m)\) such that, for all sufficiently large \(m\),
+\[
+\mathcal C^{\leftarrow}_{w}(m,Q_m)
+\ge
+-mD(w).
+\]
+Equivalently, the cost of accessing the \(m\)-th fixed cylinder of a
+subcritical block is at least the total defect gain obtained by repeating
+that block \(m\) times.
+\end{conjecture}
+
+This conjecture expresses the general principle:
+
+\[
+\boxed{
+\text{local subcriticality does not imply globally accessible
+subcriticality.}
+}
+\]
+
+% ---------------------------------------------------------------------
+\subsection{Relation to the Collatz problem}
+\label{subsec:relation-to-collatz}
+
+The S202 accessibility barrier, even if proved, does not by itself prove
+the Collatz conjecture. It only proves that one specific subcritical
+\(3\)-adic block cannot be exploited cheaply from the root.
+
+To obtain a route toward Collatz, one needs an additional reduction
+principle.
+
+\begin{conjecture}[Subcritical reduction of counterexamples]
+\label{conj:subcritical-reduction}
+If the Collatz conjecture fails, then there exists an accessible family of
+admissible inverse words whose asymptotic defect becomes negative after
+entering a recurrent subcritical block or family of blocks.
+\end{conjecture}
+
+In schematic form, the desired strategy is:
+
+\[
+\boxed{
+\text{Counterexample}
+\Longrightarrow
+\text{accessible subcritical family}
+}
+\]
+and
+\[
+\boxed{
+\text{universal accessibility barrier}
+\Longrightarrow
+\text{no accessible subcritical family}.
+}
+\]
+
+Together these would imply the nonexistence of a counterexample.
+
+Thus the long-term program is:
+
+\[
+\boxed{
+\text{Reduction of counterexamples}
++
+\text{universal subcritical accessibility barrier}
+\Longrightarrow
+\text{Collatz}.
+}
+\]
+
+At the current stage, S202 provides the first nontrivial test case for this
+program, and S214 provides the potential-theoretic language needed to move
+from finite certificates to structural barriers.
+
+% ---------------------------------------------------------------------
+\subsection{Immediate formal milestones}
+\label{subsec:S214-formal-milestones}
+
+The immediate formal targets are:
+
+\begin{enumerate}
+    \item Complete the S216 closure-to-barrier bridge in Lean.
+    \item Obtain the first formal theorem:
+    \[
+    \mathcal C^{\leftarrow}_{S202}(1,3)\ge1.
+    \]
+    \item Scale the certificate generation to:
+    \[
+    (m,Q,T)=(1,5,1),\ (1,8,1),\ (1,10,1),\ (2,6,2).
+    \]
+    \item Extract empirical profiles of the cheap region using:
+    \[
+    \rho_+,\qquad \rho_-,\qquad j,\qquad D.
+    \]
+    \item Use these profiles to search for explicit finite-depth potentials
+    of the form
+    \[
+    \Phi(j,c)
+    =
+    \lambda\delta_+(c,r)
+    +
+    \gamma\rho_-(c,r)
+    -
+    \mu(Q-j)
+    +
+    \psi(c\bmod3^h).
+    \]
+\end{enumerate}
+
+The first fully verified Lean theorem
+\[
+\mathcal C^{\leftarrow}_{S202}(1,3)\ge1
+\]
+will constitute the first formal accessibility barrier in the S202 chain.

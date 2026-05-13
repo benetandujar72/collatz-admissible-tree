@@ -1,0 +1,70 @@
+% =====================================================================
+% S214-Core: 3-adic Accessibility Potentials
+% Standalone technical document (companion to s216_paper.tex).
+% Compile on Overleaf or with: pdflatex s214_core.tex
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[english]{babel}
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{microtype}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!50!black,
+    citecolor=blue!50!black,
+    urlcolor=blue!50!black
+}
+
+% --- Theorem environments -------------------------------------------------
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+
+\theoremstyle{remark}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{remark}[theorem]{Remark}
+
+% --- Title ---------------------------------------------------------------
+\title{S214-Core: 3-adic Accessibility Potentials\\
+\large Companion technical note to the S216 closure-to-barrier theorem}
+\author{Anonymous (double-blind submission)}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We isolate the structural mechanism behind the accessibility barrier
+associated with the S202 subcritical block of the admissible inverse
+Collatz tree. We introduce the root and negative-run \(3\)-adic
+proximities \(\rho_+,\rho_-\) and their associated deficit
+\(\delta_+\), prove an elementary separation lemma stating that a
+\(3\)-adic cylinder cannot be simultaneously close to \(1\) and to
+\(-1\), and derive an arithmetic constraint forcing negative defect
+runs to live near \(-1\). We then formalise candidate accessibility
+potentials \(\Phi(j,c)\) that bound the cost
+\(\mathcal C^{\leftarrow}_{S202}(m,Q)\) via Bellman--Ford-style edge
+inequalities, state the S202 accessibility barrier conjecture and its
+universal generalisation, and connect the framework to a long-term
+reduction strategy for the Collatz problem. All lemmas in this note are
+proved unconditionally; the conjectures are stated explicitly as open
+problems.
+\end{abstract}
+
+\tableofcontents
+
+\input{s214_core_section}
+
+\end{document}

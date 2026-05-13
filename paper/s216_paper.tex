@@ -1,0 +1,751 @@
+\documentclass[11pt,a4paper]{article}
+
+% ===== Packages =====
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{amsmath,amsthm,amssymb,amsfonts}
+\usepackage{mathtools}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  citecolor=green!50!black,
+  urlcolor=blue!50!black
+}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  framerule=0.3pt,
+  framesep=4pt,
+  columns=fullflexible,
+  showstringspaces=false
+}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+% ===== Theorem environments =====
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+
+\theoremstyle{plain}
+\newtheorem*{conjecture*}{Conjecture}
+\newtheorem{conjecture}[theorem]{Conjecture}
+
+% ===== Macros =====
+\newcommand{\NN}{\mathbb{N}}
+\newcommand{\ZZ}{\mathbb{Z}}
+\newcommand{\ZZp}[1]{\mathbb{Z}_{#1}}
+\newcommand{\Branch}{\mathcal{B}}
+\newcommand{\InvG}{G^{\leftarrow}}
+\newcommand{\Calphax}{\mathcal{C}^{\leftarrow}_{S202}}
+\newcommand{\aS}{a_{S202}}
+\newcommand{\wS}{w_{S202}}
+\newcommand{\defect}{\mathrm{D}}
+\newcommand{\credit}{\mathrm{credit}}
+\newcommand{\relevant}{\mathrm{relevant}}
+\DeclareMathOperator{\InX}{InX}
+\DeclareMathOperator{\InvEdge}{InvEdge}
+\DeclareMathOperator{\modulus}{mod}
+
+% ===== Title (double-blind: no authors) =====
+\title{Bellman--Ford Closure Certificates for the
+       Admissible Inverse Cylinder Graph of the Collatz Map\\
+       \large{A formally verified barrier framework}}
+\date{\today}
+\author{}
+
+\begin{document}
+\maketitle
+
+% Blind: no author block; section 0 acknowledges this.
+
+\begin{abstract}
+We introduce a new certificate framework for proving cylinder-accessibility
+lower bounds in the admissible inverse tree of the Collatz dynamics.
+The framework, called \emph{S216 Bellman--Ford optimistic closure},
+addresses a subtle issue in earlier proposals: because some edges in
+the inverse cylinder graph have negative weight, a naïve
+``$d < T$'' relaxation cut fails to be a valid barrier criterion.
+We replace it with the relevance predicate
+\[
+  \relevant(v, d) \iff d - (Q - j(v)) < T,
+\]
+which we show is the minimal saturation rule under which a finite
+table over visited states proves $\Calphax(m, Q) \ge T$, the defect
+lower bound on every admissible word landing in the $m$-th cylinder
+of the published S202 fixed point.
+
+The main theorem (Section~\ref{sec:closure-to-barrier}) is established
+in two stages:
+(i) a~\emph{suffix weight bound} certifying that the maximum future
+descent from any vertex is at most $-(Q - j)$,
+(ii) a~Bellman--Ford propagation argument showing that every prefix of
+a hypothetical cheap path is \emph{relevant} and hence captured by
+the closure invariant.
+
+A complete formalization in the Lean~4 proof assistant is presented
+in Section~\ref{sec:lean}, comprising
+${\sim}1{,}600$ lines of new proof-script atop the public Mathlib
+library, with $0$ \texttt{sorry}/\texttt{admit} axiomatic gaps and a
+final theorem
+\emph{Word $\Rightarrow$ barrier} chain proven end-to-end.
+Section~\ref{sec:experiments} reports machine-verified certificates
+for $(m, Q) \in \{(1,3), (1,5), (1,8), (1,10), (2,6)\}$, including
+the case $Q = 10$ that previously exceeded the naïve budget.
+\end{abstract}
+
+\section{Introduction}\label{sec:intro}
+
+The Collatz conjecture, dating back to 1937~\cite{lagarias2010,wirsching}, states that
+the orbit of every positive integer under
+\[
+  T(n) =
+    \begin{cases}
+       n/2     & n \text{ even},\\
+       (3n+1)/2 & n \text{ odd},
+    \end{cases}
+\]
+eventually reaches $1$. After more than eight decades the conjecture
+remains open; the strongest unconditional result is due to Tao~\cite{tao2022},
+who proved that almost every Collatz orbit eventually attains an
+\emph{almost bounded value}, building on prior probabilistic
+arguments of Kontorovich--Sinai~\cite{kontorovich2002} and structural
+analyses of Lagarias~\cite{lagarias1985}. The conjecture is
+equivalent to the assertion that no positive integer admits an
+infinite forward Collatz orbit disjoint from $\{1, 2\}$.
+We work in the dual model of \emph{admissible inverse iteration}: in
+this picture, words $u \in \{\mathtt{0},\mathtt{1}\}^*$ encode reverse
+trajectories along the $\Psi_0,\Psi_1$ inverse branches, evaluated
+from a starting integer $n_0 = 1$ via a state machine
+\((n, A, q, B)\) carrying the translation identity
+\[
+   3^q\,n + B \;=\; 2^A.
+\tag{Inv-Id}\label{eq:invid}
+\]
+The \emph{defect} of a word is $\defect(u) := A(u) - 2\,q(u)$.
+Words with negative defect would yield a Collatz cycle off the trivial
+$\{1,2,4\}$ cycle and refute the conjecture; conjecturally,
+$\defect(u) \to \infty$ as $q(u) \to \infty$ along admissible
+families.
+
+A specific admissible word
+$\wS = \mathtt{10100000001000010000000000}$ (the \emph{S202 word},
+introduced in the companion preprint~\cite{S202})
+is known to achieve a negative defect:
+$(\defect, n, A, q) = (-1, 251, 43, 22)$ when evaluated from $n_0 = 1$.
+Iterating $\wS$ asymptotically defines a 3-adic fixed point
+$\aS = 1 + 3^{22} \in \ZZp{3}$, around which the cylinder family
+\[
+  C_m \;:=\; \{u : (n(u) \equiv \aS) \bmod 3^{22m+2}\}
+\]
+governs the asymptotic slope problem in the admissible cover.
+The \emph{S202 alternative conjecture} asks whether
+$C_m$ is accessible with $\defect = o(m)$ (subcritical slope), or
+whether a structural obstruction blocks deep $C_m$ for $m \gg 1$.
+
+The present work focuses on \emph{lower bounds}. We define
+\[
+  \Calphax(m, Q) :=
+  \inf\bigl\{\, \defect(u) : u \in C_m \text{ and } q(u) \le Q\,\bigr\}.
+\]
+Establishing $\Calphax(m, Q) \ge T$ for concrete $(m, Q, T)$ is the
+barrier program. Such inequalities translate, via the
+concatenation lemma~\cite{S211}, into asymptotic slope statements:
+if $\Calphax(m, Q) \ge T_m$ with $T_m / m \to c > 0$, then no
+subcritical accessibility family can exist below slope $2 - c$.
+
+\medskip
+
+The main contribution of this paper is:
+
+\begin{itemize}
+\item A correct certificate format (Sections~\ref{sec:graph}--\ref{sec:closure-to-barrier})
+      establishing $\Calphax(m, Q) \ge T$ from a finite, machine-checkable
+      table of states; the format replaces the naïve cut by an
+      \emph{optimistic} relevance rule.
+\item A fully verified Lean~4 formalization (Section~\ref{sec:lean}) of
+      the closure-to-barrier theorem together with the path-word
+      correspondence (forward half) required to translate the abstract
+      barrier into a defect lower bound for every admissible word
+      landing in the cylinder.
+\item Machine-verified certificates for the cases tabulated in
+      Section~\ref{sec:experiments}, including a $352{,}716$-state
+      certificate for $(m, Q) = (1, 10)$.
+\end{itemize}
+
+The artefact accompanying this submission contains the Python
+generator (\texttt{s216\_colab.py}), the Lean~4 development
+(\texttt{S216.lean}, \texttt{S212Forward.lean}, etc.), and the
+auto-generated certificates.
+
+\subsection*{Related work}\label{sec:related}
+Formal verification of number-theoretic conjectures has grown rapidly
+in the last decade, with notable milestones including the
+formalization of the Kepler conjecture~\cite{flyspeck},
+the prime number theorem~\cite{eberl-paulson}, and
+Tao's recent informal-to-Lean projects~\cite{tao-blueprint}.
+On the Collatz side, computer-assisted analyses go back to the early
+1980s~\cite{lagarias1985}; the closest precedents to our approach
+are the symbolic-dynamics framework of Conway~\cite{conway1972}
+(reformulating Collatz as a halting problem for FRACTRAN), and the
+3-adic analysis of Bernstein--Lagarias~\cite{bernstein-lagarias} which
+underlies our cylinder framework.
+
+Bellman--Ford on graphs with negative edges is classical in algorithm
+design~\cite{cormen}; our novelty is the use of a problem-specific
+\emph{credit potential} (Section~\ref{sec:closure-to-barrier}) that
+preserves both decidability of the certificate and the formal
+soundness of the closure-to-barrier implication under negative
+weights.
+
+\section{The Admissible Inverse Cylinder Graph}\label{sec:graph}
+
+\subsection{Admissibility section}
+Fix the admissibility section $\InX(n) :\iff n \bmod 9
+\in \{1,2,4,5,7,8\}$, and the deterministic table
+$\tau : \InX \to \{1,2,3,4\}$ given by
+$\tau(1)=2,\ \tau(2)=1,\ \tau(4)=2,\ \tau(5)=3,\ \tau(7)=4,\ \tau(8)=1$.
+The admissible state machine takes $(n,A,q,B) \in \NN^4$ to one of two
+successor states according to the branch symbol.
+
+\subsection{Inverse cylinder vertices}
+Fix $m \in \NN$ and let $R := 22m + 2$ throughout. A vertex of the
+inverse cylinder graph is a pair $(j, c) \in \NN^2$:
+\[
+  V_{m,Q} := \{(j, c) : 0 \le j \le Q\} \subset \NN^2,
+\]
+where $j$ counts the inverse \texttt{0}-edges already used and $c$
+denotes the cylinder representative modulo $3^{R+j}$. The
+\emph{canonical} version of $(j,c)$ satisfies $c < 3^{R+j}$.
+
+The \emph{start} is
+$s := (0, \aS \bmod 3^R)$;
+a vertex $(j, c)$ is a \emph{goal} iff $c \equiv 1 \pmod{3^{R+j}}$.
+
+\subsection{Edges}
+There are two edge kinds (we abuse notation by reusing $v, v'$ for
+canonical representatives):
+
+\medskip
+\noindent\textbf{Inverse-$\mathtt{1}$ edges.} For each admissible
+$\alpha \in \{1,2,4,5,7,8\}$ with $\tau := \tau(\alpha)$, an edge
+$v \to v'$ exists iff
+\begin{enumerate}
+  \item $j(v') = j(v)$,
+  \item $v.c \equiv 2^{\tau} \cdot v'.c \pmod{3^{R+j}}$,
+  \item $v'.c \equiv \alpha \pmod 9$,
+\end{enumerate}
+with weight $\omega = \tau$.
+
+\medskip
+\noindent\textbf{Inverse-$\mathtt{0}$ edges.}
+For each admissible $\alpha$ and provided $j(v) < Q$,
+\begin{enumerate}
+  \item $j(v') = j(v) + 1$,
+  \item $3v.c + 1 \equiv 2^{\tau(\alpha)} \cdot v'.c \pmod{3^{R+j(v')}}$,
+  \item $v'.c \equiv \alpha \pmod 9$,
+\end{enumerate}
+with weight $\omega = \tau(\alpha) - 2$.
+
+\medskip
+\noindent The canonical $v'.c$ for each $\alpha$ is uniquely determined
+by $v.c$:
+\[
+  v'.c
+  \;=\;
+  (2^\tau)^{-1} \cdot v.c
+  \;\bmod\; 3^{R+j(v')},
+\]
+which we computed in practice using $\mathrm{invMod2}(M) := (M+1)/2$,
+the closed-form inverse of $2$ modulo any odd $M$.
+
+\subsection{Path weight and barrier}
+A weighted directed path $p = v_0 \to v_1 \to \cdots \to v_k$ has
+weight $w(p) := \sum_i \omega(v_{i-1}, v_i)$.
+The cylinder barrier statement is
+\[
+  \Calphax(m, Q) \;:=\;
+  \min_p w(p),
+\]
+the minimum over paths from $s$ to any goal vertex within the
+$Q$-budget.
+
+The structural correspondence (Theorem~\ref{thm:s212-forward}) states
+that paths in this graph are in bijection with admissible words $u$
+satisfying $q(u) \le Q$ and $n(u) \equiv \aS \pmod{3^R}$, with path
+weight equal to $\defect(u)$. Hence the graph-theoretic barrier
+becomes a defect lower bound on admissible words.
+
+\section{S216: Bellman--Ford Closure with Negative Edges}\label{sec:closure-to-barrier}
+
+\subsection{The negativity issue}
+A naïve approach to prove $\Calphax(m, Q) \ge T$ enumerates all
+states reachable from $s$ along paths of total weight $< T$ and
+verifies that none is a goal. Equivalently, one builds a partial
+dist function $\mathrm{dist} : V_{m,Q} \to \ZZ$ with closure
+\[
+  \forall v, \forall (v, v', \omega): \quad
+  \mathrm{dist}(v') \le \mathrm{dist}(v) + \omega
+\]
+restricted to the region $\mathrm{dist}(v) < T$.
+
+This is \emph{wrong} as soon as the graph admits edges of negative
+weight. In our graph, the inverse-$\mathtt{0}$ edges with
+$\alpha \in \{2, 8\}$ have $\tau = 1$ and therefore
+$\omega = -1$. A path may temporarily accumulate weight above $T$ and
+descend below it later. Restricting the saturation to
+``$\mathrm{dist}(v) < T$'' misses precisely those prefixes that
+exceed $T$ but contribute to a final goal of cost $< T$.
+
+\subsection{The credit bound}
+Negative edges are exactly the $j$-incrementing inverse-$\mathtt{0}$
+steps. Hence from any vertex $v$, the number of negative-weight steps
+remaining is bounded by $Q - j(v)$.
+
+\begin{lemma}[Suffix weight bound]\label{lem:suffix}
+For any path $v \to^* t$ confined to $V_{m,Q}$,
+\[
+  w(p) \;\ge\; -(Q - j(v)).
+\]
+\end{lemma}
+
+\begin{proof}
+Each edge has weight $\ge j(v_i) - j(v_{i+1})$
+(positive edges have $\omega = \tau \ge 1$ and preserve $j$;
+negative edges contribute $-1$ and increment $j$ by $1$).
+Telescoping along the path,
+$w(p) \ge j(v_0) - j(v_k) \ge -(Q - j(v_0))$,
+using $j(v_k) \le Q$ on the bounded path.
+\end{proof}
+
+This is Lemma~6.1 in the supplementary Lean module
+(\texttt{suffix\_weight\_bound}). Define the \emph{credit} of a
+vertex as $\credit(Q, v) := Q - j(v)$.
+
+\subsection{Optimistic relevance}
+A state--cost pair $(v, d)$ is called \emph{relevant} (relative to
+$Q, T$) iff
+\[
+  d - \credit(Q, v) \;<\; T.
+\]
+Otherwise the prefix $(v, d)$ provably cannot complete to a path of
+weight $< T$ (Lemma~\ref{lem:suffix}), and may be pruned without loss.
+
+\begin{lemma}[Prefix relevance]\label{lem:relevance}
+If $p = s \to^* g$ is a path of total weight $w(p) < T$, then for
+every prefix endpoint $v_i$ with accumulated cost $d_i$, the pair
+$(v_i, d_i)$ is relevant.
+\end{lemma}
+
+\begin{proof}
+$d_i + \text{(suffix weight from $v_i$ to $g$)} = w(p) < T$.
+By Lemma~\ref{lem:suffix} applied to the suffix,
+$d_i - \credit(Q, v_i) \le w(p) < T$.
+\end{proof}
+
+\subsection{Closure certificate}
+\begin{definition}\label{def:cert}
+An \emph{S216 closure certificate} for $(m, Q, T)$ is a partial
+function $\mathrm{dist} : V_{m,Q} \to \ZZ \cup \{\bot\}$ together
+with three invariants:
+\begin{enumerate}
+\item[(C1)] $\mathrm{dist}(s) = 0$.
+\item[(C2)] No goal $g$ in the support of $\mathrm{dist}$ has
+            $\mathrm{dist}(g) < T$.
+\item[(C3)] For every vertex $v$ in the support of $\mathrm{dist}$
+            with $\relevant(Q, T, v, \mathrm{dist}(v))$,
+            and every outgoing edge $v \to v'$ of weight $\omega$
+            with $j(v') \le Q$ and
+            $\relevant(Q, T, v', \mathrm{dist}(v) + \omega)$,
+            the value $\mathrm{dist}(v')$ is defined and satisfies
+            $\mathrm{dist}(v') \le \mathrm{dist}(v) + \omega$.
+\end{enumerate}
+\end{definition}
+
+\subsection{Main theorem}
+\begin{theorem}[Closure-to-barrier]\label{thm:closure-to-barrier}
+If an S216 closure certificate for $(m, Q, T)$ exists, then
+$\Calphax(m, Q) \ge T$.
+\end{theorem}
+
+\begin{proof}
+Suppose, for contradiction, that a path $p$ from $s$ to a goal $g$
+has total weight $w(p) < T$. Let $v_0 = s, v_1, \dots, v_k = g$ be its
+vertex sequence with prefix costs $d_i$ (so $d_0 = 0$ and $d_k = w(p)$).
+
+We show by induction on $i$ that
+$\mathrm{dist}(v_i)$ is defined and $\mathrm{dist}(v_i) \le d_i$.
+The base case $i = 0$ holds by (C1).
+
+For the inductive step, assume the property for $i$. By
+Lemma~\ref{lem:relevance} the prefix $(v_i, d_i)$ is relevant. By
+the inductive hypothesis $\mathrm{dist}(v_i) \le d_i$, so
+$(v_i, \mathrm{dist}(v_i))$ is also relevant. Similarly
+$(v_{i+1}, d_{i+1})$ is relevant, hence
+$(v_{i+1}, \mathrm{dist}(v_i) + \omega_i)$ with
+$\omega_i = w(v_i \to v_{i+1})$ is relevant (because
+$\mathrm{dist}(v_i) + \omega_i \le d_{i+1}$).
+By (C3), $\mathrm{dist}(v_{i+1})$ is defined and bounded above by
+$\mathrm{dist}(v_i) + \omega_i \le d_i + \omega_i = d_{i+1}$.
+
+Finally $\mathrm{dist}(g) \le d_k = w(p) < T$, contradicting (C2). \qed
+\end{proof}
+
+\section{From Barrier to Admissible Words}\label{sec:s212-forward}
+
+The graph-theoretic barrier translates into a defect lower bound for
+admissible words via the \emph{path-word correspondence}, the
+``forward half'' of which we prove below.
+
+\begin{theorem}[S212 forward]\label{thm:s212-forward}
+Let $u$ be an admissible word with
+$n(u) \equiv \aS \pmod{3^R}$.
+Then there exists a weighted directed path in
+$\InvG_{m,Q}$ from the start vertex $s$ to a canonical goal $g$ with
+$j(g) = q(u)$ and weight $\defect(u)$.
+Moreover, every intermediate vertex along the path is canonical.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+By structural induction on $u$ from the front. The base case is
+trivial (the empty word). For $u = b :: u'$, the inductive hypothesis
+produces a path for $u'$ starting from the post-$b$ state; we
+prepend an inverse-edge corresponding to the branch $b$, which is
+exactly the predicate
+$\InvEdge_{R}(v, v', \omega)$ for the explicit
+$v, v', \omega$ supplied by the state-machine update.
+Canonicality follows because every appended vertex is constructed as
+$\bigl(j, x \bmod 3^{R+j}\bigr)$ for some $x \in \NN$.
+The full proof is mechanized as \texttt{S212\_forward\_general} in
+\texttt{S212Forward.lean}.
+\end{proof}
+
+\begin{corollary}\label{cor:full-chain}
+Given $(m, Q, T)$ with an S216 closure certificate (Definition~\ref{def:cert})
+whose start matches the inverse start, and given any admissible word $u$ with
+$q(u) \le Q$ and $n(u) \equiv \aS \pmod{3^R}$, one has
+$\defect(u) \ge T$.
+\end{corollary}
+
+\section{Formalization in Lean~4}\label{sec:lean}
+
+The entire chain above is formalized in Lean~4~\cite{lean4} atop
+Mathlib~\cite{mathlib}. The artefact consists of two new modules over
+the existing \texttt{CollatzLean4} development:
+
+\begin{itemize}
+\item \texttt{S212Forward.lean}: forward path-word correspondence
+      (Theorem~\ref{thm:s212-forward}) including canonicality of all
+      path vertices.
+\item \texttt{S216.lean}: definitions \texttt{credit}, \texttt{relevant};
+      structures \texttt{S216Cert} and the Bool-decidable variant
+      \texttt{S216Cert\_outgoing}; closure-to-barrier theorem; the
+      structural lemmas \texttt{outgoingEdges\_sound},
+      \texttt{outgoingEdges\_complete\_one}, and
+      \texttt{outgoingEdges\_complete\_zero}.
+\end{itemize}
+
+\begin{lstlisting}
+theorem closure_to_barrier_outgoing
+    {R Q : Nat} {T : Int} (cert : S216Cert_outgoing R Q T)
+    (hR : 1 ≤ R)
+    (h_start_can : cert.start.c < 3 ^ (R + cert.start.j))
+    {goal : InvVertex} {w : Int} {vs : List InvVertex}
+    (h_path : WPath (InvEdge R) cert.start goal w vs)
+    (h_g : InvVertex.IsGoal goal R)
+    (h_start_bound : cert.start.j ≤ Q)
+    (h_path_can : ∀ u ∈ vs, u.c < 3 ^ (R + u.j))
+    (h_path_bound : ∀ u ∈ vs, u.j ≤ Q)
+    (h_w_lt : w < T) :
+    False
+\end{lstlisting}
+
+\noindent The full end-to-end barrier theorem is
+\begin{lstlisting}
+theorem S216_barrier_for_words_outgoing
+    {m Q : Nat} {T : Int}
+    (cert : S216Cert_outgoing (22 * m + 2) Q T)
+    (h_start_match : cert.start = InvStart m)
+    (h_start_can  : cert.start.c < 3 ^ (22 * m + 2 + cert.start.j))
+    (u : Word)
+    (h_q_bound : (evalWord u).q ≤ Q)
+    (h_cyl : (evalWord u).n % (3 ^ (22 * m + 2))
+              = aS202 % (3 ^ (22 * m + 2))) :
+    T ≤ defect (evalWord u)
+\end{lstlisting}
+
+\noindent
+The Lean development comprises ${\sim}1{,}600$ lines of new proof
+script, built on top of Mathlib without any additional axiom and with
+$0$ \texttt{sorry} placeholders.
+
+The \emph{Bool-decidable} variant \texttt{S216Cert\_outgoing} replaces
+the \texttt{InvEdge} quantifier of Definition~\ref{def:cert} by
+iteration over the explicit \texttt{outgoingEdges} enumerator. The
+soundness and canonical completeness lemmas certify that this
+enumeration is equivalent to the abstract \texttt{InvEdge} predicate
+for the canonical paths produced by Theorem~\ref{thm:s212-forward}.
+
+\section{Algorithm and Experimental Verification}\label{sec:experiments}
+
+\subsection{The certificate-generation algorithm}
+Algorithm~\ref{alg:bf} produces an S216 certificate (or a refutation,
+i.e.\ a cheap path to a goal) by an SPFA-style label-correcting
+relaxation, pruning any label that fails the optimistic relevance
+predicate. Termination on a finite candidate is guaranteed since the
+relevant region is finite (bounded by $Q$ and by $T + \credit(Q,v)$).
+
+\begin{algorithm}[h]
+\caption{S216 BF closure (relevance-pruned label correction)}\label{alg:bf}
+\begin{algorithmic}[1]
+\State $\mathrm{dist}[s] \gets 0$;\ \ $\mathit{queue} \gets [\,s\,]$
+\While{$\mathit{queue}$ non-empty}
+  \State $v \gets$ pop front of $\mathit{queue}$;\ $d \gets \mathrm{dist}[v]$
+  \If{$d - (Q - j(v)) \ge T$} \textbf{continue} \Comment{prune non-relevant}
+  \EndIf
+  \If{$v$ is a goal and $d < T$} \Return $(\textsc{useful\_path}, v, d)$
+  \EndIf
+  \For{$(v', \omega) \in \mathrm{outgoingEdges}(v)$}
+    \State $d' \gets d + \omega$
+    \If{$v'$ is goal and $d' < T$} \Return $(\textsc{useful\_path}, v', d')$
+    \EndIf
+    \If{$d' - (Q - j(v')) \ge T$} \textbf{continue} \Comment{non-relevant target}
+    \EndIf
+    \If{$\mathrm{dist}[v']$ undefined or $d' < \mathrm{dist}[v']$}
+      \State $\mathrm{dist}[v'] \gets d'$;\ \ enqueue $v'$
+    \EndIf
+  \EndFor
+\EndWhile
+\State \Return $(\textsc{barrier}, \mathrm{dist})$
+\end{algorithmic}
+\end{algorithm}
+
+The state space size scales roughly as $O(6^Q)$ in the worst case
+(six admissible $\alpha$ choices per zero-step); empirically the
+relevant region grows much more slowly because most successor
+candidates fail $\alpha$-admissibility or relevance.
+
+\subsection{Experimental certificates}
+Table~\ref{tab:certs} reports certificate sizes and verification
+status for several $(m, Q)$. The Python script
+\texttt{s216\_colab.py} implements Algorithm~\ref{alg:bf} together
+with an independent verifier that re-checks (C1)--(C3) against a
+freshly loaded certificate JSON.
+
+\begin{table}[h]
+\centering
+\caption{S216 BF closure certificates. ``Naïve'' is the legacy
+$d < T$ cut (insufficient for a formal barrier); ``S216'' is the
+optimistic cut $d - (Q-j) < T$. All S216 certificates verify
+independently. The case $(1, 10)$ exceeded the local budget under the
+S202 engine but completes under the Colab pipeline.}
+\label{tab:certs}
+\begin{tabular}{rrrrrr}
+\toprule
+$m$ & $Q$ & $T$ & Naïve states & S216 states & verifier \\
+\midrule
+1 & 3  & 1 & 22                 & 35           & ok \\
+1 & 5  & 1 & 196                & 462          & ok \\
+1 & 8  & 1 & 6{,}917            & 24{,}310     & ok \\
+1 & 10 & 1 & $>\!200{,}000^{*}$ & 352{,}716    & ok \\
+2 & 6  & 2 & 1{,}429            & 3{,}003      & ok \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent ($*$) The naïve cut produces an incomplete table within the
+$2 \times 10^5$ budget. Even with a higher budget, the resulting
+table would not constitute a valid barrier under S216 since negative
+prefixes are pruned.
+
+\subsection{Reproducibility}
+The full artefact builds under Lean~4.30.0-rc2 with the Mathlib
+revision pinned by the accompanying \texttt{lake-manifest.json}. The
+Python pipeline runs on Python~3.10 or higher with no external
+dependencies beyond the standard library. A representative invocation:
+\begin{lstlisting}
+$ python tools/s216_colab.py --m 1 --Q 10 --budget 5000000
+=== S216 engine: m=1 Q=10 T=1 R=24 ===
+[s216] states=352716 expanded=352716 edges=727856 t=2.5s
+VERIFICATION: ok
+Conclusion: C^<-_{S202}(m=1, Q=10) >= 1
+$ lake build CollatzLean4
+Build completed successfully (8415 jobs).
+\end{lstlisting}
+A fresh build of the Lean development completes in under two minutes
+on commodity hardware. All five certificates in Table~\ref{tab:certs}
+are reproduced in under a minute aggregate.
+
+\section{Open Problems}\label{sec:open}
+
+\subsection*{The reverse half of the path--word correspondence}
+We have proven the forward direction
+(Theorem~\ref{thm:s212-forward}); the reverse direction states that
+every inverse-graph path with $j(g) = q$ corresponds to at least one
+admissible word with $\defect = w$. Combining both halves would yield
+the full bijection (the conjectural \texttt{S212\_path\_word\_correspondence}
+in the Lean development).
+
+\subsection*{Analytic potentials}
+The S216 certificate is an explicit lookup table over visited
+canonical states, of size growing roughly as a polynomial in $Q$. A
+much cleaner \emph{analytic potential} would be a closed-form
+function $\Phi : V_{m,Q} \to \ZZ$ with the local potential
+inequality
+$\Phi(v) \le \omega + \Phi(v')$ along every edge,
+combined with start/goal boundary conditions. The S214
+conjecture~\cite{S214} (formalized in the supplementary Lean module
+\texttt{Potential.lean}) proposes a mixed analytic potential of the form
+\[
+  \Phi(j, c) = \lambda\,\delta_+(c, R+j)
+             + \gamma\,\rho_-(c, R+j)
+             - \mu(Q - j)
+             + \psi(c \bmod 3^h),
+\]
+where $\delta_+,\rho_-$ are 3-adic distance functions to $1$ and $-1$.
+Finding $\lambda,\gamma,\mu,\psi$ satisfying the edge inequality is
+the key analytic problem.
+
+\subsection*{Scaling laws of $\Calphax(m, Q)$}
+The most pressing open question is the asymptotic of
+$\Calphax(m, Q)$ as $Q \to \infty$ for fixed $m$. The S202
+alternative conjecture amounts to whether $\Calphax(m, Q)$ remains
+unbounded (slope barrier) or stabilizes (subcritical accessibility).
+
+% =====================================================================
+% S214-Core companion section (3-adic accessibility potentials).
+% Defined in paper/s214_core_section.tex; also compiles standalone via
+% paper/s214_core.tex.
+% =====================================================================
+\input{s214_core_section}
+
+\section{Conclusion}
+
+We have presented an explicitly machine-checkable barrier framework
+for the cylinder-accessibility problem in the admissible inverse
+Collatz tree, fully formalized in Lean~4 with no axiomatic gaps.
+The key analytical insight is the credit-based relevance rule
+(Definition~\ref{def:cert}, item (C3)), which corrects a subtle
+prune-bug in earlier proposals and renders the certificate suitable
+both for machine verification and for formal lifting.
+
+The artefact accompanying this submission provides:
+(i) the Python certificate generator and independent verifier,
+(ii) a complete Lean~4 formalization,
+(iii) sample certificates for $(m, Q) \in \{(1,3),\dots,(2,6)\}$.
+
+\bibliographystyle{plain}
+\begin{thebibliography}{99}
+
+% --- Collatz literature ---
+\bibitem{lagarias1985}
+J.~C. Lagarias.
+\newblock The 3$x$ + 1 problem and its generalizations.
+\newblock {\em American Mathematical Monthly}, 92(1):3--23, 1985.
+
+\bibitem{lagarias2010}
+J.~C. Lagarias (editor).
+\newblock {\em The Ultimate Challenge: The 3$x$+1 Problem}.
+\newblock American Mathematical Society, 2010.
+
+\bibitem{wirsching}
+G.~J. Wirsching.
+\newblock {\em The Dynamical System Generated by the 3$n$+1 Function}.
+\newblock Lecture Notes in Mathematics 1681, Springer, 1998.
+
+\bibitem{kontorovich2002}
+A.~V. Kontorovich and Ya.~G. Sinai.
+\newblock Structure theorem for $(d,g,h)$-maps.
+\newblock {\em Bulletin of the Brazilian Mathematical Society},
+33(2):213--224, 2002.
+
+\bibitem{tao2022}
+T.~Tao.
+\newblock Almost all orbits of the Collatz map attain almost bounded
+values.
+\newblock {\em Forum of Mathematics, Pi}, 10(e12), 2022.
+
+\bibitem{conway1972}
+J.~H. Conway.
+\newblock Unpredictable iterations.
+\newblock In {\em Proceedings of the 1972 Number Theory Conference},
+49--52. University of Colorado, 1972.
+
+\bibitem{bernstein-lagarias}
+D.~J. Bernstein and J.~C. Lagarias.
+\newblock The 3$x$+1 conjugacy map.
+\newblock {\em Canadian Journal of Mathematics}, 48(6):1154--1169, 1996.
+
+% --- Formal verification ---
+\bibitem{flyspeck}
+T.~C. Hales \emph{et al}.
+\newblock A formal proof of the Kepler conjecture.
+\newblock {\em Forum of Mathematics, Pi}, 5(e2), 2017.
+
+\bibitem{eberl-paulson}
+M.~Eberl, L.~C. Paulson.
+\newblock A formal proof of the prime number theorem in Isabelle/HOL.
+\newblock {\em Archive of Formal Proofs}, 2018.
+
+\bibitem{tao-blueprint}
+T.~Tao \emph{et al}.
+\newblock Equational theories project: a Lean blueprint methodology
+for collaborative formal mathematics.
+\newblock Online, \url{https://teorth.github.io/equational_theories},
+2024--2026.
+
+\bibitem{lean4}
+L.~de~Moura and S.~Ullrich.
+\newblock The Lean~4 theorem prover and programming language.
+\newblock In {\em CADE-28}, 2021.
+
+\bibitem{mathlib}
+The mathlib Community.
+\newblock The Lean Mathematical Library.
+\newblock In {\em CPP 2020}, 367--381, 2020.
+\newblock \url{https://leanprover-community.github.io}.
+
+% --- Algorithms ---
+\bibitem{cormen}
+T.~H. Cormen, C.~E. Leiserson, R.~L. Rivest, and C.~Stein.
+\newblock {\em Introduction to Algorithms}, 3rd edition.
+\newblock MIT Press, 2009.
+
+% --- Within-program references (self-citations, anonymised) ---
+\bibitem{S202}
+\emph{[Author manuscript]}.
+S202 tree: admissible inverse iteration around the
+$\protect\aS = 1+3^{22}$ fixed point.
+Companion preprint, available in artefact supplement, 2026.
+
+\bibitem{S211}
+\emph{[Author manuscript]}.
+S211 concatenation lemma: subcritical accessibility
+implies subcritical slope.
+Companion preprint, available in artefact supplement, 2026.
+
+\bibitem{S214}
+\emph{[Author manuscript]}.
+S214: local 3-adic potentials in the admissible
+inverse cylinder graph.
+Companion preprint, available in artefact supplement, 2026.
+
+\end{thebibliography}
+
+\end{document}

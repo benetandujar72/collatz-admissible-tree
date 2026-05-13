@@ -19,3 +19,14 @@ import CollatzLean4.Cert_m1_Q3
 import CollatzLean4.Cert_m1_Q5
 import CollatzLean4.PathWordCorrespondence
 import CollatzLean4.Potential
+import CollatzLean4.OverCover
+import CollatzLean4.S212Forward
+import CollatzLean4.S216
+import CollatzLean4.S214Core
+import CollatzLean4.Cert_m1_Q3_S216_Barrier
+import CollatzLean4.Cert_m1_Q5_S216_Barrier
+import CollatzLean4.Cert_m1_Q8_S216_Barrier
+import CollatzLean4.Cert_m1_Q10_S216_Barrier
+import CollatzLean4.TrivialPotential
+import CollatzLean4.AnalyticBarrier
+import CollatzLean4.AS202Lift

@@ -163,6 +163,32 @@ def Word.numZeros : Word → Nat
 @[simp] theorem Word.numZeros_cons_one (bs : Word) :
     Word.numZeros (Branch.one :: bs) = Word.numZeros bs := rfl
 
+/-- Number of `Branch.one` symbols in a word. -/
+def Word.numOnes : Word → Nat
+  | []                  => 0
+  | Branch.zero :: bs   => Word.numOnes bs
+  | Branch.one  :: bs   => Word.numOnes bs + 1
+
+@[simp] theorem Word.numOnes_nil : Word.numOnes [] = 0 := rfl
+
+@[simp] theorem Word.numOnes_cons_zero (bs : Word) :
+    Word.numOnes (Branch.zero :: bs) = Word.numOnes bs := rfl
+
+@[simp] theorem Word.numOnes_cons_one (bs : Word) :
+    Word.numOnes (Branch.one :: bs) = Word.numOnes bs + 1 := rfl
+
+/-- The total word length equals the sum of `numOnes` and `numZeros`. -/
+theorem Word.length_eq_numOnes_add_numZeros (u : Word) :
+    u.length = Word.numOnes u + Word.numZeros u := by
+  induction u with
+  | nil => rfl
+  | cons b bs ih =>
+      cases b
+      · simp [Word.numOnes_cons_one, Word.numZeros_cons_one, ih, List.length_cons]
+        omega
+      · simp [Word.numOnes_cons_zero, Word.numZeros_cons_zero, ih, List.length_cons]
+        omega
+
 /-- S213 main theorem: cylinder propagation through an admissible word.
 Starting from cylinder precision `k ≥ numZeros w + 2` ensures the
 result is in a cylinder of precision `k - numZeros w ≥ 2`. -/

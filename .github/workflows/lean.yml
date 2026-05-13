@@ -1,0 +1,75 @@
+name: Lean build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'CollatzLean4/**'
+      - '.github/workflows/lean.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'CollatzLean4/**'
+      - '.github/workflows/lean.yml'
+  workflow_dispatch:
+
+# Cancel in-progress runs on the same ref when a new commit lands.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build CollatzLean4 (Lean ${{ matrix.lean-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        # Pin to the toolchain declared in CollatzLean4/lean-toolchain.
+        # The action reads it automatically; this matrix is here only so
+        # future toolchain bumps stay visible in the CI log.
+        lean-version: ['v4.30.0-rc2']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # leanprover/lean-action wraps elan + lake, fetches the Mathlib
+      # precompiled cache via `lake exe cache get`, and runs `lake build`.
+      # We point it at the CollatzLean4/ subdirectory (the lakefile lives
+      # one level below repo root).
+      - name: Build the Lean project
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: CollatzLean4
+          use-mathlib-cache: true
+          build: true
+          test: false
+          lint: false
+
+      # Smoke-check the headline theorems: confirm no `sorry` leaked in.
+      # Note that `native_decide` legitimately depends on
+      # `Lean.ofReduceBool` / `Lean.ofReduceNat`; those are part of
+      # Lean's native evaluation trust base and are expected to appear.
+      # The check below only fails on `sorryAx`.
+      - name: Verify zero `sorry` footprint of the four formal barriers
+        working-directory: CollatzLean4
+        run: |
+          cat > /tmp/verify_axioms.lean <<'EOF'
+          import CollatzLean4
+          open CollatzLean4.Admissible
+
+          #print axioms S216_barrier_for_words_outgoing
+          #print axioms Cert_m1_Q3_S216.barrier_m1_Q3
+          #print axioms Cert_m1_Q5_S216.barrier_m1_Q5
+          #print axioms Cert_m1_Q8_S216.barrier_m1_Q8
+          #print axioms Cert_m1_Q10_S216.barrier_m1_Q10
+          #print axioms S202_slope_barrier_conditional
+          EOF
+          lake env lean /tmp/verify_axioms.lean | tee /tmp/axioms.out
+          if grep -q "sorryAx" /tmp/axioms.out; then
+            echo "::error::sorryAx detected in a headline theorem"
+            exit 1
+          fi
+          echo "Axiom footprint: zero sorry, as expected."

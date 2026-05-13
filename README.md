@@ -1,5 +1,7 @@
 # Collatz Admissible Tree — Lean 4 formalization
 
+[![Lean build](https://github.com/benetandujar72/collatz-admissible-tree/actions/workflows/lean.yml/badge.svg)](https://github.com/benetandujar72/collatz-admissible-tree/actions/workflows/lean.yml)
+
 Formal Lean 4 verification of an admissible-inverse / 3-adic translation-set
 framework around the Collatz conjecture, plus a 2-adic (Terras / TBD) parity
 coordinate side, plus a constructive S202 cylinder access criterion.

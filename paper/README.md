@@ -10,8 +10,6 @@
 | [s214_core.tex](s214_core.tex) | Wrapper standalone para `s214_core_section.tex`. | listo |
 | [abstract.txt](abstract.txt) | Abstract en texto plano para el formulario arXiv. | listo |
 
-Para los metadatos completos de envío arXiv (subject, MSC, endorsement,
-checklist) ver [../ARXIV_SUBMISSION.md](../ARXIV_SUBMISSION.md).
 
 ## Compilación
 
@@ -37,8 +35,6 @@ Overleaf (motor LaTeX por defecto).
    `\appendix` de `main.tex` con URL del repo y commit hash.
 3. **`s216_paper.tex`** como companion preprint que referencia al
    principal.
-4. **Contacto a Tao** ([CONTACT_TAO_PACKAGE.md](../CONTACT_TAO_PACKAGE.md))
-   solo después de tener arXiv ID + Zenodo DOI.
 
 ## Versionado
 
@@ -60,7 +56,6 @@ Overleaf (motor LaTeX por defecto).
 
 ## Material suplementario (ancillary files)
 
-Listado en `../ARXIV_SUBMISSION.md` §4. Resumen:
 - `tools/s216_engine.py` — implementación de referencia.
 - `tools/s216_colab_debug.py` — script Colab con sanity check.
 - `tools/cert_to_lean_s216.py` — exporter a Lean.

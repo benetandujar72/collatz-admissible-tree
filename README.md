@@ -116,18 +116,16 @@ accessibility barrier (structural obstruction discovered).
 
 | Documento | Para qué sirve |
 |-----------|---------------|
-| [HANDOFF_COLLATZ_ROADMAP.md](HANDOFF_COLLATZ_ROADMAP.md) | Panorama estratégico exhaustivo — colaboradores nuevos empiezan aquí |
-| [HANDOFF_S216.md](HANDOFF_S216.md) | Detalle del cierre S216 (BF closure → barrera terminal) |
-| [FRONTIER_STATUS.md](FRONTIER_STATUS.md) | Estado actual de fronteras `(m, Q)` cerradas y bloqueos pendientes |
-| [tools/README.md](tools/README.md) | Toolchain Python ↔ Lean: motores, exporters, sanity checks |
-| [ADVANCE_ASSESSMENT.md](ADVANCE_ASSESSMENT.md) | Evaluación de avances respecto al plan original |
-| [HANDOFF.md](HANDOFF.md) | Documento histórico (líneas de investigación iniciales) |
+| [paper/main.tex](paper/main.tex) | Manuscrito principal (overview integrador del programa). |
+| [paper/s216_paper.tex](paper/s216_paper.tex) | Companion técnico de S216 (BF closure → barrera terminal). |
+| [paper/README.md](paper/README.md) | Cómo compilar los manuscritos. |
+| [tools/README.md](tools/README.md) | Toolchain Python ↔ Lean: motores, exporters, sanity checks. |
 
 ## Contributing
 
-Líneas de investigación abiertas (ver [HANDOFF_COLLATZ_ROADMAP.md](HANDOFF_COLLATZ_ROADMAP.md) §5 para detalle):
-1. **`S202_one_edge_count_conjecture`** (único hueco analítico restante).
-2. **Refactor `InvStart` → `aS202_at`** para desbloquear certs `m ≥ 2` ([FRONTIER_STATUS.md](FRONTIER_STATUS.md)).
+Líneas de investigación abiertas:
+1. **`S202_one_edge_count_conjecture`** (único hueco analítico restante; statement en [AnalyticBarrier.lean](CollatzLean4/CollatzLean4/AnalyticBarrier.lean) y §7 de [paper/main.tex](paper/main.tex)).
+2. **Refactor `InvStart` → `aS202_at`** para desbloquear certs `m ≥ 2` (documentado en [AS202Lift.lean](CollatzLean4/CollatzLean4/AS202Lift.lean)).
 3. **S213**: cylinder stability lemma para `wS202`.
 4. **Bidirectional Terras**: extender [BinaryTensor](CollatzLean4/CollatzLean4/BinaryTensor.lean).
 

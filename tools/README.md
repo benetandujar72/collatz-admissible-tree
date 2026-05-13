@@ -113,8 +113,10 @@ Una barrera `S216BarrierForWords m Q T` formaliza:
 > `D(u) ≥ T`.
 
 Combinada con `S202_one_edge_count_conjecture` (el único hueco abierto
-del programa, ver [HANDOFF_COLLATZ_ROADMAP.md](../HANDOFF_COLLATZ_ROADMAP.md)),
-esto cierra la rama analítica del programa S189–S220 hacia Collatz.
+del programa, statement en
+[AnalyticBarrier.lean](../CollatzLean4/CollatzLean4/AnalyticBarrier.lean)
+y §7 de [paper/main.tex](../paper/main.tex)), esto cierra la rama
+analítica del programa S189–S220 hacia Collatz.
 
 ## Notas reproducibles
 

@@ -14,3 +14,16 @@ tools/__pycache__/
 *.out
 *.toc
 *.synctex.gz
+
+# Internal operational documents (handoffs, contact strategy, submission
+# checklists, frontier-status notes). Kept locally for the author but not
+# part of the public repository. The public-facing documentation is the
+# top-level README.md, paper/README.md, tools/README.md, paper/main.tex
+# (and companion preprints).
+ADVANCE_ASSESSMENT.md
+ARXIV_SUBMISSION.md
+CONTACT_TAO_PACKAGE.md
+FRONTIER_STATUS.md
+HANDOFF.md
+HANDOFF_COLLATZ_ROADMAP.md
+HANDOFF_S216.md

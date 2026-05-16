@@ -1,0 +1,211 @@
+{
+  "frontier": [
+    [
+      1,
+      3
+    ],
+    [
+      1,
+      5
+    ],
+    [
+      1,
+      8
+    ],
+    [
+      1,
+      10
+    ],
+    [
+      2,
+      6
+    ],
+    [
+      2,
+      9
+    ],
+    [
+      3,
+      6
+    ]
+  ],
+  "results": [
+    {
+      "m": 1,
+      "Q": 3,
+      "kappa_precise": {
+        "status": "barrier",
+        "m": 1,
+        "Q": 3,
+        "T": 1,
+        "states_seen": 137,
+        "expanded": 137,
+        "edges_checked": 252,
+        "min_goal_dist_ge": 1,
+        "elapsed_s": 0.0017421245574951172
+      },
+      "kappa_coarse": {
+        "status": "barrier",
+        "m": 1,
+        "Q": 3,
+        "T": 1,
+        "states_seen": 703,
+        "expanded": 703,
+        "edges_checked": 1030,
+        "min_goal_dist_ge": 1,
+        "elapsed_s": 0.0035343170166015625
+      }
+    },
+    {
+      "m": 1,
+      "Q": 5,
+      "kappa_precise": {
+        "status": "barrier",
+        "m": 1,
+        "Q": 5,
+        "T": 1,
+        "states_seen": 4425,
+        "expanded": 4425,
+        "edges_checked": 8572,
+        "min_goal_dist_ge": 1,
+        "elapsed_s": 0.03421163558959961
+      },
+      "kappa_coarse": {
+        "status": "barrier",
+        "m": 1,
+        "Q": 5,
+        "T": 1,
+        "states_seen": 80665,
+        "expanded": 80665,
+        "edges_checked": 119548,
+        "min_goal_dist_ge": 1,
+        "elapsed_s": 0.7577552795410156
+      }
+    },
+    {
+      "m": 1,
+      "Q": 8,
+      "kappa_precise": {
+        "status": "barrier",
+        "m": 1,
+        "Q": 8,
+        "T": 1,
+        "states_seen": 893376,
+        "expanded": 893379,
+        "edges_checked": 1759930,
+        "min_goal_dist_ge": 1,
+        "elapsed_s": 11.717326164245605
+      },
+      "kappa_coarse": {
+        "status": "incomplete",
+        "m": 1,
+        "Q": 8,
+        "T": 1,
+        "states_seen": 5000003,
+        "expanded": 1938563,
+        "edges_checked": 5001628,
+        "elapsed_s": 42.720436811447144
+      }
+    },
+    {
+      "m": 1,
+      "Q": 10,
+      "kappa_precise": {
+        "status": "incomplete",
+        "m": 1,
+        "Q": 10,
+        "T": 1,
+        "states_seen": 5000001,
+        "expanded": 1675923,
+        "edges_checked": 6048182,
+        "elapsed_s": 42.271087646484375
+      },
+      "kappa_coarse": {
+        "status": "incomplete",
+        "m": 1,
+        "Q": 10,
+        "T": 1,
+        "states_seen": 5000007,
+        "expanded": 1328665,
+        "edges_checked": 5002934,
+        "elapsed_s": 38.75005221366882
+      }
+    },
+    {
+      "m": 2,
+      "Q": 6,
+      "kappa_precise": {
+        "status": "barrier",
+        "m": 2,
+        "Q": 6,
+        "T": 2,
+        "states_seen": 61645,
+        "expanded": 61645,
+        "edges_checked": 114630,
+        "min_goal_dist_ge": 2,
+        "elapsed_s": 0.8473796844482422
+      },
+      "kappa_coarse": {
+        "status": "barrier",
+        "m": 2,
+        "Q": 6,
+        "T": 2,
+        "states_seen": 1612549,
+        "expanded": 1612549,
+        "edges_checked": 2335720,
+        "min_goal_dist_ge": 2,
+        "elapsed_s": 18.505747079849243
+      }
+    },
+    {
+      "m": 2,
+      "Q": 9,
+      "kappa_precise": {
+        "status": "incomplete",
+        "m": 2,
+        "Q": 9,
+        "T": 2,
+        "states_seen": 5000001,
+        "expanded": 2092431,
+        "edges_checked": 6353176,
+        "elapsed_s": 46.77067947387695
+      },
+      "kappa_coarse": {
+        "status": "incomplete",
+        "m": 2,
+        "Q": 9,
+        "T": 2,
+        "states_seen": 5000001,
+        "expanded": 1570395,
+        "edges_checked": 5000000,
+        "elapsed_s": 32.83214735984802
+      }
+    },
+    {
+      "m": 3,
+      "Q": 6,
+      "kappa_precise": {
+        "status": "barrier",
+        "m": 3,
+        "Q": 6,
+        "T": 3,
+        "states_seen": 134913,
+        "expanded": 134913,
+        "edges_checked": 239536,
+        "min_goal_dist_ge": 3,
+        "elapsed_s": 1.24794340133667
+      },
+      "kappa_coarse": {
+        "status": "barrier",
+        "m": 3,
+        "Q": 6,
+        "T": 3,
+        "states_seen": 2765825,
+        "expanded": 2765825,
+        "edges_checked": 3919098,
+        "min_goal_dist_ge": 3,
+        "elapsed_s": 36.19674849510193
+      }
+    }
+  ]
+}

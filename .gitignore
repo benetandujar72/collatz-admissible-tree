@@ -27,3 +27,14 @@ FRONTIER_STATUS.md
 HANDOFF.md
 HANDOFF_COLLATZ_ROADMAP.md
 HANDOFF_S216.md
+HANDOFF_S238.md
+
+# Intermediate / superseded scripts kept locally but not part of the
+# public toolchain. The canonical scripts (s230_dual_search,
+# s233_psi_validator, s238_sweep_parallel, s238_psi_verifier_precise)
+# are public; the ones below are debug or superseded variants.
+tools/s233_coef_sweep.py
+tools/s233_diagnose_edges.py
+tools/s238_export_psi.py
+tools/s238_sweep_corrected.py
+tools/s238_tables_corrected/

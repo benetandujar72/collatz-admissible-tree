@@ -489,6 +489,267 @@ theorem WPath_weight_ge_one_minus_neg
   obtain ⟨n_one, n_neg, n_pos_zero, h_count, h_j, h_w⟩ := WPath_weight_decompose h_path
   exact ⟨n_one, n_neg, by omega, by omega, h_w⟩
 
+/-! ### Actual classified path counts
+
+The existential witnesses in `WPath_weight_decompose` are produced by a
+proof, but a conjecture stated only with unconstrained existential witnesses
+does not force the witnesses to be the real edge counts. The inductive
+predicate below records the classification of every actual edge in the path.
+-/
+
+/-- A `WPath` whose edges are explicitly classified into the three relevant
+classes: one-edges, τ=1 zero-edges, and τ≥2 zero-edges. The three natural
+parameters are the actual counts of these classes along the listed path. -/
+def InvPathCounts (R : Nat) :
+    InvVertex → InvVertex → Int → List InvVertex → Nat → Nat → Nat → Prop
+  | s, t, w, [], n_one, n_neg, n_pos_zero =>
+      s = t ∧ w = 0 ∧ n_one = 0 ∧ n_neg = 0 ∧ n_pos_zero = 0
+  | s, t, w, v :: vs, n_one, n_neg, n_pos_zero =>
+      ∃ ω₁ ω₂ n_one' n_neg' n_pos_zero',
+        InvPathCounts R v t ω₂ vs n_one' n_neg' n_pos_zero' ∧
+        w = ω₁ + ω₂ ∧
+        ((InvEdgeOne R s v ω₁ ∧
+            n_one = n_one' + 1 ∧
+            n_neg = n_neg' ∧
+            n_pos_zero = n_pos_zero') ∨
+         (InvEdgeZero R s v ω₁ ∧
+            tau v.c = 1 ∧
+            n_one = n_one' ∧
+            n_neg = n_neg' + 1 ∧
+            n_pos_zero = n_pos_zero') ∨
+         (InvEdgeZero R s v ω₁ ∧
+            2 ≤ tau v.c ∧
+            n_one = n_one' ∧
+            n_neg = n_neg' ∧
+            n_pos_zero = n_pos_zero' + 1))
+
+/-- The τ-aware combinatorial edge weight:
+one-edges have weight `+1`, τ=1 zero-edges have weight `-1`, and
+τ≥2 zero-edges have weight `0`. This is the precise κ weight whose
+path sum is `#one - #zero_tau1`. -/
+def InvKappaPreciseEdge (R : Nat) (v v' : InvVertex) (κ : Int) : Prop :=
+  (∃ ω, InvEdgeOne R v v' ω ∧ κ = 1) ∨
+  (∃ ω, InvEdgeZero R v v' ω ∧ tau v'.c = 1 ∧ κ = -1) ∨
+  (∃ ω, InvEdgeZero R v v' ω ∧ 2 ≤ tau v'.c ∧ κ = 0)
+
+/-- A κ-precise edge is monotone in the zero-budget coordinate `j`. -/
+theorem InvKappaPreciseEdge_j_monotone
+    {R : Nat} {v v' : InvVertex} {κ : Int}
+    (h : InvKappaPreciseEdge R v v' κ) :
+    v.j ≤ v'.j := by
+  rcases h with h_one | h_zero_neg | h_zero_pos
+  · obtain ⟨_ω, h_edge, _hκ⟩ := h_one
+    obtain ⟨h_j, _hX, _h_cons, _hω⟩ := h_edge
+    omega
+  · obtain ⟨_ω, h_edge, _h_tau, _hκ⟩ := h_zero_neg
+    obtain ⟨h_j, _hX, _h_cons, _hω⟩ := h_edge
+    omega
+  · obtain ⟨_ω, h_edge, _h_tau, _hκ⟩ := h_zero_pos
+    obtain ⟨h_j, _hX, _h_cons, _hω⟩ := h_edge
+    omega
+
+/-- Along any κ-precise path, every listed vertex has `j` bounded by the
+terminal `j`. -/
+theorem WPath_kappa_j_monotone
+    {R : Nat} {s t : InvVertex} {κ : Int} {vs : List InvVertex}
+    (h_path : WPath (InvKappaPreciseEdge R) s t κ vs) :
+    s.j ≤ t.j ∧ ∀ u ∈ vs, u.j ≤ t.j := by
+  induction vs generalizing s κ with
+  | nil =>
+      simp [WPath] at h_path
+      obtain ⟨rfl, _hκ⟩ := h_path
+      exact ⟨le_rfl, by simp⟩
+  | cons v vs' ih =>
+      simp only [WPath] at h_path
+      obtain ⟨κ₁, κ₂, h_edge, h_rest, _hκ⟩ := h_path
+      have h_edge_j : s.j ≤ v.j := InvKappaPreciseEdge_j_monotone h_edge
+      have h_rest_mono := ih h_rest
+      constructor
+      · exact le_trans h_edge_j h_rest_mono.1
+      · intro u hu
+        rcases List.mem_cons.mp hu with rfl | h_mem
+        · exact h_rest_mono.1
+        · exact h_rest_mono.2 u h_mem
+
+/-- Bounded path-level potential telescoping for κ-precise edges. The local
+edge inequality only needs to hold inside the finite slice `j ≤ Q`. -/
+theorem WPath_kappa_weight_ge_potential_bounded
+    {R Q : Nat} (Φ : InvVertex → Int)
+    (h_edge : ∀ v v' κ,
+      v.j ≤ Q → v'.j ≤ Q →
+      InvKappaPreciseEdge R v v' κ → Φ v ≤ κ + Φ v') :
+    ∀ {s t : InvVertex} {κ : Int} {vs : List InvVertex},
+      s.j ≤ Q →
+      t.j ≤ Q →
+      (∀ u ∈ vs, u.j ≤ Q) →
+      WPath (InvKappaPreciseEdge R) s t κ vs →
+      Φ s - Φ t ≤ κ := by
+  intro s t κ vs h_s_bound h_t_bound h_vs_bound h_path
+  induction vs generalizing s κ with
+  | nil =>
+      simp [WPath] at h_path
+      obtain ⟨rfl, rfl⟩ := h_path
+      omega
+  | cons v vs' ih =>
+      simp only [WPath] at h_path
+      obtain ⟨κ₁, κ₂, h_step, h_rest, rfl⟩ := h_path
+      have h_v_bound : v.j ≤ Q := h_vs_bound v (List.mem_cons_self)
+      have h_rest_bound : ∀ u ∈ vs', u.j ≤ Q :=
+        fun u hu => h_vs_bound u (List.mem_cons_of_mem v hu)
+      have h1 : Φ s ≤ κ₁ + Φ v :=
+        h_edge s v κ₁ h_s_bound h_v_bound h_step
+      have h2 : Φ v - Φ t ≤ κ₂ :=
+        ih h_v_bound h_rest_bound h_rest
+      linarith
+
+/-- Forgetting the edge classification yields the underlying weighted path. -/
+theorem InvPathCounts.toWPath
+    {R : Nat} {s t : InvVertex} {w : Int} {vs : List InvVertex}
+    {n_one n_neg n_pos_zero : Nat}
+    (h : InvPathCounts R s t w vs n_one n_neg n_pos_zero) :
+    WPath (InvEdge R) s t w vs := by
+  induction vs generalizing s w n_one n_neg n_pos_zero with
+  | nil =>
+      simp [InvPathCounts] at h
+      obtain ⟨h_st, h_w, _h_one, _h_neg, _h_pos⟩ := h
+      exact ⟨h_st, h_w⟩
+  | cons v vs' ih =>
+      simp only [InvPathCounts] at h
+      obtain ⟨ω₁, ω₂, n_one', n_neg', n_pos_zero',
+        h_rest, h_w, h_class⟩ := h
+      have h_rest_path := ih h_rest
+      have h_edge : InvEdge R s v ω₁ := by
+        rcases h_class with h_one | h_zero_neg | h_zero_pos
+        · exact Or.inl h_one.1
+        · exact Or.inr h_zero_neg.1
+        · exact Or.inr h_zero_pos.1
+      simp only [WPath]
+      exact ⟨ω₁, ω₂, h_edge, h_rest_path, h_w⟩
+
+/-- A classified inverse path is also a κ-precise weighted path whose total
+weight is exactly `n_one - n_neg`. -/
+theorem InvPathCounts.toKappaWPath
+    {R : Nat} {s t : InvVertex} {w : Int} {vs : List InvVertex}
+    {n_one n_neg n_pos_zero : Nat}
+    (h : InvPathCounts R s t w vs n_one n_neg n_pos_zero) :
+    WPath (InvKappaPreciseEdge R) s t
+      ((n_one : Int) - (n_neg : Int)) vs := by
+  induction vs generalizing s w n_one n_neg n_pos_zero with
+  | nil =>
+      simp [InvPathCounts] at h
+      obtain ⟨h_st, _h_w, h_one, h_neg, _h_pos⟩ := h
+      subst n_one
+      subst n_neg
+      exact ⟨h_st, by norm_num⟩
+  | cons v vs' ih =>
+      simp only [InvPathCounts] at h
+      obtain ⟨ω₁, _ω₂, n_one', n_neg', n_pos_zero',
+        h_rest, _h_w, h_class⟩ := h
+      have h_rest_path := ih h_rest
+      rcases h_class with h_one | h_zero_neg | h_zero_pos
+      · obtain ⟨h_edge, h_n_one, h_n_neg, h_n_pos⟩ := h_one
+        subst n_one
+        subst n_neg
+        subst n_pos_zero
+        simp only [WPath]
+        refine ⟨1, (n_one' : Int) - (n_neg' : Int), ?_, h_rest_path, ?_⟩
+        · exact Or.inl ⟨ω₁, h_edge, rfl⟩
+        · push_cast
+          ring
+      · obtain ⟨h_edge, h_tau, h_n_one, h_n_neg, h_n_pos⟩ := h_zero_neg
+        subst n_one
+        subst n_neg
+        subst n_pos_zero
+        simp only [WPath]
+        refine ⟨-1, (n_one' : Int) - (n_neg' : Int), ?_, h_rest_path, ?_⟩
+        · exact Or.inr (Or.inl ⟨ω₁, h_edge, h_tau, rfl⟩)
+        · push_cast
+          ring
+      · obtain ⟨h_edge, h_tau, h_n_one, h_n_neg, h_n_pos⟩ := h_zero_pos
+        subst n_one
+        subst n_neg
+        subst n_pos_zero
+        simp only [WPath]
+        refine ⟨0, (n_one' : Int) - (n_neg' : Int), ?_, h_rest_path, ?_⟩
+        · exact Or.inr (Or.inr ⟨ω₁, h_edge, h_tau, rfl⟩)
+        · ring
+
+/-- The classified counts give the genuine lower bound
+`n_one - n_neg ≤ w` for the path weight. -/
+theorem InvPathCounts.weight_lower_bound
+    {R : Nat} {s t : InvVertex} {w : Int} {vs : List InvVertex}
+    {n_one n_neg n_pos_zero : Nat}
+    (h : InvPathCounts R s t w vs n_one n_neg n_pos_zero) :
+    (n_one : Int) - (n_neg : Int) ≤ w := by
+  induction vs generalizing s w n_one n_neg n_pos_zero with
+  | nil =>
+      simp [InvPathCounts] at h
+      obtain ⟨_h_st, h_w, h_one, h_neg, _h_pos⟩ := h
+      subst n_one
+      subst n_neg
+      subst w
+      norm_num
+  | cons v vs' ih =>
+      simp only [InvPathCounts] at h
+      obtain ⟨ω₁, ω₂, n_one', n_neg', n_pos_zero',
+        h_rest, h_w, h_class⟩ := h
+      have h_rest_bound := ih h_rest
+      rcases h_class with h_one | h_zero_neg | h_zero_pos
+      · obtain ⟨h_edge, h_n_one, h_n_neg, h_n_pos⟩ := h_one
+        subst n_one
+        subst n_neg
+        subst n_pos_zero
+        have h_ω : 1 ≤ ω₁ := oneEdge_weight_pos h_edge
+        rw [h_w]
+        push_cast
+        linarith
+      · obtain ⟨h_edge, h_tau, h_n_one, h_n_neg, h_n_pos⟩ := h_zero_neg
+        subst n_one
+        subst n_neg
+        subst n_pos_zero
+        have h_ω : ω₁ = -1 := tau1ZeroEdge_weight_eq_neg_one h_edge h_tau
+        rw [h_w, h_ω]
+        push_cast
+        linarith
+      · obtain ⟨h_edge, h_tau, h_n_one, h_n_neg, h_n_pos⟩ := h_zero_pos
+        subst n_one
+        subst n_neg
+        subst n_pos_zero
+        have h_ω : 0 ≤ ω₁ := tau_ge_2_ZeroEdge_weight_nonneg h_edge h_tau
+        rw [h_w]
+        linarith
+
+/-- Every inverse weighted path has actual classified counts. -/
+theorem WPath.exists_InvPathCounts
+    {R : Nat} {s t : InvVertex} {w : Int} {vs : List InvVertex}
+    (h_path : WPath (InvEdge R) s t w vs) :
+    ∃ n_one n_neg n_pos_zero : Nat,
+      InvPathCounts R s t w vs n_one n_neg n_pos_zero := by
+  induction vs generalizing s w with
+  | nil =>
+      simp [WPath] at h_path
+      obtain ⟨h_st, h_w⟩ := h_path
+      refine ⟨0, 0, 0, ?_⟩
+      simp [InvPathCounts, h_st, h_w]
+  | cons v vs' ih =>
+      simp only [WPath] at h_path
+      obtain ⟨ω₁, ω₂, h_edge, h_rest, h_w⟩ := h_path
+      obtain ⟨n_one, n_neg, n_pos_zero, h_counts⟩ := ih h_rest
+      rcases invEdge_weight_trichotomy h_edge with
+        ⟨h_one, _h_ω_lb⟩ | ⟨h_zero, h_tau_1, _h_ω_eq⟩ | ⟨h_zero, h_tau_ge_2, _h_ω_nn⟩
+      · refine ⟨n_one + 1, n_neg, n_pos_zero, ?_⟩
+        simp only [InvPathCounts]
+        exact ⟨ω₁, ω₂, n_one, n_neg, n_pos_zero,
+          h_counts, h_w, Or.inl ⟨h_one, rfl, rfl, rfl⟩⟩
+      · refine ⟨n_one, n_neg + 1, n_pos_zero, ?_⟩
+        simp only [InvPathCounts]
+        exact ⟨ω₁, ω₂, n_one, n_neg, n_pos_zero,
+          h_counts, h_w, Or.inr (Or.inl ⟨h_zero, h_tau_1, rfl, rfl, rfl⟩)⟩
+      · refine ⟨n_one, n_neg, n_pos_zero + 1, ?_⟩
+        simp only [InvPathCounts]
+        exact ⟨ω₁, ω₂, n_one, n_neg, n_pos_zero,
+          h_counts, h_w, Or.inr (Or.inr ⟨h_zero, h_tau_ge_2, rfl, rfl, rfl⟩)⟩
+
 /-! ### Word-level path decomposition
 
 Lifts `WPath_weight_decompose` through `S212_forward` to produce a
@@ -675,6 +936,390 @@ def S202_one_edge_count_conjecture (m : Nat) : Prop :=
       (n_one : Int) - (n_neg : Int) ≤ defect (evalWord u) ∧
       (m : Int) ≤ (n_one : Int) - (n_neg : Int)
 
+/--
+Audit lemma: as currently stated, `S202_one_edge_count_conjecture` is equivalent
+to the defect barrier it is meant to imply. The witnesses `n_one`, `n_neg`, and
+`n_pos_zero` are existential and are not constrained to be actual edge counts.
+Thus the statement is not yet an independent combinatorial reduction.
+-/
+theorem S202_one_edge_count_conjecture_iff_defect_barrier (m : Nat) :
+    S202_one_edge_count_conjecture m ↔
+      ∀ u : Word,
+        (evalWord u).n % (3 ^ (22 * m + 2)) = aS202 % (3 ^ (22 * m + 2)) →
+        (m : Int) ≤ defect (evalWord u) := by
+  constructor
+  · intro h u h_cyl
+    obtain ⟨n_one, n_neg, n_pos_zero, _h_count, h_le_defect, h_m_le⟩ := h u h_cyl
+    linarith
+  · intro h u h_cyl
+    refine ⟨m, 0, Word.numZeros u, by omega, ?_, ?_⟩
+    · simpa using h u h_cyl
+    · simp
+
+/--
+Corrected non-circular path-count conjecture. Every actual classified
+inverse-graph path from the m-th S202 start cylinder to a goal has
+`m` more one-edges than τ=1 zero-edges.
+
+Unlike `S202_one_edge_count_conjecture`, this statement quantifies over
+`InvPathCounts`, so the counts are tied to the edge sequence itself.
+-/
+def S202_actual_edge_count_conjecture (m : Nat) : Prop :=
+  ∀ {goal : InvVertex} {w : Int} {vs : List InvVertex}
+    {n_one n_neg n_pos_zero : Nat},
+    InvVertex.IsGoal goal (22 * m + 2) →
+    InvPathCounts (22 * m + 2) (InvStart m) goal w vs
+      n_one n_neg n_pos_zero →
+    (m : Int) ≤ (n_one : Int) - (n_neg : Int)
+
+/-- The κ-precise barrier: every κ-weighted inverse path from the m-th
+S202 start cylinder to a goal has total κ-cost at least `m`. -/
+def S202_kappa_precise_barrier (m : Nat) : Prop :=
+  ∀ {goal : InvVertex} {κ : Int} {vs : List InvVertex},
+    InvVertex.IsGoal goal (22 * m + 2) →
+    WPath (InvKappaPreciseEdge (22 * m + 2)) (InvStart m) goal κ vs →
+    (m : Int) ≤ κ
+
+/-- A κ-precise path barrier implies the corrected actual edge-count
+conjecture, because `InvPathCounts.toKappaWPath` turns the actual counts
+into a κ path of weight exactly `n_one - n_neg`. -/
+theorem S202_actual_edge_count_of_kappa_precise_barrier
+    {m : Nat}
+    (h_barrier : S202_kappa_precise_barrier m) :
+    S202_actual_edge_count_conjecture m := by
+  intro goal w vs n_one n_neg n_pos_zero h_goal h_counts
+  exact h_barrier h_goal (InvPathCounts.toKappaWPath h_counts)
+
+/-- A local potential certificate for κ-precise edges proves the κ barrier.
+This is the natural non-circular target for the remaining mathematics. -/
+theorem S202_kappa_precise_barrier_from_potential
+    (m : Nat) (Φ : InvVertex → Int)
+    (h_edge : ∀ v v' κ,
+      InvKappaPreciseEdge (22 * m + 2) v v' κ → Φ v ≤ κ + Φ v')
+    (h_goal : ∀ v,
+      InvVertex.IsGoal v (22 * m + 2) → Φ v ≤ 0)
+    (h_start : Φ (InvStart m) ≥ (m : Int)) :
+    S202_kappa_precise_barrier m := by
+  intro goal κ vs h_g h_path
+  exact barrier_from_potential
+    (InvKappaPreciseEdge (22 * m + 2)) Φ h_edge (m : Int)
+    h_start (h_goal goal h_g) h_path
+
+/-- Combining the previous two steps: a κ-precise potential certificate proves
+the corrected actual edge-count conjecture. -/
+theorem S202_actual_edge_count_from_kappa_precise_potential
+    (m : Nat) (Φ : InvVertex → Int)
+    (h_edge : ∀ v v' κ,
+      InvKappaPreciseEdge (22 * m + 2) v v' κ → Φ v ≤ κ + Φ v')
+    (h_goal : ∀ v,
+      InvVertex.IsGoal v (22 * m + 2) → Φ v ≤ 0)
+    (h_start : Φ (InvStart m) ≥ (m : Int)) :
+    S202_actual_edge_count_conjecture m :=
+  S202_actual_edge_count_of_kappa_precise_barrier
+    (S202_kappa_precise_barrier_from_potential m Φ h_edge h_goal h_start)
+
+/--
+The corrected actual edge-count conjecture implies the S202 slope barrier
+for all zero budgets `Q`. This is the rigorous connection to forward
+Collatz words: `S212_forward` turns each admissible word in the S202
+cylinder into its actual inverse-graph path, then the classified count
+bound and path-weight bound telescope to `defect ≥ m`.
+-/
+theorem S202_slope_barrier_from_actual_edge_count
+    {m Q : Nat}
+    (h_conj : S202_actual_edge_count_conjecture m) :
+    S216BarrierForWords m Q (m : Int) := by
+  intro u _h_q h_cyl
+  obtain ⟨vs, goal, h_g, _h_goal_j, _h_can, h_path⟩ := S212_forward m u h_cyl
+  obtain ⟨n_one, n_neg, n_pos_zero, h_counts⟩ := WPath.exists_InvPathCounts h_path
+  have h_count_lb : (m : Int) ≤ (n_one : Int) - (n_neg : Int) :=
+    h_conj h_g h_counts
+  have h_weight_lb :
+      (n_one : Int) - (n_neg : Int) ≤ defect (evalWord u) :=
+    InvPathCounts.weight_lower_bound h_counts
+  linarith
+
+/-! ### Bounded-slice κ-precise barrier (certificate only needed on `j ≤ Q`)
+
+`S202_kappa_precise_barrier_from_potential` demands a potential `Φ` satisfying
+the κ-edge inequality on the **entire** infinite inverse graph. Finite
+backward-search certificates (the S215/S216 machinery, the `Cert_m1_Q*` files)
+only ever control the **finite slice** `j ≤ Q`. The two lemmas
+`WPath_kappa_j_monotone` and `WPath_kappa_weight_ge_potential_bounded` let us
+discharge the barrier from a potential that is required to be valid only inside
+that slice: since `j` is monotone along κ-precise edges, any path reaching a
+goal with `goal.j ≤ Q` stays in the slice, so the bounded telescoping applies.
+
+This is the **attainable, non-circular target** for the remaining 3-adic
+mathematics — the analytic, uniform-in-`m` counterpart of the per-instance
+S216 BFS certificates. -/
+
+/-- Bounded-slice κ-precise barrier: every κ-precise inverse path from
+`InvStart m` to a goal **with at most `Q` zero-steps** has total κ-cost at
+least `m`. Strictly weaker (more attainable) than `S202_kappa_precise_barrier`,
+which constrains paths to goals of arbitrary depth. -/
+def S202_kappa_precise_barrier_bounded (m Q : Nat) : Prop :=
+  ∀ {goal : InvVertex} {κ : Int} {vs : List InvVertex},
+    InvVertex.IsGoal goal (22 * m + 2) →
+    goal.j ≤ Q →
+    WPath (InvKappaPreciseEdge (22 * m + 2)) (InvStart m) goal κ vs →
+    (m : Int) ≤ κ
+
+/-- The unbounded κ barrier implies the bounded one — confirming the bounded
+form is a genuine relaxation, not a hidden strengthening. -/
+theorem S202_kappa_precise_barrier_bounded_of_unbounded
+    {m Q : Nat} (h : S202_kappa_precise_barrier m) :
+    S202_kappa_precise_barrier_bounded m Q := by
+  intro goal κ vs h_g _h_goal_j h_path
+  exact h h_g h_path
+
+/-- A potential certificate valid **only inside the slice `j ≤ Q`** proves the
+bounded κ-precise barrier. The slice hypotheses on the edge inequality and the
+goal bound are exactly what a finite certificate establishes; `j`-monotonicity
+(`WPath_kappa_j_monotone`) confines the whole path to the slice, so the bounded
+telescoping `WPath_kappa_weight_ge_potential_bounded` applies. -/
+theorem S202_kappa_precise_barrier_bounded_from_potential
+    (m Q : Nat) (Φ : InvVertex → Int)
+    (h_edge : ∀ v v' κ,
+      v.j ≤ Q → v'.j ≤ Q →
+      InvKappaPreciseEdge (22 * m + 2) v v' κ → Φ v ≤ κ + Φ v')
+    (h_goal : ∀ v,
+      InvVertex.IsGoal v (22 * m + 2) → v.j ≤ Q → Φ v ≤ 0)
+    (h_start : Φ (InvStart m) ≥ (m : Int)) :
+    S202_kappa_precise_barrier_bounded m Q := by
+  intro goal κ vs h_g h_goal_j h_path
+  have h_mono := WPath_kappa_j_monotone h_path
+  have h_start_j : (InvStart m).j ≤ Q := by show 0 ≤ Q; omega
+  have h_vs_bound : ∀ x ∈ vs, x.j ≤ Q := fun x hx =>
+    le_trans (h_mono.2 x hx) h_goal_j
+  have h_tele := WPath_kappa_weight_ge_potential_bounded Φ h_edge
+    h_start_j h_goal_j h_vs_bound h_path
+  have h_goal_le := h_goal goal h_g h_goal_j
+  linarith
+
+/-- Bounded-slice corrected actual edge-count conjecture: every actual
+classified path to a goal of depth `≤ Q` has `m` more one-edges than τ=1
+zero-edges. The counts are tied to the edge sequence (via `InvPathCounts`), so
+this is non-circular. -/
+def S202_actual_edge_count_conjecture_bounded (m Q : Nat) : Prop :=
+  ∀ {goal : InvVertex} {w : Int} {vs : List InvVertex}
+    {n_one n_neg n_pos_zero : Nat},
+    InvVertex.IsGoal goal (22 * m + 2) →
+    goal.j ≤ Q →
+    InvPathCounts (22 * m + 2) (InvStart m) goal w vs
+      n_one n_neg n_pos_zero →
+    (m : Int) ≤ (n_one : Int) - (n_neg : Int)
+
+/-- The bounded κ barrier implies the bounded actual edge-count conjecture,
+because `InvPathCounts.toKappaWPath` turns the actual counts into a κ path of
+weight exactly `n_one - n_neg`. -/
+theorem S202_actual_edge_count_bounded_of_kappa_precise_barrier_bounded
+    {m Q : Nat}
+    (h_barrier : S202_kappa_precise_barrier_bounded m Q) :
+    S202_actual_edge_count_conjecture_bounded m Q := by
+  intro goal w vs n_one n_neg n_pos_zero h_goal h_goal_j h_counts
+  exact h_barrier h_goal h_goal_j (InvPathCounts.toKappaWPath h_counts)
+
+/-- The bounded actual edge-count conjecture implies the S202 slope barrier
+`defect ≥ m` for words with at most `Q` zero-steps. The `Q`-slice hypothesis is
+discharged from the word's zero-step budget `(evalWord u).q ≤ Q`, which equals
+`goal.j` (`= Word.numZeros u`) along the forward path. -/
+theorem S202_slope_barrier_from_actual_edge_count_bounded
+    {m Q : Nat}
+    (h_conj : S202_actual_edge_count_conjecture_bounded m Q) :
+    S216BarrierForWords m Q (m : Int) := by
+  intro u h_q h_cyl
+  obtain ⟨vs, goal, h_g, h_goal_j, _h_can, h_path⟩ := S212_forward m u h_cyl
+  obtain ⟨n_one, n_neg, n_pos_zero, h_counts⟩ := WPath.exists_InvPathCounts h_path
+  have h_goal_le_Q : goal.j ≤ Q := by
+    rw [h_goal_j, ← evalWord_q_eq]; exact h_q
+  have h_count_lb : (m : Int) ≤ (n_one : Int) - (n_neg : Int) :=
+    h_conj h_g h_goal_le_Q h_counts
+  have h_weight_lb :
+      (n_one : Int) - (n_neg : Int) ≤ defect (evalWord u) :=
+    InvPathCounts.weight_lower_bound h_counts
+  linarith
+
+/-- **Bounded-slice end-to-end reduction.** A κ-precise potential certificate
+valid only inside the finite slice `j ≤ Q` proves the S202 slope barrier
+`defect ≥ m` for all admissible words with at most `Q` zero-steps.
+
+This is the strongest honest reduction currently available: it replaces the
+*global* potential demanded by `S202_kappa_precise_barrier_from_potential` with
+a *finite-slice* certificate of exactly the kind produced by the S215/S216
+backward search, and unlike `S202_one_edge_count_conjecture` it is provably
+non-circular (the edge counts are pinned to the path by `InvPathCounts`). -/
+theorem S202_slope_barrier_from_kappa_precise_potential_bounded
+    (m Q : Nat) (Φ : InvVertex → Int)
+    (h_edge : ∀ v v' κ,
+      v.j ≤ Q → v'.j ≤ Q →
+      InvKappaPreciseEdge (22 * m + 2) v v' κ → Φ v ≤ κ + Φ v')
+    (h_goal : ∀ v,
+      InvVertex.IsGoal v (22 * m + 2) → v.j ≤ Q → Φ v ≤ 0)
+    (h_start : Φ (InvStart m) ≥ (m : Int)) :
+    S216BarrierForWords m Q (m : Int) :=
+  S202_slope_barrier_from_actual_edge_count_bounded
+    (S202_actual_edge_count_bounded_of_kappa_precise_barrier_bounded
+      (S202_kappa_precise_barrier_bounded_from_potential m Q Φ h_edge h_goal h_start))
+
+/-! ### Edge-generic Bellman-Ford closure, instantiated for κ-precise edges
+
+The S216 closure machinery (`S216Cert`, `propagate_dist`, `closure_to_barrier`
+in `S216.lean`) depends on the underlying edge predicate ONLY through the weight
+lower bound `(v.j : Int) - (v'.j : Int) ≤ ω`. Abstracting over an arbitrary
+weighted edge `E` gives a reusable closure-to-barrier theorem; instantiating it
+for `InvKappaPreciseEdge` yields a Bellman-Ford **certificate route** to
+`S202_kappa_precise_barrier_bounded` (and hence `S216BarrierForWords m Q m`) —
+the κ-weighted analogue of the existing per-instance defect certificates. -/
+
+/-- κ-precise edges satisfy the same weight lower bound as `InvEdge`:
+`v.j - v'.j ≤ κ` (one-edges keep `j` with κ=1≥0; zero-edges raise `j` by 1 with
+κ∈{-1,0}≥-1). This is the ONLY edge property the closure machinery needs. -/
+theorem InvKappaPreciseEdge_weight_lower_bound
+    {R : Nat} {v v' : InvVertex} {κ : Int}
+    (h : InvKappaPreciseEdge R v v' κ) :
+    (v.j : Int) - (v'.j : Int) ≤ κ := by
+  rcases h with ⟨ω, h_e, h_k⟩ | ⟨ω, h_e, _h_tau, h_k⟩ | ⟨ω, h_e, _h_tau, h_k⟩
+  · obtain ⟨h_j, _, _, _⟩ := h_e; subst h_k
+    have : v'.j = v.j := h_j; omega
+  · obtain ⟨h_j, _, _, _⟩ := h_e; subst h_k
+    have : v'.j = v.j + 1 := h_j; omega
+  · obtain ⟨h_j, _, _, _⟩ := h_e; subst h_k
+    have : v'.j = v.j + 1 := h_j; omega
+
+section AbstractClosure
+
+variable {E : InvVertex → InvVertex → Int → Prop}
+
+/-- Edge-generic suffix weight bound (mirror of `suffix_weight_bound`). -/
+theorem abs_suffix_weight_bound (Q : Nat)
+    (hlb : ∀ v v' ω, E v v' ω → (v.j : Int) - (v'.j : Int) ≤ ω)
+    {v t : InvVertex} {w : Int} {vs : List InvVertex}
+    (h_path : WPath E v t w vs)
+    (h_v_bound : v.j ≤ Q)
+    (h_path_bound : ∀ u ∈ vs, u.j ≤ Q) :
+    -((Q : Int) - v.j) ≤ w := by
+  induction vs generalizing v w with
+  | nil =>
+      simp only [WPath] at h_path
+      obtain ⟨rfl, rfl⟩ := h_path
+      have : (v.j : Int) ≤ Q := by exact_mod_cast h_v_bound
+      omega
+  | cons u vs' ih =>
+      simp only [WPath] at h_path
+      obtain ⟨ω₁, ω₂, h_edge, h_rest, rfl⟩ := h_path
+      have h_u_bound : u.j ≤ Q := h_path_bound u (List.mem_cons.mpr (Or.inl rfl))
+      have h_rest_bound : ∀ x ∈ vs', x.j ≤ Q := fun x hx =>
+        h_path_bound x (List.mem_cons.mpr (Or.inr hx))
+      have ih_result := ih h_rest h_u_bound h_rest_bound
+      have h_ω₁ : (v.j : Int) - (u.j : Int) ≤ ω₁ := hlb v u ω₁ h_edge
+      linarith
+
+/-- Edge-generic closure certificate over an arbitrary weighted edge `E`.
+Same three Bellman-Ford optimistic-closure invariants as `S216Cert`. -/
+structure AbsCert (E : InvVertex → InvVertex → Int → Prop)
+    (R Q : Nat) (T : Int) where
+  start : InvVertex
+  dist  : InvVertex → Option Int
+  start_dist : dist start = some 0
+  no_goal_lt : ∀ v d, dist v = some d → InvVertex.IsGoal v R → ¬ d < T
+  closed :
+    ∀ v d v' ω, dist v = some d → relevant Q T v d → E v v' ω →
+      v'.j ≤ Q → relevant Q T v' (d + ω) →
+      ∃ d', dist v' = some d' ∧ d' ≤ d + ω
+
+/-- Edge-generic dist propagation (mirror of `propagate_dist`). -/
+theorem abs_propagate_dist
+    {R Q : Nat} {T : Int} (cert : AbsCert E R Q T)
+    (hlb : ∀ v v' ω, E v v' ω → (v.j : Int) - (v'.j : Int) ≤ ω)
+    {v_start t : InvVertex} {w d_v_start : Int} {vs : List InvVertex}
+    (h_path : WPath E v_start t w vs)
+    (h_v_bound : v_start.j ≤ Q)
+    (h_path_bound : ∀ u ∈ vs, u.j ≤ Q)
+    (h_v_dist : cert.dist v_start = some d_v_start)
+    (h_total_lt : d_v_start + w < T) :
+    ∃ d_t, cert.dist t = some d_t ∧ d_t ≤ d_v_start + w := by
+  induction vs generalizing v_start w d_v_start with
+  | nil =>
+      simp only [WPath] at h_path
+      obtain ⟨rfl, rfl⟩ := h_path
+      exact ⟨d_v_start, h_v_dist, by linarith⟩
+  | cons u vs' ih =>
+      simp only [WPath] at h_path
+      obtain ⟨ω₁, ω₂, h_edge, h_rest, rfl⟩ := h_path
+      have h_u_bound : u.j ≤ Q := h_path_bound u (List.mem_cons.mpr (Or.inl rfl))
+      have h_rest_bound : ∀ x ∈ vs', x.j ≤ Q := fun x hx =>
+        h_path_bound x (List.mem_cons.mpr (Or.inr hx))
+      have h_suffix : -((Q : Int) - u.j) ≤ ω₂ :=
+        abs_suffix_weight_bound Q hlb h_rest h_u_bound h_rest_bound
+      have h_full_suffix : -((Q : Int) - v_start.j) ≤ ω₁ + ω₂ := by
+        have h_full : WPath E v_start t (ω₁ + ω₂) (u :: vs') := by
+          simp only [WPath]; exact ⟨ω₁, ω₂, h_edge, h_rest, rfl⟩
+        exact abs_suffix_weight_bound Q hlb h_full h_v_bound h_path_bound
+      have h_v_rel : relevant Q T v_start d_v_start := by
+        unfold relevant credit; linarith
+      have h_u_rel : relevant Q T u (d_v_start + ω₁) := by
+        unfold relevant credit; linarith
+      obtain ⟨d_u', h_u_dist, h_u_le⟩ :=
+        cert.closed v_start d_v_start u ω₁ h_v_dist h_v_rel h_edge h_u_bound h_u_rel
+      have h_u_total_lt : d_u' + ω₂ < T := by linarith
+      obtain ⟨d_t, h_t_dist, h_t_le⟩ :=
+        ih h_rest h_u_bound h_rest_bound h_u_dist h_u_total_lt
+      exact ⟨d_t, h_t_dist, by linarith⟩
+
+/-- Edge-generic closure-to-barrier (mirror of `closure_to_barrier`). -/
+theorem abs_closure_to_barrier
+    {R Q : Nat} {T : Int} (cert : AbsCert E R Q T)
+    (hlb : ∀ v v' ω, E v v' ω → (v.j : Int) - (v'.j : Int) ≤ ω)
+    {goal : InvVertex} {w : Int} {vs : List InvVertex}
+    (h_path : WPath E cert.start goal w vs)
+    (h_g : InvVertex.IsGoal goal R)
+    (h_start_bound : cert.start.j ≤ Q)
+    (h_path_bound : ∀ u ∈ vs, u.j ≤ Q)
+    (h_w_lt : w < T) :
+    False := by
+  obtain ⟨d_goal, h_goal_dist, h_goal_le⟩ :=
+    abs_propagate_dist cert hlb h_path h_start_bound h_path_bound
+      cert.start_dist (by linarith)
+  exact cert.no_goal_lt goal d_goal h_goal_dist h_g (by linarith)
+
+end AbstractClosure
+
+/-- **κ-precise barrier from a Bellman-Ford closure certificate.** An `AbsCert`
+over `InvKappaPreciseEdge` at base precision `22m+2`, target `m`, start
+`InvStart m`, proves `S202_kappa_precise_barrier_bounded m Q`. The certificate's
+three fields (start dist 0, no goal below `m`, optimistic closure) are exactly
+what the κ-weighted Bellman-Ford search produces. -/
+theorem S202_kappa_precise_barrier_bounded_from_cert
+    {m Q : Nat}
+    (cert : AbsCert (InvKappaPreciseEdge (22 * m + 2)) (22 * m + 2) Q (m : Int))
+    (h_start : cert.start = InvStart m) :
+    S202_kappa_precise_barrier_bounded m Q := by
+  intro goal κ vs h_g h_goal_j h_path
+  by_contra h_lt
+  rw [not_le] at h_lt
+  rw [← h_start] at h_path
+  have h_mono := WPath_kappa_j_monotone h_path
+  have h_start_bound : cert.start.j ≤ Q := by rw [h_start]; show 0 ≤ Q; omega
+  have h_vs_bound : ∀ u ∈ vs, u.j ≤ Q := fun u hu =>
+    le_trans (h_mono.2 u hu) h_goal_j
+  exact abs_closure_to_barrier cert
+    (fun v v' ω h => InvKappaPreciseEdge_weight_lower_bound h)
+    h_path h_g h_start_bound h_vs_bound h_lt
+
+/-- **End-to-end: a κ-precise closure certificate proves the S202 slope
+barrier.** Composes the certificate route with the bounded-slice chain:
+`AbsCert (InvKappaPreciseEdge …)` ⟹ `S216BarrierForWords m Q m`. This is the
+κ-weighted, non-circular analogue of `S216_barrier_for_words_outgoing`. -/
+theorem S202_slope_barrier_from_kappa_cert
+    {m Q : Nat}
+    (cert : AbsCert (InvKappaPreciseEdge (22 * m + 2)) (22 * m + 2) Q (m : Int))
+    (h_start : cert.start = InvStart m) :
+    S216BarrierForWords m Q (m : Int) :=
+  S202_slope_barrier_from_actual_edge_count_bounded
+    (S202_actual_edge_count_bounded_of_kappa_precise_barrier_bounded
+      (S202_kappa_precise_barrier_bounded_from_cert cert h_start))
+
 /-- **Conditional S202 slope barrier — precise tight form**.
 
 The conjecture's tight form `m ≤ n_one - n_neg` directly implies
@@ -745,26 +1390,37 @@ theorem S202_one_edge_count_conjecture_coarse_implies_precise
            │
        S202 alternative (slope barrier or subcritical access)
            ↑
-           │   slope-barrier branch:  defect ≥ m uniformly
+           │   slope-barrier branch:  defect ≥ m  (words with ≤ Q zeros)
            │
-       S216BarrierForWords m Q m   ← S202_slope_barrier_conditional ✅
+       S216BarrierForWords m Q m
            ↑
-           │   modulo:  S202_one_edge_count_conjecture m Q
-           │           (THE single remaining mathematical gap)
+           │   ← S202_slope_barrier_from_kappa_precise_potential_bounded ✅
+           │     (non-circular: edge counts pinned to the path)
            │
-       n_one ≥ m + Q for every admissible word
+       κ-precise potential Φ valid on the finite slice j ≤ Q
+       (Φ start ≥ m,  Φ goal ≤ 0,  κ-edge-monotone for j, j' ≤ Q)
            ↑
-           │   ← Word_defect_decompose ✅ (Lean theorem)
-           │   ← WPath_weight_decompose ✅ (Lean theorem)
-           │   ← invEdge_weight_trichotomy ✅ (Lean theorem)
+           │   ← WPath_kappa_weight_ge_potential_bounded ✅ (slice telescoping)
+           │   ← WPath_kappa_j_monotone ✅  (path stays in slice)
+           │   ← InvPathCounts.toKappaWPath / .weight_lower_bound ✅
+           │   ← WPath.exists_InvPathCounts ✅ / invEdge_weight_trichotomy ✅
            │
-       Path of admissible word in inverse cylinder graph
+       Path of admissible word in inverse cylinder graph (S212_forward ✅)
 ```
 
-**The S202 one-edge-count conjecture** is the precise, rigorously
-stated, single open problem that — once resolved by 3-adic dynamics —
-would close the analytic side of the S202 alternative as a Lean
-theorem. The conjecture is **combinatorial and 3-adic in nature**, and
-falls outside the formalisation infrastructure. -/
+**Status of the remaining gap (corrected).** The earlier
+`S202_one_edge_count_conjecture` was shown **circular** by
+`S202_one_edge_count_conjecture_iff_defect_barrier`: its unconstrained
+existential witnesses make it logically *equivalent* to the very
+barrier it was meant to imply, so it is not a genuine reduction. The
+corrected statements `S202_actual_edge_count_conjecture(_bounded)` pin
+the counts to the actual edges via `InvPathCounts`, and the honest
+remaining target is a **finite-slice κ-precise potential** `Φ`: it only
+has to be valid on the slice `j ≤ Q` — exactly what the S215/S216
+backward search produces — and is provably non-circular. Constructing
+such a `Φ` uniformly in `m` (the analytic counterpart of the
+per-instance S216 BFS certificates `Cert_m1_Q*`, which already give
+`S216BarrierForWords 1 Q 1` unconditionally for Q ∈ {3, 5, 8, 10})
+remains the open 3-adic core. -/
 
 end CollatzLean4.Admissible

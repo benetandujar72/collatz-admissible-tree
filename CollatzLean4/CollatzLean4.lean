@@ -30,3 +30,6 @@ import CollatzLean4.Cert_m1_Q10_S216_Barrier
 import CollatzLean4.TrivialPotential
 import CollatzLean4.AnalyticBarrier
 import CollatzLean4.AS202Lift
+import CollatzLean4.KappaCert
+import CollatzLean4.Cert_m1_Q1_kappa
+import CollatzLean4.Cert_m1_Q3_kappa

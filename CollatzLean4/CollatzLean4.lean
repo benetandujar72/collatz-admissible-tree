@@ -34,3 +34,4 @@ import CollatzLean4.KappaCert
 import CollatzLean4.Cert_m1_Q1_kappa
 import CollatzLean4.Cert_m1_Q3_kappa
 import CollatzLean4.RhoTransitionLaws
+import CollatzLean4.Nu3UnitInvariance

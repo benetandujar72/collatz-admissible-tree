@@ -148,7 +148,22 @@ unproven implication: every word `u` landing in the `m = 1` S202 cylinder
 
 This is the *only* gap between the repository's word semantics and the
 astronomical lower bound of Part A. It is stated as a `Prop`, never assumed as
-an `axiom`. -/
+an `axiom`.
+
+**STATUS (refuted — see `CollatzLean4.BridgeTruth`): this bridge is DEAD.**
+Its natural raw-triple generalization is machine-refuted
+(`BridgeTruth.cylinderForcesVal22_false_raw`/`_faithful`) by the program's own
+S202 witness `(n,A,q,B) = (251,43,22,919447060349)`: it satisfies the
+translation identity and resonance, yet `A = 43` is odd so `ν₃(2^43 − 1) = 0`,
+not `22`. More fundamentally, on *genuine* cylinder words
+`BridgeTruth.deep_regime_cylinder_collapse` proves that once `q ≥ 24` one has
+`2^A ≡ B (mod 3^24)` — the cylinder residue of `n` is annihilated, so cylinder
+membership has **zero leverage** on `2^A` (a 3-adic unit), hence none on
+`ν₃(2^A − 1)` (which depends on `A` alone). The genuine S202 slackness is
+ADDITIVE (`defect = A − 2q ≥ m`, via the inverse-graph κ-weight), NOT this
+multiplicative valuation. `cylinder_forces_astronomical_A` below is therefore
+vacuously conditional on a hypothesis no cylinder word can satisfy; kept only
+as a documented dead end. The LTE/discrete-log route to `defect ≥ m` is closed. -/
 def CylinderForcesVal22 : Prop :=
   ∀ u : Word,
     (evalWord u).n % (3 ^ 24) = aS202 % (3 ^ 24) →

@@ -17,10 +17,21 @@ at most `Q` zero-steps (`S202_slope_barrier_from_kappa_cert`, non-circular). The
 barrier currently holds **unconditionally only for `m = 1`** (per-instance
 `native_decide` certificates `Cert_m1_Q{1,3,5,8,10}`), plus a weak
 **uniform-in-`(m,Q)`** baseline `defect ≥ −Q + 1` (`analyticBarrier_for_words`).
-Today's work added the **3-unit invariance lemma `nu3_unit_mul`** and the
+
+A **2026-05-29 closing pass** (verified, 0 sorry, axiom-clean) added three pieces
+on the analytic route: (i) the **one-edge discrete-log law `oneEdge_rhoPlus_law`**,
+completing the ρ₊ edge calculus for *all four* edge types; (ii) the **correct
+lifting-the-exponent closed form** `ν₃(2^S − 1) = (Even S ? 1 + ν₃(S) : 0)`
+(`padicValNat_two_pow_sub_one`) plus the capped/uncapped bridge
+`nu3_eq_padicValNat_of_lt`; and (iii) **Part A slackness** — unconditionally,
+`ν₃(2^A − 1) = 22 ⟹ A ≥ 2·3^21 = 20 920 706 406` (`slackness_at_22`). The
+prior pass had added the **3-unit invariance lemma `nu3_unit_mul`** and the
 **τ=2 "clean climb" law `zeroEdge_tau2_rhoPlus_climb`**, completing the verified
-ρ₊ transition table on zero-edges `{τ=1 reset ✓, τ=2 climb ✓, τ=3 reset ✓}` and
-unblocking the analytic (uniform-`m`) potential route.
+ρ₊ transition table on zero-edges `{τ=1 reset ✓, τ=2 climb ✓, τ=3 reset ✓}`.
+With law (1) now also proven, the ρ₊ transition table is **complete on every
+edge type**, and the LTE engine is in place — but the **word→valuation bridge**
+(`CylinderForcesVal22`) that would feed Part A from a cylinder condition remains
+an explicit, unproven hypothesis (the residual frontier, see §3.7).
 
 **This is NOT a proof of Collatz, nor even of the full S202 alternative.** It is one
 half (the slope-barrier half) of one branch of the S202 alternative, and it is
@@ -41,19 +52,25 @@ conjecture (Level 0). **An honest reader stops believing at the first
 
 | Level | Claim | Status | Pinned to |
 |------:|-------|--------|-----------|
-| **4** | ρ₊ transition table on zero-edges: τ=1 reset, **τ=2 climb**, τ=3 reset; 3-unit invariance of ν₃; residue-congruence of ν₃ | **PROVEN** (today) | `nu3_unit_mul`, `nu3_congr_mod_pow`, `zeroEdge_tau2_rhoPlus_climb`, `zeroEdge_tau_1/3_deltaPlus_max` |
+| **4** | ρ₊ transition table — **all four edge types**: zero-edge τ=1 reset / **τ=2 climb** / τ=3 reset, **and the one-edge discrete-log law**; 3-unit invariance + residue-congruence of ν₃ | **PROVEN** | `nu3_unit_mul`, `nu3_congr_mod_pow`, `zeroEdge_tau2_rhoPlus_climb`, `zeroEdge_tau_1/3_deltaPlus_max`, **`oneEdge_rhoPlus_law` (new 05-29)** |
+| **4-LTE** | Lifting-the-exponent closed form `ν₃(2^S−1) = (Even S ? 1+ν₃(S) : 0)`; capped↔uncapped bridge; Part-A slackness `ν₃(2^A−1)=22 ⟹ A ≥ 2·3^21` | **PROVEN** (new 05-29) | `padicValNat_two_pow_sub_one`, `nu3_eq_padicValNat_of_lt`, `slackness_at_22`, `slackness_at_22_value` |
 | **3** | κ-precise edge calculus: weight trichotomy, path decomposition `defect ≥ n_one − n_neg`, slice telescoping, j-monotonicity, exact-count predicate | **PROVEN** | `invEdge_weight_trichotomy`, `WPath_weight_decompose`, `InvPathCounts.*`, `WPath_kappa_*` |
 | **2** | **Reduction**: an `AbsCert`/closure certificate (or finite-slice κ-potential) over `InvKappaPreciseEdge` ⟹ `S216BarrierForWords m Q m`. Non-circular (counts pinned via `InvPathCounts`). | **PROVEN** (the *implication*) | `S202_slope_barrier_from_kappa_cert`, `S216_barrier_for_words_via_kappa`, `S202_slope_barrier_from_kappa_precise_potential_bounded` |
 | **2′** | The certificate's hypothesis **discharged unconditionally** for `m = 1`, `Q ∈ {1,3,5,8,10}` | **PROVEN** (`native_decide`) | `Cert_m1_Q{1,3,5,8,10}_kappa.barrier_*` |
+| **2-bridge** | **Word→valuation bridge**: a cylinder condition `n ≡ aS202 (mod 3^24)` forces `ν₃(2^A−1)=22` (would feed Part-A slackness into the κ counting) | **OPEN-NUMBER-THEORY** (isolated, named, *not* an axiom) | hypothesis `CylinderForcesVal22`; conditional corollary `cylinder_forces_astronomical_A` PROVEN |
 | **2″** | The certificate's hypothesis discharged **uniformly in `m`** (one analytic Φ, not a per-`m` BFS table) | **OPEN-NUMBER-THEORY** | *target of §3 DAG* |
 | **1a** | S202 slope-barrier branch: `defect ≥ m` for **all** `m` (uniform) | **OPEN-NUMBER-THEORY** | follows from 2″ via Level-2 reduction |
 | **1b** | S202 alternative *fully* resolved (slope barrier **and** subcritical-access branch) | **OPEN-NUMBER-THEORY** | 1a + an unformalized second branch |
 | **0** | Bandujar reduction: "S202 alternative ⟹ no Collatz counterexample", then Collatz | **EXTERNAL** (not formalized; not in repo as a proof) | — |
 
-**Where the honesty line sits:** everything through **Level 2′** is genuinely
-machine-checked. Level **2″ / 1a** is the first real mathematical gap (a uniform
-3-adic argument). Levels **1b** and **0** are *additional* gaps, the last of which
-is outside the formal program entirely.
+**Where the honesty line sits:** everything through **Level 2′** (plus the new
+Level 4-LTE) is genuinely machine-checked. The **word→valuation bridge**
+(Level 2-bridge) and **Level 2″ / 1a** are the first real mathematical gaps (a
+uniform 3-adic argument, and the cylinder→`ν₃(2^A−1)` link). Note: Part-A
+slackness is *unconditional*, but its astronomical conclusion `A ≥ 2·3^21`
+only bites *given* the bridge — which is exactly the open piece. Levels **1b**
+and **0** are *additional* gaps, the last of which is outside the formal program
+entirely.
 
 A weaker but **fully uniform** rung also exists and is proven:
 `analyticBarrier_for_words : S216BarrierForWords m Q (−Q + 1)` for all `m ≥ 1, Q`.
@@ -69,14 +86,18 @@ Level 1b  S202 alternative fully resolved
 Level 1a  defect ≥ m  for all m   (uniform slope barrier)
    ▲ OPEN     (needs Level 2″)
 Level 2″  uniform-in-m κ certificate / analytic Φ
-   ┊ OPEN  ── analytic route now unblocked by Level-4 climb law
+   ┊ OPEN  ── ρ₊ edge calculus now COMPLETE (all 4 laws); LTE engine in place
+Level 2-bridge  cylinder ⟹ ν₃(2^A−1)=22   (CylinderForcesVal22)
+   ┊ OPEN  ── named hypothesis, NOT an axiom; conditional corollary proven
+Level 4-LTE  ν₃(2^A−1) closed form + Part-A slack A≥2·3^21   ✅ (05-29)
+   ▲ PROVEN  (unconditional; bites only once the bridge is supplied)
 Level 2′  defect ≥ 1   (m=1, Q∈{1,3,5,8,10})           ✅ native_decide
    ▲ PROVEN
 Level 2   κ-cert  ⟹  S216BarrierForWords m Q m          ✅ non-circular
    ▲ PROVEN
 Level 3   κ-edge calculus + path decomposition           ✅
    ▲ PROVEN
-Level 4   ρ₊ transition table + ν₃ unit/residue lemmas   ✅ (today)
+Level 4   ρ₊ transition table (all 4 edge types) + ν₃ unit/residue   ✅
 ```
 
 ---
@@ -89,22 +110,24 @@ single most leveraged open target. Status reflects the current repo.
 
 ```
 nu3_unit_mul ✅ ─────────────┐
-                             ├──► oneEdge_rhoPlus_law (law 1, discrete-log)  [HARD, FORMALIZABLE-NOW]
+                             ├──► oneEdge_rhoPlus_law ✅ (law 1, discrete-log, DONE 05-29)
 nu3_congr_mod_pow ✅ ────────┤        │
                              │        ▼
-nu3_mul_three ✅ ────────────┼──► zeroEdge_tau2_rhoPlus_climb ✅ (law 2, DONE today)
-                             │
-nu3_eq_padicValNat_of_lt ────┴──► lte_nu3_two_pow_sub_one ──► goal_forces_A_valuation_22
-   [MEDIUM, not present]            [MEDIUM, not present]        [MEDIUM]
+nu3_mul_three ✅ ────────────┼──► zeroEdge_tau2_rhoPlus_climb ✅ (law 2, DONE)
+                             │     ⇒ ρ₊ EDGE CALCULUS COMPLETE (all 4 laws)
+nu3_eq_padicValNat_of_lt ✅ ─┴──► padicValNat_two_pow_sub_one ✅ ──► slackness_at_22 ✅
+   (bridge, DONE 05-29)            (LTE closed form, DONE 05-29)      (Part A, DONE 05-29)
+                                          │                              │
+                                          │     ν₃(2^A−1)=22 ⟹ A≥2·3^21 (UNCONDITIONAL)
+                                          ▼                              ▼
+                                 CylinderForcesVal22  ◄── THE RESIDUAL GAP (named hypothesis)
+                                 [OPEN-NUMBER-THEORY: cylinder n≡aS202(3^24) ⟹ ν₃(2^A−1)=22]
                                           │
-                                          ▼
-                                 one_edge_count_astronomical_lower_bound
-                                          │
-                                          ▼
-                                 kappa_barrier_astronomically_slack ──► (feeds Level 2″ Φ / counting)
+                                          ▼  (conditional corollary cylinder_forces_astronomical_A ✅)
+                                 uniform-in-m κ certificate / Φ ──► (Level 2″)
 ```
 
-### 3.1 `nu3_unit_mul` — **PROVEN today** ✅
+### 3.1 `nu3_unit_mul` — **PROVEN (prior pass)** ✅
 
 ```lean
 theorem nu3_unit_mul (u x c : Nat) (hu : u % 3 ≠ 0) : nu3 (u * x) c = nu3 x c
@@ -114,7 +137,7 @@ multiplication by a 3-unit. Induction on the cap `c` mirroring the `nu3`
 recursion; the load-bearing step is `(u*x)/3 = u*(x/3)` via `Nat.mul_div_assoc`
 (needs `3 ∣ x`). File: `Nu3UnitInvariance.lean`. Axioms: `{propext, Quot.sound}`.
 
-### 3.2 `nu3_congr_mod_pow` — **PROVEN today** ✅
+### 3.2 `nu3_congr_mod_pow` — **PROVEN (prior pass)** ✅
 
 ```lean
 theorem nu3_congr_mod_pow (c a b : Nat) (h : a % 3^c = b % 3^c)
@@ -126,7 +149,7 @@ saturation residue `0` (e.g. `nu3 3 1 = 1` but `nu3 (3 % 3) 1 = nu3 0 1 = 0`,
 because the `nu3 0 = 0` convention encodes "valuation 0", not "∞"). The
 nonzero-hypothesis congruence form is the true and sufficient statement.
 
-### 3.3 `zeroEdge_tau2_rhoPlus_climb` — **PROVEN today** ✅ (law 2)
+### 3.3 `zeroEdge_tau2_rhoPlus_climb` — **PROVEN (prior pass)** ✅ (law 2)
 
 ```lean
 theorem zeroEdge_tau2_rhoPlus_climb {R} (hR : 1 ≤ R) {v v' ω}
@@ -139,24 +162,32 @@ The τ=2 clean climb. Proof chain (main case `v'.c ≠ 1`):
 =[nu3_mul_three] ν₃(v.c−1)+1 = ρ₊(v.c,r)+1`. Boundary `v'.c=1` via
 `nu3_eq_cap_of_dvd`. Completes the zero-edge transition table.
 
-### 3.4 `oneEdge_rhoPlus_law` (law 1, discrete-log) — **FORMALIZABLE-NOW, HARD, not present**
+### 3.4 `oneEdge_rhoPlus_law` (law 1, discrete-log) — **PROVEN 2026-05-29** ✅
 
 ```lean
--- target (modular form; keep arguments in range via the residue representative)
 theorem oneEdge_rhoPlus_law {R} (hR : 1 ≤ R) {v v' ω}
-    (h_one : InvEdgeOne R v v' ω) :
-    rhoPlus v'.c (R+v'.j) = nu3 ((v.c - 2^tau v'.c) % 3^(R+v'.j)) (R+v'.j)
+    (h_one : InvEdgeOne R v v' ω)
+    (h_v'_can : v'.c < 3 ^ (R + v'.j)) (h_v'_ne1 : v'.c ≠ 1) :
+    rhoPlus v'.c (R + v'.j)
+      = nu3 ((v.c + (3 ^ (R + v.j) - 2 ^ tau v'.c % 3 ^ (R + v.j)))
+              % 3 ^ (R + v.j)) (R + v.j)
 ```
 Along a one-edge, `v'.c ≡ 2^{−τ}·v.c (mod 3^r)`, so `v'.c − 1 ≡ 2^{−τ}(v.c − 2^τ)`
-and `2^{−τ}` is a 3-unit. Discharge with `nu3_unit_mul` (the unit) +
-`nu3_congr_mod_pow` (the residue transfer, **now available**). HARD because it must
-extract the inverse `2^{−τ}` from `invMod2Pow` and prove it coprime to 3, all
-modulo `3^r`. *Both prerequisites it was waiting on (unit invariance + the
-congruence form) now exist*, so this is the next concrete formalization target on
-the analytic route. Not on the LTE critical path but required for any analytic
-Bellman–Ford potential built from ρ₊.
+and `2^{−τ}` is a 3-unit. Discharged with `oneEdge_threeUnit_inv` (the inverse
+`invMod2Pow τ (3^r)` is a 3-unit), `oneEdge_discreteLog` (the inversion repackaged
+from `outgoingEdges_complete_one`), then `nu3_congr_mod_pow` (residue transfer) +
+`nu3_unit_mul` (strip the unit). File: `OneEdgeRhoLaw.lean`; axioms
+`{propext, Classical.choice, Quot.sound}`.
 
-### 3.5 `nu3_eq_padicValNat_of_lt` — **FORMALIZABLE-NOW, MEDIUM, not present**
+**Documented form adjustment (not a gap):** the verified probe writes the RHS as
+`ν₃((c − 2^τ) mod 3^r)` with **integer** subtraction. Since ℕ-subtraction
+truncates when `v.c < 2^τ` (the hypotheses do not exclude this, and `v.c` need not
+be canonical), the law renders the ℤ-residue faithfully as
+`(v.c + (3^r − 2^τ mod 3^r)) mod 3^r`. This is the exact, always-correct ℕ
+transcription — purely a representation choice, not a weakening. With this law
+proven, the ρ₊ edge calculus is **complete on all four edge types**.
+
+### 3.5 `nu3_eq_padicValNat_of_lt` — **PROVEN 2026-05-29** ✅
 
 ```lean
 theorem nu3_eq_padicValNat_of_lt (n c : Nat) (hn : n ≠ 0)
@@ -166,42 +197,78 @@ One-directional bridge from the custom capped `nu3` to Mathlib's `padicValNat` i
 the cap-not-binding regime (`nu3 n c = min(padicValNat 3 n, c)`; this is the
 unsaturated case; the saturated case is already `nu3_eq_cap_of_dvd`, S214Core:278).
 Induction on `c` against `padicValNat.div` / `padicValNat.eq_zero_of_not_dvd`;
-needs `Fact (Nat.Prime 3)`. **Leverage point:** once `nu3 = padicValNat` in the
-astronomically-sub-`3^21` regime, *all* of Mathlib's lifting-the-exponent applies
-for free. Optional for laws (1)/(2) (direct induction was simpler) but the gateway
-for the LTE route below.
+`Fact (Nat.Prime 3)` found automatically. File: `LTEBound.lean`; axioms clean.
+**Leverage realised:** with `nu3 = padicValNat` in the astronomically-sub-`3^21`
+regime, Mathlib's lifting-the-exponent now applies to the project's `nu3` for free
+— this is the gateway that made §3.6 mechanical.
 
-### 3.6 `lte_nu3_two_pow_sub_one` — **FORMALIZABLE-NOW, MEDIUM, not present**
+### 3.6 `padicValNat_two_pow_sub_one` (LTE core) — **PROVEN 2026-05-29** ✅ (with corrected statement)
 
 ```lean
-theorem lte_nu3_two_pow_sub_one (S : Nat) (hS : S ≠ 0) :
-    padicValNat 3 (2^S - 1) = padicValNat 3 S
+theorem padicValNat_two_pow_sub_one (S : Nat) (hS : S ≠ 0) :
+    padicValNat 3 (2^S - 1) = if Even S then 1 + padicValNat 3 S else 0
 ```
-The lifting-the-exponent core: `v₃(2^S − 1) = v₃(S)` (since `3 ∣ 2^2 − 1` and
-`ord₃(2) = 2`). Mathlib has `multiplicity.Nat.pow_sub_pow` / the LTE API; this is a
-specialization. Feeds the astronomical lower bound on one-edge counts.
+**Correction to the original plan:** the proposed `ν₃(2^S − 1) = ν₃(S)` is
+**WRONG**. Because `3 ∤ (2 − 1) = 1`, Mathlib's odd-prime LTE lemma
+`padicValNat.pow_sub_pow` cannot be applied to base `2` directly; one must reindex
+through `2^{2t} = 4^t` (so `3 ∣ 4 − 1 = 3`) and split on parity. The **even
+branch carries a `+1`** the naive guess missed; the odd branch is `0` (since
+`2^S ≡ 2 mod 3`). Supporting lemmas in `LTEBound.lean`:
+`padicValNat_four_pow_sub_one` (`ν₃(4^t−1)=1+ν₃(t)`),
+`padicValNat_two_pow_sub_one_even`, `padicValNat_two_pow_sub_one_odd`. All axioms
+clean. This is the quantitative engine behind §3.7.
 
-### 3.7 `goal_forces_A_valuation_22` → `one_edge_count_astronomical_lower_bound` → `kappa_barrier_astronomically_slack` — **MEDIUM, not present**
+### 3.7 Part-A slackness ✅ (PROVEN 05-29) → `CylinderForcesVal22` (OPEN, the residual gap) → uniform-`m`
 
-The payoff chain: reaching the goal cylinder `[1]` from the start
-`[aS202 = 1 + 3^22]` is a 3-adic discrete-log problem; LTE forces
-`n_one ≳ 3^21`, so the κ-barrier `n_one − n_neg ≥ m` is astronomically slack for
-the realizable range of `m`. These give a *quantitative* (and ideally uniform-`m`)
-lower bound on `n_one`, which is exactly the Level-2″ input. **Caveat:** turning
-"astronomically slack" into a uniform Lean theorem `defect ≥ m for all m` still
-requires bounding `n_one` from below for *every admissible word*, not just showing
-slack for a fixed `m` — this is where the genuine 3-adic dynamics enters and why
-2″/1a is tagged OPEN, not FORMALIZABLE-NOW.
+The payoff chain, now **split into a proven half and the isolated open half**
+(`BarrierSlack.lean`):
+
+**Part A — UNCONDITIONAL, fully proven.** From the LTE closed form (§3.6):
+```lean
+theorem slackness_at_22 {A} (hA : A ≠ 0) (hval : padicValNat 3 (2^A - 1) = 22) :
+    2 * 3 ^ 21 ≤ A        -- = 20 920 706 406 ≈ 2.09 × 10^10
+```
+plus `even_of_valuation_two_pow_sub_one_pos`, `dvd_of_valuation_two_pow_sub_one`
+(`ν₃(2^A−1)=v≥1 ⟹ 2·3^(v−1) ∣ A`), `slackness_from_valuation`,
+`slackness_at_22_value`. The constant `22` is structurally correct:
+`padicValNat_aS202_sub_one : ν₃(aS202 − 1) = 22` (from `aS202 − 1 = 3^22`).
+
+**Part B — the word→valuation bridge, the RESIDUAL GAP (OPEN-NUMBER-THEORY).**
+The genuinely open step is to *derive* `ν₃(2^A − 1) = 22` from the cylinder
+condition. It is isolated as a **named hypothesis** (never an `axiom`):
+```lean
+def CylinderForcesVal22 : Prop :=
+  ∀ u : Word, (evalWord u).n % 3^24 = aS202 % 3^24 → (evalWord u).A ≠ 0 →
+    padicValNat 3 (2 ^ (evalWord u).A - 1) = 22
+theorem cylinder_forces_astronomical_A (bridge : CylinderForcesVal22) … :
+    2 * 3 ^ 21 ≤ (evalWord u).A      -- conditional corollary, PROVEN
+```
+**Why it is hard (honest obstruction).** The cylinder controls `n mod 3^24`,
+whereas `2^A` is a 3-adic *unit* (`ν₃(2^A) = 0`); the only valuation fact the word
+semantics supplies is `B ≡ 2^A (mod 3^q)`, which does **not** by itself pin
+`ν₃(2^A − 1)`. So Part A's astronomical conclusion is real but *vacuous until the
+bridge is supplied*. **Caveat (unchanged):** even with the bridge, turning this
+into a uniform `defect ≥ m for all m` (Level 2″/1a) still requires bounding
+`n_one` from below for *every* admissible word, not a fixed `m` — the genuine
+3-adic dynamics. Hence 2-bridge and 2″/1a remain OPEN.
 
 ### Ranked next steps (highest leverage first)
 
-1. **`oneEdge_rhoPlus_law` (law 1).** Unblocked today; completes the ρ₊ edge
-   calculus (all four edge types), the prerequisite for *any* analytic ρ₊-based Φ.
-2. **`nu3_eq_padicValNat_of_lt` (bridge).** Cheap, and opens the entire Mathlib LTE
-   toolbox for the regime that matters.
-3. **`lte_nu3_two_pow_sub_one`.** Mechanical given the bridge; the quantitative engine.
-4. **`one_edge_count_astronomical_lower_bound`** then the uniform-`m` certificate
-   (Level 2″) — the actual frontier.
+Items 1–3 of the previous plan (`oneEdge_rhoPlus_law`, `nu3_eq_padicValNat_of_lt`,
+the LTE core) are **now PROVEN** (05-29). The frontier has moved to:
+
+1. **`CylinderForcesVal22` (the word→valuation bridge, §3.7B).** The single piece
+   that makes Part-A slackness non-vacuous. This is the highest-leverage *open*
+   target, but it is **OPEN-NUMBER-THEORY, not a mechanical formalization**: it
+   needs a genuine 3-adic argument linking `n mod 3^24` to `ν₃(2^A − 1)` (see the
+   obstruction note). Realistically the first move is a *Python probe* to test
+   whether the implication even holds as stated for short words, before any Lean.
+2. **Analytic Φ from the now-complete ρ₊ edge calculus (Level 2″).** With all four
+   edge laws proven, attempt a finite-slice κ-potential `Φ` uniform in `m`,
+   feeding `S202_slope_barrier_from_kappa_precise_potential_bounded`. The real
+   frontier; independent of the bridge route.
+3. **A uniform lower bound on `n_one` per admissible word** — the common core both
+   routes ultimately need for `defect ≥ m for all m` (Level 1a).
 
 ---
 
@@ -229,19 +296,77 @@ none is conjecturally close.**
   than external, but worth flagging beside the externals because it is the gate to
   any non-toy claim: the proven barrier is **unconditional only for `m = 1`**. The
   per-instance certificates are `native_decide` BFS tables; there is **no** single
-  analytic certificate valid for all `m`. The §3 DAG is the plan to build one, but
-  it is unfinished.
+  analytic certificate valid for all `m`. The §3 DAG's *infrastructure* is now
+  complete (the four ρ₊ edge laws and the LTE engine are all proven as of 05-29),
+  but the load-bearing dynamical inputs — the **`CylinderForcesVal22` bridge**
+  (G3) and a per-word lower bound on `n_one` — remain unproven, so G2 is still open.
+
+- **G3 — The word→valuation bridge (Level 2-bridge).** New, explicit residual gap
+  surfaced by the 05-29 pass: deriving `ν₃(2^A − 1) = 22` (hence the astronomical
+  `A ≥ 2·3^21`) from the cylinder condition `n ≡ aS202 (mod 3^24)`. Isolated as the
+  named `Prop` `CylinderForcesVal22` and left **unproven** (stated as a hypothesis,
+  *not* an axiom). The obstruction is structural: `2^A` is a 3-adic unit, so the
+  cylinder's control of `n mod 3^24` does not directly constrain `ν₃(2^A − 1)`.
 
 > If anyone summarizes this work as "proved Collatz", "proved the S202
 > alternative", or "proved `defect ≥ m`", that is an **overclaim**. The defensible
 > statement is: *"machine-checked, non-circular reduction of the S202 slope-barrier
 > sub-route to a κ-weighted closure certificate, discharged unconditionally for
-> `m = 1`, with the uniform-`m` analytic route now unblocked at the ρ₊ transition
-> layer."*
+> `m = 1`; the ρ₊ transition table is now complete on all four edge types and the
+> lifting-the-exponent slackness `ν₃(2^A−1)=22 ⟹ A ≥ 2·3^21` is proven
+> unconditionally — but its astronomical conclusion is gated behind the still-open
+> word→valuation bridge `CylinderForcesVal22`, and the uniform-`m` barrier, the
+> subcritical-access branch, and the external Bandújar reduction all remain open."*
 
 ---
 
-## 5. What changed today (verified)
+## 5. Change log (verified passes)
+
+### 5.1 Closing pass — 2026-05-29 (verified, independently axiom-audited)
+
+Three new files, all namespace `CollatzLean4.Admissible`, all **0 sorry**, all
+built against cached Mathlib (~15s replays):
+
+- `CollatzLean4/CollatzLean4/OneEdgeRhoLaw.lean` (imports `Nu3UnitInvariance`)
+- `CollatzLean4/CollatzLean4/LTEBound.lean` (imports `Potential`,
+  `Mathlib.NumberTheory.Multiplicity`, `…Padics.PadicVal.Basic`)
+- `CollatzLean4/CollatzLean4/BarrierSlack.lean` (imports `LTEBound`, `S202Cylinders`)
+
+Build commands: `lake build CollatzLean4.OneEdgeRhoLaw`,
+`… CollatzLean4.LTEBound`, `… CollatzLean4.BarrierSlack` (run from `CollatzLean4/`).
+
+| Lemma | Statement | Role |
+|---|---|---|
+| `oneEdge_threeUnit_inv` | `r≥1 → invMod2Pow τ (3^r) % 3 ≠ 0` | The inverse is a 3-unit (hypothesis for `nu3_unit_mul`) |
+| `oneEdge_discreteLog` | `InvEdgeOne … → invMod2Pow τ M · v.c ≡ v'.c (mod M)` | Discrete-log inversion (repackaged from `outgoingEdges_complete_one`) |
+| **`oneEdge_rhoPlus_law`** | `ρ₊(v',r) = ν₃((v.c + (3^r − 2^τ%3^r))%3^r)` | **Law (1)** — completes the ρ₊ edge calculus (all 4 types) |
+| `padicValNat_four_pow_sub_one` | `t≠0 → ν₃(4^t−1)=1+ν₃(t)` | LTE base-4 (since `3∣4−1`) |
+| **`padicValNat_two_pow_sub_one`** | `ν₃(2^S−1)= Even S ? 1+ν₃(S) : 0` | **Correct LTE closed form** (naive `ν₃(S)` was WRONG) |
+| `nu3_eq_padicValNat_of_lt` | `padicValNat 3 n < c → nu3 n c = padicValNat 3 n` | Capped↔uncapped bridge (opens Mathlib LTE for `nu3`) |
+| `dvd_of_valuation_two_pow_sub_one` | `ν₃(2^A−1)=v≥1 → 2·3^(v−1) ∣ A` | Part-A core (divisibility form) |
+| **`slackness_at_22`** | `ν₃(2^A−1)=22 → A ≥ 2·3^21` | **Part A**: unconditional astronomical slack (`= 20 920 706 406`) |
+| `CylinderForcesVal22` | `def : Prop` (cylinder ⟹ `ν₃(2^A−1)=22`) | **The residual gap** — named hypothesis, *not* an axiom |
+| `cylinder_forces_astronomical_A` | `bridge → … → A ≥ 2·3^21` | Conditional corollary (proven *given* the bridge) |
+
+**Axiom footprint (independently re-checked via `#print axioms`).** All headline
+results — the one-edge law, the LTE closed form + bridge, Part-A slackness, and the
+conditional bridge corollaries — depend on **only** `{propext, Classical.choice,
+Quot.sound}`. *Caveat:* the two auxiliary "sanity anchors"
+`padicValNat_aS202_sub_one` and `nu3_aS202_sub_one` additionally carry
+`aS202_decomp._native.native_decide.ax_1_1` — the compiled-kernel-evaluation trust
+axiom inherited transitively from the **pre-existing** `aS202_decomp`
+(`S202Cylinders.lean:116`, `native_decide`). This was **not** introduced by this
+pass and does not touch any headline lemma.
+
+**Net effect on the ladder.** Level 4 is now complete on **all four** edge types
+(law (1) joins the zero-edge table); a new **Level 4-LTE** rung is proven
+unconditionally; and a new **Level 2-bridge** rung is *explicitly isolated and
+left open* (`CylinderForcesVal22`). It does **not** change Levels 2″/1a/1b/0 — the
+uniform-`m` barrier, the subcritical branch, and the external reduction remain open
+exactly as before. The frontier has sharpened from "build the LTE engine" (done)
+to "discharge the word→valuation bridge" (the genuine 3-adic obstruction).
+
+### 5.2 Prior pass — ρ₊ zero-edge table + ν₃ unit/residue lemmas (verified)
 
 New file: `CollatzLean4/CollatzLean4/Nu3UnitInvariance.lean` (namespace
 `CollatzLean4.Admissible`; imports `S214Core`, `RhoTransitionLaws`, `InverseGraph`).
@@ -256,20 +381,14 @@ Independently re-audited: `#print axioms` on all four theorems stays within
 | `mod9_of_tau_eq_two` | `tau n = 2 → n%9 ∈ {1,4}` | Helper for the climb's modular bookkeeping |
 | `zeroEdge_tau2_rhoPlus_climb` | τ=2 zero-edge: `ρ₊(v',r+1) = ρ₊(v,r)+1` | **Law (2)**: completes `{τ=1 reset, τ=2 climb, τ=3 reset}` |
 
-**Net effect on the ladder.** Level 4 is now complete on the zero-edge side, and
-the two lemmas that *every* analytic-route lemma was blocked on (unit invariance +
-residue congruence) now exist. This converts the one-edge discrete-log law
-(§3.4, law 1) from "blocked" to "formalizable now". It does **not** change Levels
-2″/1a/1b/0 — the uniform-`m` barrier, the subcritical branch, and the external
-reduction remain open exactly as before.
-
 ---
 
-### Document summary (6 lines)
+### Document summary (7 lines)
 
 1. This is the κ-precise **slope-barrier sub-route**, explicitly *not* a Collatz proof.
 2. Ladder Levels 4→2′ are machine-checked; the κ-cert ⟹ `defect ≥ m` reduction is PROVEN and non-circular, but discharged unconditionally only for `m = 1`.
-3. Levels 2″/1a (uniform-in-`m`), 1b (subcritical-access branch), 0 (Bandujar reduction) remain OPEN/EXTERNAL.
-4. Today added `nu3_unit_mul` + `zeroEdge_tau2_rhoPlus_climb` (and `nu3_congr_mod_pow`), completing the zero-edge ρ₊ table and correcting the false `nu3_mod_pow` plan item.
-5. The formalizable DAG (§3) now has its two blockers removed, opening the one-edge discrete-log law and the Mathlib-LTE bridge.
-6. Single most valuable next formal step: **`oneEdge_rhoPlus_law` (law 1, §3.4)** — now unblocked, it completes the ρ₊ edge calculus for all four edge types and is the prerequisite for any uniform-`m` analytic potential (the real frontier).
+3. The **2026-05-29 closing pass** newly proved (axiom-clean): `oneEdge_rhoPlus_law` (law 1 — ρ₊ edge calculus now complete on all 4 edge types), the **correct** LTE closed form `padicValNat_two_pow_sub_one` + bridge `nu3_eq_padicValNat_of_lt`, and Part-A slackness `slackness_at_22` (`ν₃(2^A−1)=22 ⟹ A ≥ 2·3^21`, unconditional).
+4. That pass also **isolated a new explicit gap** — the word→valuation bridge `CylinderForcesVal22` (Level 2-bridge / G3), stated as a hypothesis and *not* an axiom; Part A's astronomical conclusion is real but vacuous until this bridge is supplied.
+5. Axiom audit: all headline new lemmas use only `{propext, Classical.choice, Quot.sound}`; only the two auxiliary `aS202`-sanity anchors inherit the pre-existing `native_decide` axiom (not introduced here, not on any headline path).
+6. Levels 2-bridge/2″/1a (uniform-in-`m`), 1b (subcritical-access branch), 0 (Bandújar reduction) remain OPEN/EXTERNAL — unchanged.
+7. Single most valuable next formal step: **discharge `CylinderForcesVal22`** (the cylinder ⟹ `ν₃(2^A−1)=22` bridge), the one piece that turns the proven Part-A slackness into a live lower bound on `A`; recommend a Python probe first, since the structural obstruction (`2^A` is a 3-adic unit) may mean the implication needs reformulation before any Lean attempt.

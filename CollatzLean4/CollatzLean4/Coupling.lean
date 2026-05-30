@@ -23,6 +23,7 @@ by characterizing the quadratic-residue subgroup via the (proven) discrete log.
 -/
 
 import CollatzLean4.DlogReachable
+import CollatzLean4.CycleEquation
 
 namespace CollatzLean4.Admissible
 
@@ -58,5 +59,28 @@ theorem isSquare_iff_mod_three (k : ℕ) (hk : 1 ≤ k) {c : ℕ} (hco : Nat.Cop
     exact ⟨fun h1 => absurd h1 (by decide), fun h1 => by omega⟩
   · rw [if_neg h]
     exact ⟨fun _ => by omega, fun _ => rfl⟩
+
+/-- **THE FIRST 2↔3 COUPLING LINK (verified).** The 3-adic SIGN of the Syracuse successor equals
+the parity of the 2-adic VALUATION: `Syr n ≡ 1 mod 3` if `ν₂(3n+1)` is even, `≡ 2 mod 3` if odd.
+A 2-adic quantity (`ν₂`) is thereby locked to a 3-adic quantity (the sign `[Syr n ≡ 2 mod 3]`) —
+the project's first direct bridge between the two filtrations. (Proof: `2^{ν₂}·Syr n = 3n+1 ≡ 1
+mod 3` and `2^{ν₂} ≡ (−1)^{ν₂} mod 3`.) -/
+theorem syr_succ_mod_three (n : ℕ) :
+    (Syr n) % 3 = if (padicValNat 2 (3 * n + 1)) % 2 = 0 then 1 else 2 := by
+  have hstep := Syr_step n
+  have h1 : (2 ^ (padicValNat 2 (3 * n + 1)) * Syr n) % 3 = 1 := by rw [hstep]; omega
+  rw [Nat.mul_mod, two_pow_mod_three] at h1
+  by_cases hν : (padicValNat 2 (3 * n + 1)) % 2 = 0
+  · rw [if_pos hν] at h1 ⊢; omega
+  · rw [if_neg hν] at h1 ⊢; omega
+
+/-- The same coupling, as the parity identity `[Syr n ≡ 2 mod 3] = ν₂(3n+1) mod 2`. -/
+theorem syr_succ_sign_eq_nu2_parity (n : ℕ) :
+    (if (Syr n) % 3 = 2 then 1 else 0) = (padicValNat 2 (3 * n + 1)) % 2 := by
+  rw [syr_succ_mod_three]
+  by_cases hν : (padicValNat 2 (3 * n + 1)) % 2 = 0
+  · simp [hν]
+  · have h1 : (padicValNat 2 (3 * n + 1)) % 2 = 1 := by omega
+    simp [h1]
 
 end CollatzLean4.Admissible

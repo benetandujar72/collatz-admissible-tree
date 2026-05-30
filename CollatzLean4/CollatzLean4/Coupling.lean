@@ -149,4 +149,23 @@ theorem syr_iterate_mod (a0 m : ℕ) :
   exact syracuse_identity (fun i => (Syr^[i]) a0)
     (fun i => padicValNat 2 (3 * (Syr^[i]) a0 + 1)) hstep m
 
+/-! ### Support: the Syracuse iterates land in the units mod 3 (Tao's support, easy half) -/
+
+/-- The Syracuse successor is always coprime to 3 (`Syr n ≡ 1 or 2 mod 3`). -/
+theorem syr_succ_coprime_three (n : ℕ) : Nat.Coprime (Syr n) 3 := by
+  have h3 : ¬ (3 : ℕ) ∣ Syr n := by
+    rw [Nat.dvd_iff_mod_eq_zero, syr_succ_mod_three]; split <;> omega
+  exact ((Nat.prime_three.coprime_iff_not_dvd).mpr h3).symm
+
+/-- **The Syracuse orbit lands in the units mod 3^k.** For `m ≥ 1`, `Syr^[m] a₀` is coprime to 3,
+hence a unit mod `3^k` for every k. This is the EASY half of Tao's support statement (the Syracuse
+random variable "always avoids multiples of 3"), here as an exact deterministic fact: the
+reachable residues lie inside `(ℤ/3^k)^×`. The HARD half (every unit IS reached) is the
+unconstrained-reachability frontier. -/
+theorem syr_iterate_coprime_three (a0 m : ℕ) (hm : 1 ≤ m) :
+    Nat.Coprime ((Syr^[m]) a0) 3 := by
+  obtain ⟨m', rfl⟩ := Nat.exists_eq_succ_of_ne_zero (by omega : m ≠ 0)
+  rw [Function.iterate_succ_apply']
+  exact syr_succ_coprime_three _
+
 end CollatzLean4.Admissible

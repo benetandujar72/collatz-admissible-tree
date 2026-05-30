@@ -115,4 +115,38 @@ theorem syr_dlog_eq (k : ℕ) (hk : 1 ≤ k) (n : ℕ) :
     _ ≡ padicValNat 2 (3 * n + 1) + dlog k ((Syr n : ℕ) : ZMod (3 ^ k)) [MOD 2 * 3 ^ (k - 1)] :=
         Nat.ModEq.add_right _ (dlog_two_pow k hk _)
 
+/-! ### The iterated cocycle = Tao's Syracuse identity (EXACT) -/
+
+/-- **The exact Syracuse identity.** Iterating the cocycle (telescoping the affine identity
+`cycle_telescope` and reducing mod `3^m`, where the `3^m·a₀` term vanishes):
+`2^{A_m} · a_m ≡ C_m (mod 3^m)`, with `A_m = Σ kᵢ` (the total 2-adic valuation) and
+`C_m = Σ_{i<m} 3^{m-1-i} 2^{A_i}`. Equivalently `a_m ≡ Σ_{i<m} 3^{m-1-i} 2^{-(k_{i+1}+⋯+k_m)}
+(mod 3^m)` — exactly **Tao's Syracuse random variable `Syrac(ℤ/3^m)`**, but as a DETERMINISTIC
+identity (the `kᵢ` are the actual valuations, not random). This places the project's verified
+framework directly at Tao's (2019) object. -/
+theorem syracuse_identity (a k : ℕ → ℕ)
+    (hstep : ∀ i, 2 ^ (k i) * a (i + 1) = 3 * a i + 1) (m : ℕ) :
+    2 ^ (partialA k m) * a m ≡ cycleC k m [MOD 3 ^ m] := by
+  calc 2 ^ (partialA k m) * a m
+      = 3 ^ m * a 0 + cycleC k m := cycle_telescope a k hstep m
+    _ ≡ 0 + cycleC k m [MOD 3 ^ m] :=
+        Nat.ModEq.add_right _ (Nat.modEq_zero_iff_dvd.mpr (dvd_mul_right _ _))
+    _ = cycleC k m := zero_add _
+
+/-- **The exact Syracuse identity for the Syracuse map.** For the actual iterates `Syr^[m] a₀`
+with the true valuations `kᵢ = ν₂(3·Syr^[i](a₀)+1)`:
+`2^{A_m} · Syr^[m] a₀ ≡ C_m (mod 3^m)`. The residue of the m-th Syracuse iterate mod `3^m` is
+exactly determined by the 2-adic valuation sequence — the coupling, iterated, IS Tao's Syracuse
+distribution made an exact deterministic identity. -/
+theorem syr_iterate_mod (a0 m : ℕ) :
+    2 ^ (partialA (fun i => padicValNat 2 (3 * (Syr^[i]) a0 + 1)) m) * (Syr^[m]) a0
+      ≡ cycleC (fun i => padicValNat 2 (3 * (Syr^[i]) a0 + 1)) m [MOD 3 ^ m] := by
+  have hstep : ∀ i,
+      2 ^ (padicValNat 2 (3 * (Syr^[i]) a0 + 1)) * (Syr^[i + 1]) a0 = 3 * (Syr^[i]) a0 + 1 := by
+    intro i
+    rw [Function.iterate_succ_apply']
+    exact Syr_step ((Syr^[i]) a0)
+  exact syracuse_identity (fun i => (Syr^[i]) a0)
+    (fun i => padicValNat 2 (3 * (Syr^[i]) a0 + 1)) hstep m
+
 end CollatzLean4.Admissible

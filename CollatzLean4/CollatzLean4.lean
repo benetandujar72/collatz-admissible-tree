@@ -41,3 +41,4 @@ import CollatzLean4.BarrierSlack
 import CollatzLean4.BridgeTruth
 import CollatzLean4.UniformBarrier
 import CollatzLean4.KappaSplitWork
+import CollatzLean4.KappaSplitReduction

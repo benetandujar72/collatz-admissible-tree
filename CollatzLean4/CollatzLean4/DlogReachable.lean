@@ -316,6 +316,37 @@ theorem dlog_pow (k : ℕ) (hk : 1 ≤ k) {a : ZMod (3 ^ k)} (ha : IsUnit a) (n 
     rw [mul_comm, pow_mul, two_pow_dlog k hk ha]
   exact (two_pow_eq_iff_modEq k hk).mp (h1.trans h2.symm)
 
+/-- **The affine jump is the dlog of the ratio (3c+1)/c.** For `c` a unit,
+`dlog(3c+1) ≡ dlog(c) + dlog((3c+1)·c⁻¹) (mod 2·3^j)` — so `affineDlogJump = dlog(3c+1) − dlog(c)`
+reduces mod the order to the discrete log of the single explicit affine RATIO `(3c+1)/c = 3 + 1/c`.
+The open core is thereby the dlog of ONE unit; the coupling is `log₃(3 + c⁻¹)` (sign ⊕ analytic
+series). Direct corollary of the `dlog` homomorphism. -/
+theorem dlog_three_c_add_one_eq_ratio (c j : ℕ) (hco : Nat.Coprime c 3) :
+    dlog (j + 1) ((3 * c + 1 : ℕ) : ZMod (3 ^ (j + 1)))
+      ≡ dlog (j + 1) ((c : ℕ) : ZMod (3 ^ (j + 1)))
+        + dlog (j + 1) (((3 * c + 1 : ℕ) : ZMod (3 ^ (j + 1)))
+            * Ring.inverse ((c : ℕ) : ZMod (3 ^ (j + 1)))) [MOD 2 * 3 ^ j] := by
+  set k := j + 1 with hkdef
+  have hk : 1 ≤ k := by omega
+  have hc : IsUnit ((c : ZMod (3 ^ k))) :=
+    (ZMod.isUnit_iff_coprime c (3 ^ k)).mpr (hco.pow_right k)
+  have hco' : Nat.Coprime (3 * c + 1) 3 :=
+    ((Nat.prime_three.coprime_iff_not_dvd).mpr (by omega : ¬ (3 : ℕ) ∣ (3 * c + 1))).symm
+  have h3c : IsUnit (((3 * c + 1 : ℕ)) : ZMod (3 ^ k)) :=
+    (ZMod.isUnit_iff_coprime (3 * c + 1) (3 ^ k)).mpr (hco'.pow_right k)
+  have hrinv : IsUnit (Ring.inverse ((c : ZMod (3 ^ k)))) := by
+    apply IsUnit.of_mul_eq_one
+    exact Ring.inverse_mul_cancel _ hc
+  have hr : IsUnit (((3 * c + 1 : ℕ) : ZMod (3 ^ k)) * Ring.inverse ((c : ZMod (3 ^ k)))) :=
+    h3c.mul hrinv
+  have hcr : ((c : ZMod (3 ^ k)))
+      * (((3 * c + 1 : ℕ) : ZMod (3 ^ k)) * Ring.inverse ((c : ZMod (3 ^ k))))
+      = ((3 * c + 1 : ℕ) : ZMod (3 ^ k)) := by
+    rw [mul_comm (((3 * c + 1 : ℕ) : ZMod (3 ^ k))) _, ← mul_assoc,
+        Ring.mul_inverse_cancel _ hc, one_mul]
+  have hmul := dlog_mul k hk hc hr
+  rwa [hcr] at hmul
+
 /-! ### The open arithmetic core: the affine `x ↦ 3x+1` in dlog coordinates -/
 
 /-- **The affine dlog jump.** `affineDlogJump c j` is the change in discrete log at level `j+1`

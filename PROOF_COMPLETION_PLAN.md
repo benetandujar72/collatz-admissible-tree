@@ -99,6 +99,37 @@ depth ≈ 3²¹ and are computationally invisible (real-graph probes top out at 
 single-edge ν₃-jump of 10 < 22), so no counterexample is exhibitable and no proof is
 reachable by enumeration.
 
+A **2026-05-30 S239 new-vias + Wall-B pass** (verified, 0 sorry, axiom-audited) leaves
+the κ-route at its irreducible residual and opens *two new verified fronts*, then
+reclassifies the slope-barrier obstruction. (1) **Cycle-exclusion line** (`CycleEquation.lean`):
+the forward Syracuse map `Syr n=(3n+1)/2^{ν₂(3n+1)}`, the telescoped **cycle equation**
+`2^A·a = 3^m·a + C` with explicit `C` (`cycle_equation`, grounded in `Syr` via
+`syr_cycle_equation`), the **strict corridor** `3^m < 2^A`, and the first UNCONDITIONAL
+cycle-exclusion results `syr_no_nontrivial_fixedpoint` (no period-1) — the rigid half of
+Collatz, Baker-free up to bounded period (full result needs effective linear-forms-in-logs,
+absent from Mathlib; the realistic route is Rhin–Viola effective irrationality measure of
+log₂3, NOT full Baker — Tier-2, with a ζ(3)-in-Lean precedent). It also REFUTES two tempting
+"easy bricks" with proof (the naive accumulator rearrangement `n·(2^A−3^q)=B` holds iff n=1;
+`tau ≠ ν₂(3n+1)`). (2) **Closed-walk characterization** (`ClosedWalk.lean`): the inverse graph
+is j-stratified (`WPath_j_le`), so a closed walk is a one-edge loop forcing `2^W ≡ 1 mod 3^{R+j}`
+(`closed_oneWalk_two_pow_mod`) — the order-of-2 / discrete-log structure, NOT a forward cycle;
+reusing the LTE law, `W ≥ 2·3^{R+j−1}` (astronomical). This REFUTES the naive
+closed-walk↔forward-cycle bridge. (3) **Discrete-log foundation + Wall-B reclassification**
+(`DiscreteLog.lean`, `DlogReachable.lean`): proved `orderOf (2 : ZMod 3^k) = 2·3^{k-1}`
+(2 is a **primitive root** mod 3^k) DIRECTLY from the project's LTE law — a Tier-1,
+Mathlib-mergeable contribution. The **pivot**: via `ν₃(c−2^τ) ≥ j ⟺ dlog(c) ≡ τ (mod 2·3^{j-1})`,
+the slope-barrier residual reduces to a **reachability** question on the discrete-log residues
+of κ-paths (`ReachableDlog m`), NOT equidistribution/discrepancy — reclassifying Wall B from
+*possibly-open Tier-3* to *Tier-2 structural*. The reachable set is made a concrete τ-orbit
+with a fully-proven one-step generation rule: `oneEdge_dlog_shift` (one-edge translates dlog by
+τ), `zeroEdge_dlog_shift` (zero-edge: `dlog(3c+1) ≡ τ + dlog(c')`), `dlog_reduce` (cross-level
+tower compatibility), plus reachability infrastructure (`InvReachable_induction`,
+`invReachable_InX`). The **irreducible open core is now a named Lean object**: `affineDlogJump`
+— the dlog change induced by `x↦3x+1`, which has NO closed form (it couples the additive `+1`
+with the multiplicative dlog) and IS the 2-adic⊗3-adic coupling localized to one step. All
+verified `{propext, choice, Quot.sound}` (cycle/closed-walk lemmas `{propext, Classical.choice,
+Quot.sound}`); `invReachable_InX` inherits the pre-existing `S206_a_mod9` aS202 anchor only.
+
 **This is NOT a proof of Collatz, nor even of the full S202 alternative.** It is one
 half (the slope-barrier half) of one branch of the S202 alternative, and it is
 currently *uniform only for the toy index `m = 1`*. Reaching Collatz additionally

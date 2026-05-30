@@ -46,6 +46,77 @@ def InvReachable (m : ℕ) (v : InvVertex) : Prop :=
 theorem invReachable_start (m : ℕ) : InvReachable m (InvStart m) :=
   ⟨0, [], rfl, rfl⟩
 
+/-- **Extend a weighted path by one edge at the end (snoc).** Generic over any graph. -/
+theorem WPath_snoc {V : Type} {edge : V → V → Int → Prop}
+    {t t' : V} {ω : Int} (he : edge t t' ω) :
+    ∀ {s : V} {w : Int} {vs : List V},
+      WPath edge s t w vs → WPath edge s t' (w + ω) (vs ++ [t']) := by
+  intro s w vs h
+  induction vs generalizing s w with
+  | nil =>
+      simp only [WPath] at h
+      obtain ⟨rfl, rfl⟩ := h
+      refine ⟨ω, 0, he, ⟨rfl, rfl⟩, by ring⟩
+  | cons v vs ih =>
+      simp only [WPath] at h
+      obtain ⟨ω₁, ω₂, hsv, hrest, rfl⟩ := h
+      exact ⟨ω₁, ω₂ + ω, hsv, ih hrest, by ring⟩
+
+/-- **Reachability is closed under admissible edges.** If `v` is reachable from
+`InvStart m` and there is an inverse edge `v → v'`, then `v'` is reachable. This is the
+inductive backbone for reasoning about the reachable set. -/
+theorem invReachable_step (m : ℕ) {v v' : InvVertex} {ω : Int}
+    (hv : InvReachable m v) (he : InvEdge (22 * m + 2) v v' ω) :
+    InvReachable m v' := by
+  obtain ⟨w, vs, hpath⟩ := hv
+  exact ⟨w + ω, vs ++ [v'], WPath_snoc he hpath⟩
+
+/-- **Induction principle for reachability.** To prove a property `P` of every vertex
+reachable from `InvStart m`, it suffices to show `P (InvStart m)` and that `P` is preserved
+along every admissible edge. The fundamental tool for reasoning about the reachable set. -/
+theorem InvReachable_induction (m : ℕ) {P : InvVertex → Prop}
+    (hstart : P (InvStart m))
+    (hstep : ∀ v v' ω, P v → InvEdge (22 * m + 2) v v' ω → P v')
+    {v : InvVertex} (hv : InvReachable m v) : P v := by
+  obtain ⟨w, vs, hpath⟩ := hv
+  have H : ∀ (vs : List InvVertex) (s : InvVertex) (w : Int),
+      P s → WPath (InvEdge (22 * m + 2)) s v w vs → P v := by
+    intro vs
+    induction vs with
+    | nil =>
+        intro s w hs hpath
+        simp only [WPath] at hpath
+        obtain ⟨rfl, _⟩ := hpath
+        exact hs
+    | cons v₁ rest ih =>
+        intro s w hs hpath
+        simp only [WPath] at hpath
+        obtain ⟨ω₁, ω₂, hedge, hrest, _⟩ := hpath
+        exact ih v₁ ω₂ (hstep s v₁ ω₁ hs hedge) hrest
+  exact H vs (InvStart m) w hstart hpath
+
+/-- The start vertex's c-coordinate is admissible (`aS202 ≡ 1 mod 9`). -/
+theorem invStart_InX (m : ℕ) : InX (InvStart m).c := by
+  show InX (aS202 % 3 ^ (22 * m + 2))
+  have h9 : (9 : ℕ) ∣ 3 ^ (22 * m + 2) := by
+    have h : (3 : ℕ) ^ 2 ∣ 3 ^ (22 * m + 2) := pow_dvd_pow 3 (by omega)
+    simpa using h
+  have hmod : (aS202 % 3 ^ (22 * m + 2)) % 9 = aS202 % 9 := Nat.mod_mod_of_dvd aS202 h9
+  unfold InX
+  rw [hmod, S206_a_mod9]
+  decide
+
+/-- **Every reachable vertex has an admissible c-coordinate.** Proven by reachability
+induction: the start is admissible (`invStart_InX`) and every inverse edge requires its
+target admissible. Hence the c-residue is always a unit mod 3^k, so `dlog` is defined on
+all of `ReachableDlog` — the reachable-residue object is well-formed, not vacuous. -/
+theorem invReachable_InX (m : ℕ) {v : InvVertex} (hv : InvReachable m v) : InX v.c := by
+  refine InvReachable_induction m (P := fun v => InX v.c) (invStart_InX m) ?_ hv
+  intro a b ω _ hedge
+  rcases hedge with h | h
+  · exact h.2.1
+  · exact h.2.1
+
 /-! ### The reachable discrete-log residue set (Wall-B Tier-2 carrier) -/
 
 /-- **The reachable discrete-log residue set.** The discrete logs of the c-coordinates of

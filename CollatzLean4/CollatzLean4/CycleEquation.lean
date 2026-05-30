@@ -214,12 +214,68 @@ theorem syr_no_nontrivial_fixedpoint (a : ℕ) (_ha : 0 < a) (h : Syr a = a) :
   have h1 : a ∣ 1 := (Nat.dvd_add_right hdvd3).mp hdvd
   exact Nat.dvd_one.mp h1
 
+/-- **No nontrivial 2-cycle (period m = 2, UNCONDITIONAL, Baker-free).** Any point
+of period dividing 2 under `Syr` is the fixed point `1`. Proof: multiplying the
+two step identities `2^{k₀}·b = 3a+1`, `2^{k₁}·a = 3b+1` (with `b = Syr a`) gives
+`ab·(2^{k₀+k₁} − 9) = 3(a+b)+1`. Positivity forces `2^{k₀+k₁} > 9`, hence `≥ 16`,
+so `7ab ≤ 3a+3b+1`, which for `a, b ≥ 1` forces `a = b = 1`. Settles period 2
+without transcendence. -/
+theorem syr_no_nontrivial_2cycle (a : ℕ) (ha : 0 < a) (h : (Syr^[2]) a = a) :
+    a = 1 := by
+  set b := Syr a with hbdef
+  have hi : 2 ^ (padicValNat 2 (3 * a + 1)) * b = 3 * a + 1 := Syr_step a
+  have ha_eq : Syr b = a := by
+    have h2 := h
+    rwa [Function.iterate_succ_apply', Function.iterate_one] at h2
+  have hii : 2 ^ (padicValNat 2 (3 * b + 1)) * a = 3 * b + 1 := by
+    have hs := Syr_step b; rw [ha_eq] at hs; exact hs
+  have hb1 : 1 ≤ b := by
+    rcases Nat.eq_zero_or_pos b with h0 | h0
+    · exfalso; rw [h0, Nat.mul_zero] at hi; omega
+    · exact h0
+  have hmul :
+      (2 ^ (padicValNat 2 (3 * a + 1)) * b) * (2 ^ (padicValNat 2 (3 * b + 1)) * a)
+        = (3 * a + 1) * (3 * b + 1) := by rw [hi, hii]
+  have e :
+      (2 ^ (padicValNat 2 (3 * a + 1)) * b) * (2 ^ (padicValNat 2 (3 * b + 1)) * a)
+        = 2 ^ (padicValNat 2 (3 * a + 1) + padicValNat 2 (3 * b + 1)) * (a * b) := by
+    rw [pow_add]; ring
+  have hstar :
+      2 ^ (padicValNat 2 (3 * a + 1) + padicValNat 2 (3 * b + 1)) * (a * b)
+        = 9 * (a * b) + 3 * a + 3 * b + 1 := by
+    rw [← e, hmul]; ring
+  have hAgt : 9 < 2 ^ (padicValNat 2 (3 * a + 1) + padicValNat 2 (3 * b + 1)) := by
+    have h1 : 9 * (a * b)
+        < 2 ^ (padicValNat 2 (3 * a + 1) + padicValNat 2 (3 * b + 1)) * (a * b) := by
+      omega
+    exact lt_of_mul_lt_mul_right h1 (Nat.zero_le _)
+  have hA4 : 4 ≤ padicValNat 2 (3 * a + 1) + padicValNat 2 (3 * b + 1) := by
+    by_contra hc
+    rw [not_le] at hc
+    have hle : 2 ^ (padicValNat 2 (3 * a + 1) + padicValNat 2 (3 * b + 1)) ≤ 2 ^ 3 :=
+      Nat.pow_le_pow_right (by norm_num) (by omega)
+    have h83 : (2 : ℕ) ^ 3 = 8 := by norm_num
+    omega
+  have h16 : 16 ≤ 2 ^ (padicValNat 2 (3 * a + 1) + padicValNat 2 (3 * b + 1)) := by
+    have h4 : (2 : ℕ) ^ 4
+        ≤ 2 ^ (padicValNat 2 (3 * a + 1) + padicValNat 2 (3 * b + 1)) :=
+      Nat.pow_le_pow_right (by norm_num) hA4
+    have h44 : (2 : ℕ) ^ 4 = 16 := by norm_num
+    omega
+  have hbig : 16 * (a * b)
+      ≤ 2 ^ (padicValNat 2 (3 * a + 1) + padicValNat 2 (3 * b + 1)) * (a * b) :=
+    Nat.mul_le_mul h16 (le_refl (a * b))
+  have h7 : 7 * (a * b) ≤ 3 * a + 3 * b + 1 := by omega
+  have hab_a : a ≤ a * b := le_mul_of_one_le_right (Nat.zero_le a) hb1
+  have hab_b : b ≤ a * b := le_mul_of_one_le_left (Nat.zero_le b) ha
+  omega
+
 /-- **The cycle conjecture** (the "no nontrivial cycles" half of Collatz): the
-only positive periodic point of `Syr` is `a = 1`. The period-1 case is PROVEN
-unconditionally (`syr_no_nontrivial_fixedpoint`). The general statement is
-UNPROVEN — the unconditional proof for unbounded period needs an effective lower
-bound on `|2^A − 3^m|` (linear forms in logarithms, Baker/Matveev), absent from
-Mathlib. Stated, never assumed. -/
+only positive periodic point of `Syr` is `a = 1`. The period-1 and period-2 cases
+are PROVEN unconditionally (`syr_no_nontrivial_fixedpoint`,
+`syr_no_nontrivial_2cycle`). The general statement is UNPROVEN — the unconditional
+proof for unbounded period needs an effective lower bound on `|2^A − 3^m|` (linear
+forms in logarithms, Baker/Matveev), absent from Mathlib. Stated, never assumed. -/
 def NoNontrivialSyrCycle : Prop :=
   ∀ (a0 m : ℕ), 0 < a0 → 0 < m → (Syr^[m]) a0 = a0 → a0 = 1
 

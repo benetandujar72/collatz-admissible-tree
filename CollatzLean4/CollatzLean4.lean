@@ -39,3 +39,4 @@ import CollatzLean4.OneEdgeRhoLaw
 import CollatzLean4.LTEBound
 import CollatzLean4.BarrierSlack
 import CollatzLean4.BridgeTruth
+import CollatzLean4.UniformBarrier

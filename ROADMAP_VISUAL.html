@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Programa Andújar — Camino formal hacia Collatz</title>
+<style>
+  :root{
+    --bg:#0b1020; --panel:#121a2f; --panel2:#0f1729; --line:#26324d;
+    --txt:#e8edf7; --dim:#9aa7c2; --faint:#6b7896;
+    --proven:#34d399; --proven-bg:#0e3a2e;
+    --front:#fbbf24; --front-bg:#3a2e0c;
+    --open:#60a5fa; --open-bg:#13294d;
+    --ext:#fb7185; --ext-bg:#3a1620;
+    --dead:#8b93a7; --dead-bg:#1b2030;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#070b16,#0b1020 40%,#0b1224);
+    color:var(--txt);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif;
+    padding:34px 18px 60px}
+  .wrap{max-width:1180px;margin:0 auto}
+  h1{font-size:26px;margin:0 0 4px;letter-spacing:.2px}
+  .sub{color:var(--dim);margin:0 0 6px}
+  .warn{display:inline-block;margin:10px 0 26px;padding:7px 13px;border-radius:8px;
+    background:var(--ext-bg);border:1px solid #5e2230;color:#ffd7de;font-weight:600;font-size:13.5px}
+  .grid{display:grid;grid-template-columns:1fr 340px;gap:26px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .col-h{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin:0 0 12px}
+
+  /* ladder */
+  .ladder{display:flex;flex-direction:column;gap:0}
+  .rung{position:relative;border:1px solid var(--line);border-left-width:5px;border-radius:12px;
+    background:var(--panel);padding:14px 16px 15px;margin:0 0 4px}
+  .rung .lvl{font-size:11px;letter-spacing:1px;color:var(--faint);text-transform:uppercase}
+  .rung h3{margin:2px 0 7px;font-size:17px}
+  .rung p{margin:0 0 8px;color:var(--dim);font-size:13.5px}
+  .badge{float:right;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.4px}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+  .tag{font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:#0c1426;border:1px solid #23314e;
+    color:#bcd0ff;padding:2px 7px;border-radius:6px}
+  .arrow{height:26px;display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:12px;gap:8px}
+  .arrow::before,.arrow::after{content:"";height:1px;width:34px;background:var(--line)}
+
+  .proven{border-left-color:var(--proven)} .proven .badge{background:var(--proven-bg);color:var(--proven)}
+  .front{border-left-color:var(--front);box-shadow:0 0 0 1px #4a3a10,0 8px 30px -12px #fbbf2455}
+    .front .badge{background:var(--front-bg);color:var(--front)}
+  .open{border-left-color:var(--open)} .open .badge{background:var(--open-bg);color:var(--open)}
+  .ext{border-left-color:var(--ext)} .ext .badge{background:var(--ext-bg);color:var(--ext)}
+
+  .here{position:absolute;right:-9px;top:50%;transform:translateY(-50%);
+    background:var(--front);color:#1a1405;font-weight:800;font-size:10.5px;letter-spacing:.5px;
+    padding:4px 9px;border-radius:6px;box-shadow:0 4px 14px -3px #fbbf24aa}
+  @media(max-width:900px){.here{position:static;display:inline-block;transform:none;margin-top:8px}}
+
+  .summit{background:radial-gradient(120% 120% at 50% 0,#1a2444,#0e1730);border-style:dashed}
+  .summit h3{font-size:20px}
+
+  /* side: journey */
+  .panel{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:16px 16px 6px}
+  .step{position:relative;padding:0 0 16px 26px;border-left:2px solid var(--line);margin-left:6px}
+  .step:last-child{border-left-color:transparent}
+  .dot{position:absolute;left:-8px;top:2px;width:14px;height:14px;border-radius:50%;border:2px solid var(--bg)}
+  .d-ok{background:var(--proven)} .d-dead{background:var(--dead)} .d-now{background:var(--front);
+    box-shadow:0 0 0 4px #fbbf2433}
+  .step h4{margin:0 0 3px;font-size:14px}
+  .step p{margin:0;color:var(--dim);font-size:12.7px}
+  .strike{color:var(--dead)} .strike h4{text-decoration:line-through;text-decoration-color:#fb718577}
+
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin:22px 2px 0;color:var(--dim);font-size:12.5px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+  .foot{margin-top:26px;color:var(--faint);font-size:12px;border-top:1px solid var(--line);padding-top:14px}
+  .mono{font-family:ui-monospace,Menlo,monospace}
+  .alt{margin-top:18px;background:var(--panel2);border:1px dashed #2c3a59;border-radius:12px;padding:13px 15px}
+  .alt h4{margin:0 0 5px;font-size:13.5px;color:#cdb4fe}
+  .alt p{margin:0;color:var(--dim);font-size:12.7px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Programa Andújar · Camino formal hacia Collatz</h1>
+  <p class="sub">Árbol inverso admisible · formalización en Lean 4 · estado a 2026-05-30</p>
+  <div class="warn">⚠ Esto NO es una demostración de Collatz. Es infraestructura verificada + una reducción no circular; los niveles superiores siguen abiertos o son matemática externa.</div>
+
+  <div class="grid">
+    <!-- LADDER -->
+    <div>
+      <p class="col-h">La escalera (cumbre = Collatz · base = lo demostrado)</p>
+      <div class="ladder">
+
+        <div class="rung ext summit">
+          <span class="badge">EXTERNO · ABIERTA 1937</span>
+          <div class="lvl">Nivel 0 · cumbre</div>
+          <h3>🏔️ Conjetura de Collatz</h3>
+          <p>∀ n natural, la iteración acelerada alcanza 1.</p>
+          <p style="color:var(--faint)">Necesita: alternativa S202 resuelta <b>+ la reducción Bandújar</b> (todo contraejemplo de Collatz fuerza una palabra admisible que viola una rama). La reducción es <b>externa, no formalizada</b>.</p>
+        </div>
+
+        <div class="arrow">necesita ⟶ resolver la alternativa S202 + reducción externa</div>
+
+        <div class="rung open">
+          <span class="badge">ABIERTO</span>
+          <div class="lvl">Nivel 1</div>
+          <h3>Alternativa S202</h3>
+          <p><span class="mono">SubcriticalAccessFamily ∨ SlopeBarrier</span> — bifurcación binaria.</p>
+          <div class="tags">
+            <span class="tag">Rama A · slope barrier → nivel 2</span>
+            <span class="tag" style="color:#ffb4c0;border-color:#5e2230">Rama B · acceso subcrítico (no formalizada)</span>
+          </div>
+        </div>
+
+        <div class="arrow">rama A ⟶ defect ≥ m para todo m</div>
+
+        <div class="rung front">
+          <span class="here">◀ AQUÍ ESTAMOS</span>
+          <span class="badge">FRENTE ABIERTO</span>
+          <div class="lvl">Nivel 2 · el frente actual</div>
+          <h3>defect = A − 2q ≥ m, <u>uniforme en m</u></h3>
+          <p>Toda palabra admisible en el cilindro m-ésimo tiene defecto ≥ m, <b>para todo m</b>. Probado <b>solo para m=1</b>, por instancia.</p>
+          <div class="tags">
+            <span class="tag" style="color:#86efac;border-color:#1f7a4d">✓ Cert_m1_Q1_kappa · Q3_kappa : S216BarrierForWords 1 Q 1</span>
+            <span class="tag">reduce a: potencial κ de slice uniforme · familia de κ-certs · inducción en m</span>
+            <span class="tag" style="color:var(--front);border-color:#4a3a10">⟳ atacándose ahora (workflow)</span>
+          </div>
+        </div>
+
+        <div class="arrow">se apoya en ↓ (cadena ya demostrada)</div>
+
+        <div class="rung proven">
+          <span class="badge">✓ PROVADO</span>
+          <div class="lvl">Nivel 2½ · la reducción no circular</div>
+          <h3>κ-certificado ⟹ barrera</h3>
+          <p>Un certificado κ (o un potencial válido en el slice <span class="mono">j ≤ Q</span>) ⟹ <span class="mono">S216BarrierForWords m Q m</span>.</p>
+          <div class="tags">
+            <span class="tag">S202_slope_barrier_from_kappa_cert</span>
+            <span class="tag">..._potential_bounded</span>
+            <span class="tag">InvPathCounts · conteos atados a las aristas (no circular)</span>
+          </div>
+        </div>
+
+        <div class="arrow">construido sobre ↓</div>
+
+        <div class="rung proven">
+          <span class="badge">✓ PROVADO · esta sesión</span>
+          <div class="lvl">Nivel 3 · cálculo 3-ádico</div>
+          <h3>Cálculo de ρ₊ COMPLETO + motor LTE</h3>
+          <p>Las 4 leyes de transición de <span class="mono">ρ₊ = ν₃(c−1)</span> y la maquinaria lifting-the-exponent, con puente a Mathlib.</p>
+          <div class="tags">
+            <span class="tag">oneEdge_rhoPlus_law (log-discreto)</span>
+            <span class="tag">zeroEdge_tau2_rhoPlus_climb (+1)</span>
+            <span class="tag">τ=1 / τ=3 reset</span>
+            <span class="tag">ν₃(2^S−1)=(Even S?1+ν₃(S):0)</span>
+            <span class="tag">nu3 ↔ padicValNat</span>
+            <span class="tag">nu3_unit_mul · nu3_congr_mod_pow</span>
+          </div>
+        </div>
+
+        <div class="arrow">construido sobre ↓</div>
+
+        <div class="rung proven">
+          <span class="badge">✓ PROVADO</span>
+          <div class="lvl">Nivel 4 · cimientos</div>
+          <h3>Infraestructura base (0 sorry)</h3>
+          <p>La maquinaria afín, modular y de grafo inverso del programa.</p>
+          <div class="tags">
+            <span class="tag">identidad afín · cilindros exactos · prefijos</span>
+            <span class="tag">tricotomía de aristas · descomposición de caminos</span>
+            <span class="tag">S212 forward (palabra→camino)</span>
+            <span class="tag">cierre BF S216 (cert→barrera)</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="legend">
+        <span><i class="sw" style="background:var(--proven)"></i> Demostrado en Lean (0 sorry)</span>
+        <span><i class="sw" style="background:var(--front)"></i> Frente abierto (aquí)</span>
+        <span><i class="sw" style="background:var(--open)"></i> Abierto (dentro del programa)</span>
+        <span><i class="sw" style="background:var(--ext)"></i> Externo / matemática nueva</span>
+      </div>
+    </div>
+
+    <!-- JOURNEY -->
+    <div>
+      <p class="col-h">El recorrido de esta sesión</p>
+      <div class="panel">
+
+        <div class="step">
+          <span class="dot d-ok"></span>
+          <h4>1 · Cadena κ no circular</h4>
+          <p>La conjetura "única" anterior era <b>circular</b> (equivalente a su propia conclusión). Se reformuló con <span class="mono">InvPathCounts</span>, atando los conteos a las aristas. ✓</p>
+        </div>
+
+        <div class="step">
+          <span class="dot d-ok"></span>
+          <h4>2 · Certificados κ para m=1</h4>
+          <p>Primeras barreras por la ruta κ: <span class="mono">S216BarrierForWords 1 Q 1</span> (Q=1,3), verificadas. ✓</p>
+        </div>
+
+        <div class="step">
+          <span class="dot d-ok"></span>
+          <h4>3 · Cálculo ρ₊ + motor LTE</h4>
+          <p>3 workflows multi-agente, verificados adversarialmente: las 4 leyes de ρ₊ y la cota LTE completas. ✓</p>
+        </div>
+
+        <div class="step strike">
+          <span class="dot d-dead"></span>
+          <h4>4 · Vía log-discreto / LTE</h4>
+          <p><b>REFUTADA (máquina-verificado).</b> El puente <span class="mono">cilindro ⟹ ν₃(2^A−1)=22</span> es falso: <span class="mono">2^A</span> es unidad 3-ádica; el cilindro controla <i>n</i>, no <span class="mono">2^A</span>. Contraejemplo: el propio testigo S202 (A=43 impar ⟹ ν₃=0). ✗</p>
+        </div>
+
+        <div class="step">
+          <span class="dot d-now"></span>
+          <h4>5 · AHORA: uniforme-en-m, vía aditiva</h4>
+          <p>Atacando <span class="mono">defect ≥ m</span> uniforme por inducción/escalado de cilindros o potencial uniforme — sin el atajo multiplicativo (ya muerto). Workflow en curso. ⟳</p>
+        </div>
+
+      </div>
+
+      <div class="alt">
+        <h4>Vía alternativa (paralela, también abierta)</h4>
+        <p>El residuo 2-ádico Sturmiano <span class="mono">R∞^Sturm ∉ ℕ</span> — ataque independiente del documento; abierto por el problema de los <i>carries</i> 2-ádicos. No formalizado.</p>
+      </div>
+
+      <div class="alt" style="border-color:#1f7a4d">
+        <h4 style="color:#86efac">Lo que cambió de verdad hoy</h4>
+        <p>Convertimos "matemática número-teórica vaga" en <b>lemas formales verificados</b> (ρ₊, LTE) + una <b>reducción no circular</b> + la <b>muerte demostrada</b> de un atajo tentador. Collatz no está más cerca — pero el terreno es ahora preciso y honesto.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    Faltan, en orden de lejanía: <b>(2)</b> defect ≥ m uniforme en m (frente) ·
+    <b>(1B)</b> rama de acceso subcrítico · <b>(0)</b> reducción Bandújar a contraejemplos de Collatz.
+    Cada peldaño verde es un teorema Lean con 0 <span class="mono">sorry</span>; cada salto naranja/azul/rojo es matemática genuinamente abierta.
+    &nbsp;·&nbsp; commits S238 en <span class="mono">origin/main</span> hasta <span class="mono">9f78b6c</span>.
+  </div>
+</div>
+</body>
+</html>

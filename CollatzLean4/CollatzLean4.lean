@@ -45,3 +45,4 @@ import CollatzLean4.KappaSplitReduction
 import CollatzLean4.BlockBoundaryWork
 import CollatzLean4.KappaSplitOddZeroBreak
 import CollatzLean4.CycleEquation
+import CollatzLean4.ClosedWalk

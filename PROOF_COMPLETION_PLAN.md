@@ -108,6 +108,19 @@ connecting the S202 alternative to actual Collatz counterexamples. Neither is
 formalized; the reduction is a non-formalizable mathematical claim *outside* this
 program's current verified perimeter.
 
+**Orthogonal new front (2026-05-30, S239).** A separate line attacks the OTHER
+half of Collatz — **cycle exclusion** (no nontrivial cycles), independent of the
+slope-barrier κ-route above. Built on the forward accelerated Syracuse map
+`Syr n = (3n+1)/2^{ν₂(3n+1)}`, it proves — machine-checked, axiom-clean — the cycle
+equation `2^A·a = 3^m·a + C` (explicit `C`), the strict corridor `3^m < 2^A`, and
+the **period-1 and period-2 cases UNCONDITIONALLY** (`syr_no_nontrivial_fixedpoint`,
+`syr_no_nontrivial_2cycle`). A companion module characterizes closed walks in the
+inverse graph as an **order-of-2 / discrete-log** phenomenon (`2^W ≡ 1 mod 3^{R+j}`,
+weight `≥ 2·3^{R+j−1}`), NOT forward cycles — refuting the naive closed-walk↔cycle
+bridge. See §5.-3. This does **not** bring Collatz closer: `m ≥ 3` is finite-but-
+tedious and unbounded period is blocked by **Baker's theorem** (linear forms in
+logarithms, absent from Mathlib).
+
 ---
 
 ## 2. Dependency ladder — Level 4 → Level 0
@@ -514,6 +527,61 @@ none is conjecturally close.**
 ---
 
 ## 5. Change log (verified passes)
+
+### 5.-3 S239 new-vias study + cycle-exclusion line + closed-walk characterization — 2026-05-30 (verified, 0 sorry, axiom-clean)
+
+After the κ-route reduced to the lone residual `FirstMPrecisionSuffixPositive`
+(§5.-2, UNDETERMINED, depth ≈ 3²¹), this pass — at the user's request — **studied
+new attack vectors** (4 grounded scouting agents) and **opened an orthogonal front**.
+
+**Four-vias study verdicts.** ① **Cycle exclusion** (affine identity ⊗ closed walks)
+— WINNER, most tractable new formal direction. ④ **Stress-test** the slope machinery
+on `qn±r` variants — DONE: it correctly discriminates `3n+1` (descent, gm 0.755),
+`3n−1` (detects the known cycle `{5,7}`), `5n+1` (divergent, gm 1.246); the
+load-bearing signal is the REAL corridor drift `E[τ]=2 vs log₂q`, NOT the integer
+defect (knife-edge ≈0, wrong sign on 5n+1) nor the raw forward κ-rate (regime-blind
+≈0.5) — `tools/variant_probe.py`. ② **2-adic ⊗ 3-adic coupling** — the genuine deep
+shot but years/unbounded; BinaryTensor's TBD superstructure (spectrum, ℓ², entropy)
+is unformalized and there is NO existing 2↔3 link. ③ **Density/Tao** — dropped:
+3–6 person-years, no Mathlib foundation, structural ceiling "almost all ≠ all".
+
+**Two refuted scout "easy bricks" (rigor catches, in the project's refute-don't-patch
+discipline).** (a) `cycle_rearrangement_iff_n_one`: the naive `n·(2^A−3^q)=B` holds
+IFF `n=1` (the accumulator is root-normalized; nontrivial cycles need the GENERAL
+equation, not `B`). (b) `tau n = ν₂(3n+1)` is FALSE — `tau` is the inverse-section
+choice exponent (`2^tau·n ≡ 1 mod 3`), counterexample `n=10` (∈X): tau=2 but ν₂(31)=0.
+
+**New module `CycleEquation.lean`** (commits 623baef, 3f260b9; forward Syracuse
+framework, grounded in the real map `Syr n=(3n+1)/2^{ν₂(3n+1)}`):
+
+| Lemma | Statement |
+|---|---|
+| `Syr`, `Syr_step` | `2^{ν₂(3a+1)}·Syr a = 3a+1` (exact step identity) |
+| `partialA`, `cycleC`, `cycle_telescope` | telescoping closed form `2^{A_m}·a_m = 3^m·a_0 + C_m` |
+| `cycle_equation`, `cycleC_pos`, `forward_cycle_corridor` | cycle eq (additive) + strict corridor `3^m < 2^{A_m}` |
+| `syr_cycle_equation`, `syr_cycle_corridor` | the above anchored on any genuine `Syr` periodic point |
+| **`syr_no_nontrivial_fixedpoint`** | **m=1 UNCONDITIONAL**: only positive `Syr` fixed point is 1 (`a∣3a+1 ⟹ a∣1`) |
+| **`syr_no_nontrivial_2cycle`** | **m=2 UNCONDITIONAL**: `ab(2^{k₀+k₁}−9)=3(a+b)+1 ⟹ 2^A≥16 ⟹ 7ab≤3a+3b+1 ⟹ a=b=1` |
+| `NoNontrivialSyrCycle` | the cycle conjecture; m=1,2 done; unbounded period behind **Baker** (not in Mathlib), marked never assumed |
+
+**New module `ClosedWalk.lean`** (commit ceee0f1) — **refutes the naive
+closed-walk↔forward-cycle bridge**, replaces it with the correct characterization:
+the inverse graph is **layered by `j`** (`InvEdge_j_le`, `WPath_j_le`: `j` is
+non-decreasing; one-edges keep `j`, zero-edges increment), so a **closed walk uses
+only one-edges**, its residues telescope (`oneWalk_residue`) and — `v₀.c` being an
+admissible unit — force **`2^W ≡ 1 (mod 3^{R+j})`** (`closed_oneWalk_two_pow_mod`):
+an **order-of-2 / discrete-log** fact, NOT a forward cycle. Reusing the project's LTE
+law `padicValNat_two_pow_sub_one`, any nontrivial closed walk has weight
+**`W ≥ 2·3^{R+j−1}`** (`closed_oneWalk_weight_ge_order`) — the same astronomical slack
+that obstructs the slope barrier, now on the closed-walk side.
+
+**Honest bottom line.** Solid verified infrastructure on a NEW front (cycle exclusion)
+plus several refuted shortcuts, but **Collatz is not materially closer**. The cycle
+line is at its natural plateau: m=1,2 clean and unconditional; m≥3 finite-but-tedious
+(Steiner-style); unbounded period blocked by Baker. All new lemmas: 0 sorry, axioms
+`{propext, Classical.choice, Quot.sound}` (#print-audited). Forward cycle-exclusion
+lives in `CycleEquation` (Syr framework), NOT in the inverse graph (the divergence/
+barrier half). All builds used narrow module targets (never the root → no Q10 blow-up).
 
 ### 5.-2 BlockBoundaryExists attack pass — 2026-05-30 (verified, 0 sorry / 0 axiom, independently axiom-audited)
 

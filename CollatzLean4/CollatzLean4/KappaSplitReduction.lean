@@ -1,49 +1,42 @@
 /-
-**Crystallised reduction of the uniform-in-m slope barrier.**
+**Crystallised reduction of the uniform-in-m slope barrier — corrected.**
 
 Building on `KappaSplitWork.lean` (the proven R2 precision-reduction functor
 `projπ` / `WPath_projectDown` / `kappaProjectsDown_holds`), this module reduces
-the open core `KappaPathSplit` — and hence the whole uniform-in-m slope barrier —
-to EXACTLY TWO named open hypotheses, with everything else discharged:
+the open core `KappaPathSplit` — and the whole uniform-in-m slope barrier — to a
+SINGLE named open hypothesis, with the R2 functor and the induction discharged.
 
-  * `BlockBoundaryExists m Q` — the SPLIT crux: every qualifying κ-path to level
-    `m+1` admits a distinguished `mid` whose prefix `projπ`-projects onto an
-    `m`-level goal, with the path data concatenating. This is the genuine
-    non-constructible obstruction (cf. `kappa_no_canonical_depth_cut` and
-    `IsGoal_projectDown_not_reflects`: `projπ` is many-to-one, so `mid` cannot be
-    recovered from the projection alone).
-  * `OuterBlockIncrement m Q` — R1: the outermost `wS202`-block suffix forces at
-    least one net one-edge, `κ₂ ≥ 1`. Gated on the path↔word bridge (S212.2) and
-    the S213 context-uniformity frontier.
+**Why a single hypothesis, not two (the R1 finding).** One is tempted to split
+`KappaPathSplit` into (R2-prefix) + (R1-suffix), with R1 the standalone claim
+"`OuterBlockIncrement`: any suffix from a block boundary forces `κ₂ ≥ 1`". This is
+FALSE: `outerBlockIncrement_false` below refutes it (the *empty* suffix at any
+goal is a counterexample, since an `(m+1)`-goal `projπ`-projects to an `m`-goal).
+So the per-block increment `κ₂ ≥ 1` cannot be peeled off as a universal lemma —
+it is intrinsically coupled to the choice of a *non-trivial* split point, hence
+folded into the single crux:
 
-`kappaPathSplit_of_block_and_increment` proves: the m-level barrier (the induction
-hypothesis) + these two ⟹ `KappaPathSplit m Q`. The precision-tower obligation is
-discharged internally via `WPath_projectDown` + `projπ_InvStart`. The capstone
-`uniform_slope_barrier_of_block_and_increment` then threads this through the
-committed induction + non-circular chain to give `S216BarrierForWords m Q m` for
-ALL `m ≥ m₀` from a base κ-certificate.
+  * `BlockBoundaryExists m Q` — every level-`(m+1)` κ-path admits a distinguished
+    `mid` whose prefix `projπ`-projects onto an `m`-goal AND whose suffix has
+    `κ₂ ≥ 1` (a genuine outer block). The non-constructible core (cf.
+    `kappa_no_canonical_depth_cut`, `IsGoal_projectDown_not_reflects`).
 
-HONEST SCOPE: this CLOSES nothing new — it records, in verified Lean, the precise
-open content of the route. Both `Prop`s are hypotheses, never axioms. The
-`BlockBoundaryExists` crux remains the real wall; beyond the slope barrier lie the
-formal `S202_alternative_conjecture` (different statement) and the external
-Bandújar reduction to Collatz. NOT a Collatz proof. 0 sorry.
+`kappaPathSplit_of_block` proves: the m-level barrier (induction hypothesis) +
+`BlockBoundaryExists` ⟹ `KappaPathSplit m Q`. The prefix bound `m ≤ κ₁` comes
+from applying the IH barrier to the projected prefix.
 
-CAVEAT C (inherited, flagged): for `m ≥ 2` the start `InvStart m = ⟨0, aS202⟩`
-uses the low-precision constant `aS202 = 1+3^22`, the WRONG S202 cylinder
-(`aS202_at_2_ne_aS202_mod_3_46`); the m-level barrier hypothesis is only
-meaningful once `InvStart` migrates to the coherent tower `aS202_at m`. The
-reduction below is true as a statement about the graph objects regardless.
+HONEST SCOPE: CLOSES nothing new — records, in verified Lean, the precise open
+content (a single satisfiable `Prop`, never an axiom) and the R1 impossibility.
+NOT the `S202_alternative_conjecture`, NOT Collatz. 0 sorry. CAVEAT C inherited
+(`InvStart` is the wrong cylinder for `m ≥ 2` until migrated to `aS202_at m`).
 -/
 
 import CollatzLean4.KappaSplitWork
 
 namespace CollatzLean4.Admissible
 
-/-- **R1 (open).** The outermost `wS202` block of a level-`(m+1)` κ-path forces
-the suffix κ-cost `κ₂ ≥ 1` (at least one net one-edge), once the prefix is a true
-block boundary (its `projπ`-image is an `m`-level goal). A `Prop`, never an
-axiom. -/
+/-- **R1 as a standalone universal (FALSE — see `outerBlockIncrement_false`).**
+The naive "outer block forces `κ₂ ≥ 1`" quantified over all `(mid, suffix)` with
+`projπ mid` an `m`-goal. Kept only to record its refutation. -/
 def OuterBlockIncrement (m Q : Nat) : Prop :=
   ∀ {mid goal : InvVertex} {κ₂ : Int} {vs₂ : List InvVertex},
     InvVertex.IsGoal goal (22 * (m + 1) + 2) → goal.j ≤ Q →
@@ -51,10 +44,31 @@ def OuterBlockIncrement (m Q : Nat) : Prop :=
     WPath (InvKappaPreciseEdge (22 * (m + 1) + 2)) mid goal κ₂ vs₂ →
     (1 : Int) ≤ κ₂
 
-/-- **The split crux (open).** Every level-`(m+1)` κ-path from `InvStart (m+1)` to
-a goal of depth `≤ Q` admits a distinguished `mid` such that the prefix
-`InvStart (m+1) ⟶ mid` `projπ`-projects onto an `m`-level goal, with the κ-cost
-and vertex list concatenating. This is the genuine non-constructible core. -/
+/-- **R1 cannot be a standalone lemma.** `OuterBlockIncrement` is refutable: take
+`mid = goal = ⟨0, 1⟩` (the root vertex, a goal at every precision) with the empty
+suffix, so `κ₂ = 0`; every hypothesis holds (an `(m+1)`-goal `projπ`-projects to
+an `m`-goal) yet `1 ≤ 0` fails. Hence the per-block increment must be coupled to a
+*non-trivial* split point, folded into `BlockBoundaryExists`. -/
+theorem outerBlockIncrement_false (m Q : Nat) : ¬ OuterBlockIncrement m Q := by
+  intro h
+  have hg : InvVertex.IsGoal (⟨0, 1⟩ : InvVertex) (22 * (m + 1) + 2) := by
+    show (1 : Nat) % 3 ^ (22 * (m + 1) + 2 + 0) = 1 % 3 ^ (22 * (m + 1) + 2 + 0)
+    rfl
+  have hpg : InvVertex.IsGoal (projπ m (⟨0, 1⟩ : InvVertex)) (22 * m + 2) := by
+    show (1 % 3 ^ (22 * m + 2 + 0)) % 3 ^ (22 * m + 2 + 0) = 1 % 3 ^ (22 * m + 2 + 0)
+    exact Nat.mod_mod _ _
+  have hpath :
+      WPath (InvKappaPreciseEdge (22 * (m + 1) + 2))
+        (⟨0, 1⟩ : InvVertex) (⟨0, 1⟩ : InvVertex) 0 [] := ⟨rfl, rfl⟩
+  have hjQ : (⟨0, 1⟩ : InvVertex).j ≤ Q := Nat.zero_le Q
+  have hcontra : (1 : Int) ≤ 0 := h hg hjQ hpg hpath
+  norm_num at hcontra
+
+/-- **The split crux (open, single hypothesis).** Every level-`(m+1)` κ-path from
+`InvStart (m+1)` to a goal of depth `≤ Q` admits a distinguished `mid` whose
+prefix `projπ`-projects onto an `m`-goal, whose suffix has `κ₂ ≥ 1`, and with the
+path data concatenating. The genuine non-constructible core. A `Prop`, never an
+axiom. -/
 def BlockBoundaryExists (m Q : Nat) : Prop :=
   ∀ {goal : InvVertex} {κ : Int} {vs : List InvVertex},
     InvVertex.IsGoal goal (22 * (m + 1) + 2) → goal.j ≤ Q →
@@ -63,64 +77,58 @@ def BlockBoundaryExists (m Q : Nat) : Prop :=
       WPath (InvKappaPreciseEdge (22 * (m + 1) + 2)) (InvStart (m + 1)) mid κ₁ vs₁ ∧
       WPath (InvKappaPreciseEdge (22 * (m + 1) + 2)) mid goal κ₂ vs₂ ∧
       κ = κ₁ + κ₂ ∧ vs = vs₁ ++ vs₂ ∧
-      InvVertex.IsGoal (projπ m mid) (22 * m + 2) ∧ mid.j ≤ Q
+      InvVertex.IsGoal (projπ m mid) (22 * m + 2) ∧ mid.j ≤ Q ∧ (1 : Int) ≤ κ₂
 
-/-- **The reduction.** The m-level barrier (induction hypothesis) together with the
-two open hypotheses `BlockBoundaryExists` and `OuterBlockIncrement` yields
-`KappaPathSplit m Q`. The precision-reduction step (R2) is discharged here via the
-proven functor `WPath_projectDown` + `projπ_InvStart`; the prefix bound `m ≤ κ₁`
-comes from applying the m-level barrier to the projected prefix. -/
-theorem kappaPathSplit_of_block_and_increment
+/-- **The reduction.** The m-level barrier (induction hypothesis) together with
+the single crux `BlockBoundaryExists` yields `KappaPathSplit m Q`. The
+precision-reduction step (R2) is discharged via `WPath_projectDown` +
+`projπ_InvStart`; the prefix bound `m ≤ κ₁` comes from applying the m-level
+barrier to the projected prefix; the suffix bound `1 ≤ κ₂` is supplied by the
+crux. -/
+theorem kappaPathSplit_of_block
     {m Q : Nat} (hm : 1 ≤ m)
     (hBar : S202_kappa_precise_barrier_bounded m Q)
-    (hBlock : BlockBoundaryExists m Q)
-    (hSuffix : OuterBlockIncrement m Q) :
+    (hBlock : BlockBoundaryExists m Q) :
     KappaPathSplit m Q := by
   intro goal κ vs h_g h_goal_j h_path
-  obtain ⟨mid, κ₁, κ₂, vs₁, vs₂, h_pre, h_suf, h_sum, h_vs, h_mid_goal, h_mid_j⟩ :=
+  obtain ⟨mid, κ₁, κ₂, vs₁, vs₂, h_pre, h_suf, h_sum, h_vs, h_mid_goal, h_mid_j, h_κ₂⟩ :=
     hBlock h_g h_goal_j h_path
-  -- R2: the prefix projects to a level-m κ-path InvStart m ⟶ projπ mid of the SAME κ₁.
   have h_proj :
       WPath (InvKappaPreciseEdge (22 * m + 2)) (InvStart m) (projπ m mid) κ₁
         (vs₁.map (projπ m)) := by
     have h := WPath_projectDown h_pre
     rwa [projπ_InvStart m hm] at h
   have h_mid_j' : (projπ m mid).j ≤ Q := by rw [projπ_j]; exact h_mid_j
-  -- prefix bound from the m-level barrier; suffix bound from R1.
   have h_κ₁ : (m : Int) ≤ κ₁ := hBar h_mid_goal h_mid_j' h_proj
-  have h_κ₂ : (1 : Int) ≤ κ₂ := hSuffix h_g h_goal_j h_mid_goal h_suf
   exact ⟨mid, κ₁, κ₂, vs₁, vs₂, h_pre, h_suf, h_sum, h_vs, h_κ₁, h_κ₂⟩
 
-/-- **Uniform κ-barrier from the two open hypotheses.** A base κ-barrier plus
-`BlockBoundaryExists` and `OuterBlockIncrement` at every level `≥ m₀` give the
-κ-precise bounded barrier at every level. Pure induction over
-`kappaPathSplit_of_block_and_increment` + the committed `barrier_step_of_split`. -/
-theorem uniform_kappa_barrier_of_block_and_increment
+/-- **Uniform κ-barrier from the single crux.** A base κ-barrier plus
+`BlockBoundaryExists` at every level `≥ m₀` gives the κ-precise bounded barrier at
+every level. Induction over `kappaPathSplit_of_block` + `barrier_step_of_split`. -/
+theorem uniform_kappa_barrier_of_block
     {Q m₀ : Nat} (hm₀ : 1 ≤ m₀)
     (h_base : S202_kappa_precise_barrier_bounded m₀ Q)
-    (h_block : ∀ m, m₀ ≤ m → BlockBoundaryExists m Q)
-    (h_incr : ∀ m, m₀ ≤ m → OuterBlockIncrement m Q) :
+    (h_block : ∀ m, m₀ ≤ m → BlockBoundaryExists m Q) :
     ∀ m, m₀ ≤ m → S202_kappa_precise_barrier_bounded m Q := by
   refine Nat.le_induction h_base ?_
   intro k hk ih
   have hk1 : 1 ≤ k := le_trans hm₀ hk
   apply barrier_step_of_split
-  exact kappaPathSplit_of_block_and_increment hk1 ih (h_block k hk) (h_incr k hk)
+  exact kappaPathSplit_of_block hk1 ih (h_block k hk)
 
 /-- **End-to-end (conditional) uniform slope barrier.** A base κ-barrier plus the
-two open hypotheses at every level yield the S202 slope barrier `defect ≥ m` for
-every `m ≥ m₀`, via the committed non-circular chain. The entire open content of
-the uniform-in-m slope-barrier route is therefore EXACTLY
-`{BlockBoundaryExists, OuterBlockIncrement}` (uniformly in `m`). -/
-theorem uniform_slope_barrier_of_block_and_increment
+single crux `BlockBoundaryExists` at every level yields the S202 slope barrier
+`defect ≥ m` for every `m ≥ m₀`, via the committed non-circular chain. The entire
+open content of the uniform-in-m slope-barrier route is therefore EXACTLY
+`BlockBoundaryExists` (uniformly in `m`). -/
+theorem uniform_slope_barrier_of_block
     {Q m₀ : Nat} (hm₀ : 1 ≤ m₀)
     (h_base : S202_kappa_precise_barrier_bounded m₀ Q)
-    (h_block : ∀ m, m₀ ≤ m → BlockBoundaryExists m Q)
-    (h_incr : ∀ m, m₀ ≤ m → OuterBlockIncrement m Q) :
+    (h_block : ∀ m, m₀ ≤ m → BlockBoundaryExists m Q) :
     ∀ m, m₀ ≤ m → S216BarrierForWords m Q (m : Int) := by
   intro m hm
   exact S202_slope_barrier_from_actual_edge_count_bounded
     (S202_actual_edge_count_bounded_of_kappa_precise_barrier_bounded
-      (uniform_kappa_barrier_of_block_and_increment hm₀ h_base h_block h_incr m hm))
+      (uniform_kappa_barrier_of_block hm₀ h_base h_block m hm))
 
 end CollatzLean4.Admissible

@@ -35,6 +35,11 @@ theorem two_pow_dlog (k : ℕ) (hk : 1 ≤ k) {c : ZMod (3 ^ k)} (hc : IsUnit c)
   rw [dif_pos h]
   exact h.choose_spec
 
+-- Performance: `dlog` is `Classical.choose`-based; unfolding it in downstream proofs is very slow.
+-- All uses below go through the abstract interface (`two_pow_dlog`, the order/hom lemmas), so we
+-- seal it as irreducible after its defining lemma to keep elaboration fast.
+attribute [irreducible] dlog
+
 /-- `2 : ZMod 3^k` is of finite order (its order is `2·3^{k-1} > 0`). -/
 theorem isOfFinOrder_two (k : ℕ) (hk : 1 ≤ k) : IsOfFinOrder (2 : ZMod (3 ^ k)) := by
   rw [← orderOf_pos_iff, orderOf_two_zmod_three_pow k hk]; positivity

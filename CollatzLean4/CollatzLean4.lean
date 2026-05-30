@@ -48,3 +48,4 @@ import CollatzLean4.CycleEquation
 import CollatzLean4.ClosedWalk
 import CollatzLean4.DiscreteLog
 import CollatzLean4.DlogReachable
+import CollatzLean4.Coupling

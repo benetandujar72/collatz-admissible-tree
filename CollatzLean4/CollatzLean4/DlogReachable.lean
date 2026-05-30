@@ -166,6 +166,43 @@ theorem oneEdge_dlog_shift (m : ℕ) {v v' : InvVertex} {ω : Int}
     rw [pow_add, hcu, hedge, hcu']
   exact (two_pow_eq_iff_modEq k hk).mp key
 
+/-- **Zero-edge discrete-log shift.** Along a zero-edge `v → v'` (`j ↦ j+1`, modulus lifts
+to `3^{R+j+1}`), the source residue transforms to `3·v.c+1` (a unit, `≡ 1 mod 3`) and:
+`dlog(3·v.c+1) ≡ τ + dlog(v'.c) (mod 2·3^{R+j})`, at the v'-level modulus. Together with
+`oneEdge_dlog_shift` this is the FULL one-step generation rule for `ReachableDlog`: both
+edge types translate `dlog` by the weight `τ` (the zero-edge first applying the affine
+`x ↦ 3x+1` and re-indexing to the finer modulus). The remaining hard piece — relating
+`dlog(3·v.c+1)` at level `j+1` back to `dlog(v.c)` at level `j` (the 3-multiplication ×
+modulus-lift interaction) — is the genuine open arithmetic of the orbit. -/
+theorem zeroEdge_dlog_shift (m : ℕ) {v v' : InvVertex} {ω : Int}
+    (he : InvEdgeZero (22 * m + 2) v v' ω) :
+    dlog (22 * m + 2 + v'.j) ((3 * v.c + 1 : ℕ) : ZMod (3 ^ (22 * m + 2 + v'.j)))
+      ≡ tau v'.c + dlog (22 * m + 2 + v'.j) ((v'.c : ZMod (3 ^ (22 * m + 2 + v'.j))))
+        [MOD 2 * 3 ^ (22 * m + 2 + v'.j - 1)] := by
+  obtain ⟨hj, hX', hcong, hτ⟩ := he
+  set k := 22 * m + 2 + v'.j with hk_def
+  have hk : 1 ≤ k := by omega
+  clear_value k
+  have hcop : Nat.Coprime (3 * v.c + 1) (3 ^ k) := by
+    have h3 : ¬ (3 : ℕ) ∣ (3 * v.c + 1) := by omega
+    exact ((Nat.prime_three.coprime_iff_not_dvd).mpr h3).symm.pow_right k
+  have hunit : IsUnit (((3 * v.c + 1 : ℕ) : ZMod (3 ^ k))) :=
+    (ZMod.isUnit_iff_coprime (3 * v.c + 1) (3 ^ k)).mpr hcop
+  have hunit' : IsUnit ((v'.c : ZMod (3 ^ k))) :=
+    (ZMod.isUnit_iff_coprime v'.c (3 ^ k)).mpr (InX_coprime_three_pow hX' k)
+  have hcu : (2 : ZMod (3 ^ k)) ^ (dlog k (((3 * v.c + 1 : ℕ) : ZMod (3 ^ k))))
+      = ((3 * v.c + 1 : ℕ) : ZMod (3 ^ k)) := two_pow_dlog k hk hunit
+  have hcu' : (2 : ZMod (3 ^ k)) ^ (dlog k ((v'.c : ZMod (3 ^ k)))) = (v'.c : ZMod (3 ^ k)) :=
+    two_pow_dlog k hk hunit'
+  have hedge : (((3 * v.c + 1 : ℕ) : ZMod (3 ^ k))) = 2 ^ (tau v'.c) * ((v'.c : ZMod (3 ^ k))) := by
+    have h1 : ((3 * v.c + 1 : ℕ) : ZMod (3 ^ k)) = ((2 ^ (tau v'.c) * v'.c : ℕ) : ZMod (3 ^ k)) := by
+      rw [ZMod.natCast_eq_natCast_iff]; exact hcong
+    rw [h1]; push_cast; ring
+  have key : (2 : ZMod (3 ^ k)) ^ (dlog k (((3 * v.c + 1 : ℕ) : ZMod (3 ^ k))))
+      = (2 : ZMod (3 ^ k)) ^ (tau v'.c + dlog k ((v'.c : ZMod (3 ^ k)))) := by
+    rw [pow_add, hcu, hedge, hcu']
+  exact (two_pow_eq_iff_modEq k hk).mp key
+
 /-! ### The reachable discrete-log residue set (Wall-B Tier-2 carrier) -/
 
 /-- **The reachable discrete-log residue set.** The discrete logs of the c-coordinates of

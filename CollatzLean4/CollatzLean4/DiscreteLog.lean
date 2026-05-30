@@ -20,6 +20,8 @@ bound from `≥` to EXACT divisibility by the order, and computes
 import CollatzLean4.ClosedWalk
 import Mathlib.Data.ZMod.Basic
 import Mathlib.GroupTheory.OrderOfElement
+import Mathlib.Data.Nat.Totient
+import Mathlib.Data.ZMod.QuotientGroup
 
 namespace CollatzLean4.Admissible
 
@@ -97,5 +99,51 @@ theorem orderOf_two_zmod_three_pow (k : ℕ) (hk : 1 ≤ k) :
   have hpos : 0 < orderOf (2 : ZMod (3 ^ k)) :=
     Nat.pos_of_dvd_of_pos hdvd_ord hN1
   exact (key _ hpos).mp (pow_orderOf_eq_one _)
+
+/-! ### Discrete log exists: every unit mod 3^k is a power of 2 -/
+
+/-- **Discrete log exists mod 3^k.** Since 2 is a primitive root
+(`orderOf_two_zmod_three_pow`), it generates the unit group, so every unit `c` of
+`ZMod (3^k)` is a natural power `2^t` — its discrete logarithm `t = dlog(c)`.
+
+This is the **Wall-B reformulation primitive**. Combined with the divisibility law, the
+one-edge ρ₊-lift satisfies `ν₃(c − 2^τ) ≥ j ⟺ c ≡ 2^τ (mod 3^j) ⟺ dlog(c) ≡ τ (mod 2·3^{j-1})`,
+recasting the slope-barrier residual as a REACHABILITY question on discrete-log
+residues along κ-paths — NOT an equidistribution/discrepancy question (which would be
+Tier-3 / open). -/
+theorem exists_two_pow_eq_of_isUnit (k : ℕ) (hk : 1 ≤ k)
+    {c : ZMod (3 ^ k)} (hc : IsUnit c) :
+    ∃ t : ℕ, (2 : ZMod (3 ^ k)) ^ t = c := by
+  haveI : NeZero (3 ^ k) := ⟨by positivity⟩
+  have h2unit : IsUnit (2 : ZMod (3 ^ k)) := by
+    have hcast : ((2 : ℕ) : ZMod (3 ^ k)) = (2 : ZMod (3 ^ k)) := by push_cast; ring
+    rw [← hcast, ZMod.isUnit_iff_coprime]
+    exact (by decide : Nat.Coprime 2 3).pow_right k
+  obtain ⟨u, hu⟩ := h2unit
+  obtain ⟨v, hv⟩ := hc
+  have hou : orderOf u = 2 * 3 ^ (k - 1) := by
+    rw [← orderOf_units, hu, orderOf_two_zmod_three_pow k hk]
+  have hcard : Nat.card (ZMod (3 ^ k))ˣ = 3 ^ (k - 1) * 2 := by
+    rw [Nat.card_eq_fintype_card, ZMod.card_units_eq_totient,
+        Nat.totient_prime_pow Nat.prime_three (by omega)]
+  have htop : Subgroup.zpowers u = ⊤ := by
+    apply Subgroup.eq_top_of_card_eq
+    rw [Nat.card_zpowers, hou, hcard]; ring
+  have hmem : v ∈ Subgroup.zpowers u := by rw [htop]; exact Subgroup.mem_top v
+  have hv_pow : ∃ t : ℕ, u ^ t = v := by
+    rwa [← mem_powers_iff_mem_zpowers, Submonoid.mem_powers_iff] at hmem
+  obtain ⟨t, ht⟩ := hv_pow
+  refine ⟨t, ?_⟩
+  have e : (2 : ZMod (3 ^ k)) ^ t = ((u ^ t : (ZMod (3 ^ k))ˣ) : ZMod (3 ^ k)) := by
+    rw [← hu]; push_cast; ring
+  rw [e, ht]; exact hv
+
+/-- **The ρ₊-lift is a congruence (Wall-B reformulation, congruence form).**
+`3^j ∣ (c − 2^t) ⟺ 2^t ≡ c (mod 3^j)` — the one-edge jump depth `ν₃(c − 2^t)` is
+exactly how deep `c` agrees with `2^t`. With `exists_two_pow_eq_of_isUnit` this is the
+discrete-log congruence `dlog(c) ≡ t (mod 2·3^{j-1})`. -/
+theorem three_pow_dvd_sub_iff_modEq (c t j : ℕ) (h : 2 ^ t ≤ c) :
+    3 ^ j ∣ (c - 2 ^ t) ↔ 2 ^ t ≡ c [MOD 3 ^ j] :=
+  (Nat.modEq_iff_dvd' h).symm
 
 end CollatzLean4.Admissible

@@ -284,6 +284,38 @@ theorem dlog_three_c_add_one_even (c j : ℕ) :
     ((Nat.prime_three.coprime_iff_not_dvd).mpr (by omega : ¬ (3 : ℕ) ∣ (3 * c + 1))).symm
   rw [dlog_mod_two (j + 1) (3 * c + 1) (by omega) hco, if_neg (by omega : ¬ (3 * c + 1) % 3 = 2)]
 
+/-! ### dlog is a LOGARITHM (group homomorphism)
+
+The structural essence behind "the 3-adic part is analytic": `dlog : units → ℤ/(2·3^{k-1})` is a
+group homomorphism (`dlog(ab) ≡ dlog a + dlog b`). This is exactly what makes the affine jump a
+single `dlog` of the ratio `(3c+1)/c` and what turns the zero-edge "open arithmetic" into the
+`log₃` homomorphism — the analytic structure, proven directly from the order law (no series). -/
+
+/-- **`dlog` is additive (logarithm law).** For units `a,b`,
+`dlog(a·b) ≡ dlog a + dlog b (mod 2·3^{k-1})`. -/
+theorem dlog_mul (k : ℕ) (hk : 1 ≤ k) {a b : ZMod (3 ^ k)} (ha : IsUnit a) (hb : IsUnit b) :
+    dlog k (a * b) ≡ dlog k a + dlog k b [MOD 2 * 3 ^ (k - 1)] := by
+  have h1 : (2 : ZMod (3 ^ k)) ^ (dlog k (a * b)) = a * b := two_pow_dlog k hk (ha.mul hb)
+  have h2 : (2 : ZMod (3 ^ k)) ^ (dlog k a + dlog k b) = a * b := by
+    rw [pow_add, two_pow_dlog k hk ha, two_pow_dlog k hk hb]
+  exact (two_pow_eq_iff_modEq k hk).mp (h1.trans h2.symm)
+
+/-- `dlog 1 ≡ 0`. -/
+theorem dlog_one (k : ℕ) (hk : 1 ≤ k) :
+    dlog k (1 : ZMod (3 ^ k)) ≡ 0 [MOD 2 * 3 ^ (k - 1)] := by
+  have h1 : (2 : ZMod (3 ^ k)) ^ (dlog k (1 : ZMod (3 ^ k))) = 1 :=
+    two_pow_dlog k hk isUnit_one
+  exact (two_pow_eq_iff_modEq k hk).mp (h1.trans (pow_zero _).symm)
+
+/-- **`dlog` of a power: `dlog(aⁿ) ≡ n·dlog a`.** Completes the homomorphism package. -/
+theorem dlog_pow (k : ℕ) (hk : 1 ≤ k) {a : ZMod (3 ^ k)} (ha : IsUnit a) (n : ℕ) :
+    dlog k (a ^ n) ≡ n * dlog k a [MOD 2 * 3 ^ (k - 1)] := by
+  have h1 : (2 : ZMod (3 ^ k)) ^ (dlog k (a ^ n)) = a ^ n :=
+    two_pow_dlog k hk (ha.pow n)
+  have h2 : (2 : ZMod (3 ^ k)) ^ (n * dlog k a) = a ^ n := by
+    rw [mul_comm, pow_mul, two_pow_dlog k hk ha]
+  exact (two_pow_eq_iff_modEq k hk).mp (h1.trans h2.symm)
+
 /-! ### The open arithmetic core: the affine `x ↦ 3x+1` in dlog coordinates -/
 
 /-- **The affine dlog jump.** `affineDlogJump c j` is the change in discrete log at level `j+1`

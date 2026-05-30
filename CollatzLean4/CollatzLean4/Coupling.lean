@@ -83,4 +83,36 @@ theorem syr_succ_sign_eq_nu2_parity (n : ℕ) :
   · have h1 : (padicValNat 2 (3 * n + 1)) % 2 = 1 := by omega
     simp [h1]
 
+/-- **THE COUPLING COCYCLE EQUATION (verified).** In `ZMod (3^k)`, the full coupling between the
+two filtrations: `dlog(3n+1) ≡ ν₂(3n+1) + dlog(Syr n) (mod 2·3^{k-1})` — the 3-adic discrete log
+of the affine image equals the 2-adic valuation PLUS the dlog of the Syracuse successor. So one
+forward step shifts the discrete log by exactly the 2-adic valuation `ν₂`. The parity link
+(`syr_succ_sign_eq_nu2_parity`) is this equation's mod-2 digit; this is ALL digits. This is the
+genuine cocycle of the skew product, in dlog coordinates. (From `Syr_step` + the `dlog` homomorphism
+`dlog_mul`/`dlog_two_pow`.) -/
+theorem syr_dlog_eq (k : ℕ) (hk : 1 ≤ k) (n : ℕ) :
+    dlog k ((3 * n + 1 : ℕ) : ZMod (3 ^ k))
+      ≡ padicValNat 2 (3 * n + 1) + dlog k ((Syr n : ℕ) : ZMod (3 ^ k))
+        [MOD 2 * 3 ^ (k - 1)] := by
+  have hsyr_co : Nat.Coprime (Syr n) 3 := by
+    have h3 : ¬ (3 : ℕ) ∣ Syr n := by
+      rw [Nat.dvd_iff_mod_eq_zero, syr_succ_mod_three]; split <;> omega
+    exact ((Nat.prime_three.coprime_iff_not_dvd).mpr h3).symm
+  have hsyru : IsUnit ((Syr n : ℕ) : ZMod (3 ^ k)) :=
+    (ZMod.isUnit_iff_coprime _ _).mpr (hsyr_co.pow_right k)
+  have h2u : IsUnit ((2 : ZMod (3 ^ k)) ^ (padicValNat 2 (3 * n + 1))) := (isUnit_two k).pow _
+  have heq : ((3 * n + 1 : ℕ) : ZMod (3 ^ k))
+      = (2 : ZMod (3 ^ k)) ^ (padicValNat 2 (3 * n + 1)) * ((Syr n : ℕ) : ZMod (3 ^ k)) := by
+    calc ((3 * n + 1 : ℕ) : ZMod (3 ^ k))
+        = ((2 ^ (padicValNat 2 (3 * n + 1)) * Syr n : ℕ) : ZMod (3 ^ k)) := by rw [Syr_step]
+      _ = (2 : ZMod (3 ^ k)) ^ (padicValNat 2 (3 * n + 1)) * ((Syr n : ℕ) : ZMod (3 ^ k)) := by
+          push_cast; ring
+  calc dlog k ((3 * n + 1 : ℕ) : ZMod (3 ^ k))
+      = dlog k ((2 : ZMod (3 ^ k)) ^ (padicValNat 2 (3 * n + 1)) * ((Syr n : ℕ) : ZMod (3 ^ k))) := by
+        rw [heq]
+    _ ≡ dlog k ((2 : ZMod (3 ^ k)) ^ (padicValNat 2 (3 * n + 1)))
+          + dlog k ((Syr n : ℕ) : ZMod (3 ^ k)) [MOD 2 * 3 ^ (k - 1)] := dlog_mul k hk h2u hsyru
+    _ ≡ padicValNat 2 (3 * n + 1) + dlog k ((Syr n : ℕ) : ZMod (3 ^ k)) [MOD 2 * 3 ^ (k - 1)] :=
+        Nat.ModEq.add_right _ (dlog_two_pow k hk _)
+
 end CollatzLean4.Admissible

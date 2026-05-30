@@ -35,6 +35,23 @@ theorem two_pow_dlog (k : ℕ) (hk : 1 ≤ k) {c : ZMod (3 ^ k)} (hc : IsUnit c)
   rw [dif_pos h]
   exact h.choose_spec
 
+/-- `2 : ZMod 3^k` is of finite order (its order is `2·3^{k-1} > 0`). -/
+theorem isOfFinOrder_two (k : ℕ) (hk : 1 ≤ k) : IsOfFinOrder (2 : ZMod (3 ^ k)) := by
+  rw [← orderOf_pos_iff, orderOf_two_zmod_three_pow k hk]; positivity
+
+/-- Injectivity of `t ↦ 2^t` mod the order: `2^n = 2^m ⟺ n ≡ m (mod 2·3^{k-1})`. -/
+theorem two_pow_eq_iff_modEq (k : ℕ) (hk : 1 ≤ k) {n m : ℕ} :
+    (2 : ZMod (3 ^ k)) ^ n = (2 : ZMod (3 ^ k)) ^ m ↔ n ≡ m [MOD 2 * 3 ^ (k - 1)] := by
+  rw [(isOfFinOrder_two k hk).pow_eq_pow_iff_modEq, orderOf_two_zmod_three_pow k hk]
+
+/-- **Wall-B reformulation (dlog form).** For a unit `c`,
+`2^τ = c ⟺ τ ≡ dlog(c) (mod 2·3^{k-1})`. -/
+theorem two_pow_eq_iff_dlog (k : ℕ) (hk : 1 ≤ k) {c : ZMod (3 ^ k)} (hc : IsUnit c) (τ : ℕ) :
+    (2 : ZMod (3 ^ k)) ^ τ = c ↔ τ ≡ dlog k c [MOD 2 * 3 ^ (k - 1)] := by
+  have hd : (2 : ZMod (3 ^ k)) ^ (dlog k c) = c := two_pow_dlog k hk hc
+  nth_rewrite 1 [← hd]
+  exact two_pow_eq_iff_modEq k hk
+
 /-! ### Reachability in the inverse cylinder graph -/
 
 /-- A vertex is reachable from `InvStart m` via an admissible inverse path. -/
@@ -116,6 +133,38 @@ theorem invReachable_InX (m : ℕ) {v : InvVertex} (hv : InvReachable m v) : InX
   rcases hedge with h | h
   · exact h.2.1
   · exact h.2.1
+
+/-- **One-edge discrete-log shift (the structural content of the reachable set).** Along a
+one-edge `v → v'` (same j-level), the discrete log shifts by exactly the edge weight `τ`:
+`dlog(v.c) ≡ τ + dlog(v'.c) (mod 2·3^{R+j-1})`, where `τ = tau v'.c`. So one-edges
+translate `dlog` by a known amount — `ReachableDlog` is generated from the start residue by
+these explicit shifts (a τ-labelled orbit), not an opaque set. This is the concrete handle
+on the Wall-B open core. -/
+theorem oneEdge_dlog_shift (m : ℕ) {v v' : InvVertex} {ω : Int}
+    (hv : InX v.c) (he : InvEdgeOne (22 * m + 2) v v' ω) :
+    dlog (22 * m + 2 + v.j) ((v.c : ZMod (3 ^ (22 * m + 2 + v.j))))
+      ≡ tau v'.c + dlog (22 * m + 2 + v.j) ((v'.c : ZMod (3 ^ (22 * m + 2 + v.j))))
+        [MOD 2 * 3 ^ (22 * m + 2 + v.j - 1)] := by
+  obtain ⟨hj, hX', hcong, hτ⟩ := he
+  set k := 22 * m + 2 + v.j with hk_def
+  have hk : 1 ≤ k := by omega
+  clear_value k
+  have hunit : IsUnit ((v.c : ZMod (3 ^ k))) :=
+    (ZMod.isUnit_iff_coprime v.c (3 ^ k)).mpr (InX_coprime_three_pow hv k)
+  have hunit' : IsUnit ((v'.c : ZMod (3 ^ k))) :=
+    (ZMod.isUnit_iff_coprime v'.c (3 ^ k)).mpr (InX_coprime_three_pow hX' k)
+  have hcu : (2 : ZMod (3 ^ k)) ^ (dlog k ((v.c : ZMod (3 ^ k)))) = (v.c : ZMod (3 ^ k)) :=
+    two_pow_dlog k hk hunit
+  have hcu' : (2 : ZMod (3 ^ k)) ^ (dlog k ((v'.c : ZMod (3 ^ k)))) = (v'.c : ZMod (3 ^ k)) :=
+    two_pow_dlog k hk hunit'
+  have hedge : ((v.c : ZMod (3 ^ k))) = 2 ^ (tau v'.c) * ((v'.c : ZMod (3 ^ k))) := by
+    have h1 : (v.c : ZMod (3 ^ k)) = ((2 ^ (tau v'.c) * v'.c : ℕ) : ZMod (3 ^ k)) := by
+      rw [ZMod.natCast_eq_natCast_iff]; exact hcong
+    rw [h1]; push_cast; ring
+  have key : (2 : ZMod (3 ^ k)) ^ (dlog k ((v.c : ZMod (3 ^ k))))
+      = (2 : ZMod (3 ^ k)) ^ (tau v'.c + dlog k ((v'.c : ZMod (3 ^ k)))) := by
+    rw [pow_add, hcu, hedge, hcu']
+  exact (two_pow_eq_iff_modEq k hk).mp key
 
 /-! ### The reachable discrete-log residue set (Wall-B Tier-2 carrier) -/
 

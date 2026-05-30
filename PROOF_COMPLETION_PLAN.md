@@ -68,6 +68,37 @@ level-`(m+1)` split point `mid` — a second, independent witness (beside
 `aS202_at m`) gates any non-toy use. `KappaPathSplit` is thus **reduced, not
 proven**; its hard residue is the split point plus the `InvStart` migration.
 
+A **2026-05-30 BlockBoundaryExists pass** (verified, 0 sorry, 0 axiom, independently
+axiom-audited) advances to the *successor* committed core. The `KappaPathSplit`
+residue of the prior pass has since been packaged as the single committed open Prop
+**`BlockBoundaryExists m Q`** (KappaSplitReduction.lean): every level-`(m+1)` κ-path
+to a goal admits a split point `mid` whose `projπ`-prefix is an `m`-goal AND whose
+suffix carries `κ₂ ≥ 1`. This pass (i) delivers the **generic first-witness path
+split** `WPath_first_witness_split` (fully unconditional: any `WPath` with a
+decidable vertex predicate `P` true at the target splits at the FIRST `P`-vertex,
+with firstness data `∀ x ∈ vs₁, P x → x = mid`); (ii) packages the level-`m`
+precision predicate `projMPrecise` as a `DecidablePred`; (iii) proves the TRUE
+arithmetic fact **`invStart_succ_not_mPrecise`** (the start is NOT `m`-precise, so
+the first `m`-precision point is strictly *after* the start — the R1 trap can only
+re-appear at the END, never the start); (iv) lifts the δ₊ per-edge laws to
+`InvKappaPreciseEdge` monotonicity (τ=1/τ=3 zero RESET δ₊ to max; τ=2 zero UNCHANGED;
+κ=−1 edge NON-DECREASING in δ₊); and, the headline, (v) the **valid reduction**
+`blockBoundaryExists_of_firstMPrecisionSuffixPositive : FirstMPrecisionSuffixPositive
+m Q → BlockBoundaryExists m Q`, which DISCHARGES the entire structural-split half and
+isolates the **single remaining obligation** as the sharper, provably-non-circular
+named Prop `FirstMPrecisionSuffixPositive` (on the first-`m`-precision suffix,
+`κ₂ ≥ 1`). **Truth verdict: UNDETERMINED, leaning "the κ-route as conceived cannot
+close it."** The pass also *refutes* the specific reduction line the task favoured
+("mid = LAST `m`-precision point ⟹ suffix has no τ=1 zeros ⟹ κ₂ = n_one ≥ 1"): the
+LAST `m`-precision point IS the goal (empty suffix, the R1 trap), and τ=1/τ=3 zeros
+target NON-`m`-precise successors, so a "no `m`-precise interior" selector places no
+constraint on them — the implication is a non-sequitur. The genuine open content is
+the **one-edge discrete-log jump** (`oneEdge_rhoPlus_law`: ρ₊ can lift across the
+whole final 22-digit gap in one edge), whose deciding configurations live at 3-adic
+depth ≈ 3²¹ and are computationally invisible (real-graph probes top out at a
+single-edge ν₃-jump of 10 < 22), so no counterexample is exhibitable and no proof is
+reachable by enumeration.
+
 **This is NOT a proof of Collatz, nor even of the full S202 alternative.** It is one
 half (the slope-barrier half) of one branch of the S202 alternative, and it is
 currently *uniform only for the toy index `m = 1`*. Reaching Collatz additionally
@@ -93,8 +124,11 @@ conjecture (Level 0). **An honest reader stops believing at the first
 | **3** | κ-precise edge calculus: weight trichotomy, path decomposition `defect ≥ n_one − n_neg`, slice telescoping, j-monotonicity, exact-count predicate | **PROVEN** | `invEdge_weight_trichotomy`, `WPath_weight_decompose`, `InvPathCounts.*`, `WPath_kappa_*` |
 | **2** | **Reduction**: an `AbsCert`/closure certificate (or finite-slice κ-potential) over `InvKappaPreciseEdge` ⟹ `S216BarrierForWords m Q m`. Non-circular (counts pinned via `InvPathCounts`). | **PROVEN** (the *implication*) | `S202_slope_barrier_from_kappa_cert`, `S216_barrier_for_words_via_kappa`, `S202_slope_barrier_from_kappa_precise_potential_bounded` |
 | **2′** | The certificate's hypothesis **discharged unconditionally** for `m = 1`, `Q ∈ {1,3,5,8,10}` | **PROVEN** (`native_decide`) | `Cert_m1_Q{1,3,5,8,10}_kappa.barrier_*` |
-| **2-split** | **The `WPath`-split route to uniform-`m`**: `KappaPathSplit m Q` (prefix-κ ≥ `m`, suffix-κ ≥ `1`) + the `m=1` base ⟹ `defect ≥ m` for all `m`. THE single committed open core. | **OPEN** (the genuine crux: split point `mid`) | `KappaPathSplit`, `uniform_slope_barrier_of_cert_and_split` (UniformBarrier.lean) |
+| **2-split** | **The `WPath`-split route to uniform-`m`**: `KappaPathSplit m Q` (prefix-κ ≥ `m`, suffix-κ ≥ `1`) + the `m=1` base ⟹ `defect ≥ m` for all `m`. Its residue is now packaged as the committed core `BlockBoundaryExists` (Level 2-BBE). | **OPEN** (crux re-packaged as 2-BBE) | `KappaPathSplit`, `uniform_slope_barrier_of_cert_and_split` (UniformBarrier.lean) |
 | **2-split-R2** | R2 brick: the κ-preserving precision-reduction **functor** `projπ` lifts a level-`(m+1)` κ-path to a level-`m` κ-path (same κ), discharging R2's precision-tower step | **PROVEN** (new 05-30) | `InvKappaPreciseEdge_projectDown`, `WPath_projectDown`, `kappaProjectsDown_holds` (KappaSplitWork.lean) |
+| **2-BBE** | `BlockBoundaryExists m Q` — the **single committed open core**: every `(m+1)`-κ-path to a goal splits at a `mid` with `projπ`-prefix an `m`-goal **and** suffix-κ ≥ 1. Proving it ∀`m` (+ committed `m=1` base + `uniform_slope_barrier_of_block`) ⟹ `defect ≥ m` ∀`m`. | **OPEN — UNDETERMINED** (truth verdict: leans "κ-route as conceived cannot close it") | `BlockBoundaryExists` (KappaSplitReduction.lean) |
+| **2-BBE-split** | Structural-split half of 2-BBE: generic first-witness path split + the valid reduction `FirstMPrecisionSuffixPositive m Q → BlockBoundaryExists m Q`. **Discharges every conjunct of 2-BBE except `κ₂ ≥ 1`.** | **PROVEN** (new 05-30) | `WPath_first_witness_split`, `blockBoundaryExists_of_firstMPrecisionSuffixPositive`, `invStart_succ_not_mPrecise` (BlockBoundaryWork.lean) |
+| **2-BBE-resid** | The lone residual of 2-BBE, isolated as a sharper named Prop: on the suffix from the FIRST `m`-precision vertex to the goal, `κ₂ ≥ 1`. Strictly weaker than 2-BBE (handed the firstness data; need not *exhibit* `mid`); provably non-circular. | **OPEN-NUMBER-THEORY** (the genuine crux: a 3-adic question at depth ≈ 3²¹) | `FirstMPrecisionSuffixPositive` (BlockBoundaryWork.lean) |
 | **2-bridge** | **Word→valuation bridge**: a cylinder condition `n ≡ aS202 (mod 3^24)` forces `ν₃(2^A−1)=22` (would have fed Part-A slackness into the κ counting) | **REFUTED — FALSE as stated** (machine-checked; blocked at the number-theory level, not merely unproven) | `cylinderForcesVal22_false_raw` / `_faithful`; counterexample = S202 triple; conditional corollary `cylinder_forces_astronomical_A` still typechecks but is **vacuously gated** by a false hypothesis |
 | **2″** | The certificate's hypothesis discharged **uniformly in `m`** (one analytic Φ, not a per-`m` BFS table) | **OPEN-NUMBER-THEORY** | *target of §3 DAG* |
 | **1a** | S202 slope-barrier branch: `defect ≥ m` for **all** `m` (uniform) | **OPEN-NUMBER-THEORY** | from 2″ (analytic Φ) **OR** Level 2-split (`KappaPathSplit` + m=1 base) |
@@ -114,14 +148,26 @@ never bites along this route. The first *remaining* real mathematical gaps are
 known to be **separate from** the dead LTE/dlog route). Levels **1b** and **0**
 are *additional* gaps, the last of which is outside the formal program entirely.
 
-The 2026-05-30 pass added a **second, parallel route into Level 1a** — the
-committed `WPath`-split core `KappaPathSplit` (**Level 2-split**) — and discharged
-its R2 sub-brick (**Level 2-split-R2**, the `projπ` precision functor) as a
-machine-checked theorem. This does **not** move the honesty line: Level 2-split
-itself is still OPEN, its crux being the non-constructible split point `mid`
-(`IsGoal_projectDown_not_reflects` now gives a concrete many-to-one witness that
-`mid` cannot be recovered from the projection alone), with `InvStart` migration
-(Caveat C) as a prerequisite for `m ≥ 2`.
+The 2026-05-30 passes added a **second, parallel route into Level 1a** — the
+committed `WPath`-split core `KappaPathSplit` (**Level 2-split**), now re-packaged
+as the single committed open Prop **`BlockBoundaryExists`** (**Level 2-BBE**) — and
+discharged two sub-bricks as machine-checked theorems: the R2 precision functor
+(**Level 2-split-R2**) and the entire **structural-split half** of `BlockBoundary‐
+Exists` (**Level 2-BBE-split**: the generic first-witness split + the valid
+reduction to `FirstMPrecisionSuffixPositive`). This does **not** move the honesty
+line: the residual **Level 2-BBE-resid** (`FirstMPrecisionSuffixPositive` — on the
+first-`m`-precision suffix, `κ₂ ≥ 1`) is still OPEN and is **UNDETERMINED** as to its
+truth. The structural obstruction is now pinpointed exactly: the one-edge discrete-log
+jump (`oneEdge_rhoPlus_law`) can in principle lift ρ₊ across the whole final 22-digit
+gap in a single edge, making the first (= only) `m`-precision vertex coincide with
+the goal (the uniform R1 trap, ⟹ FALSE); whether some intermediate `m`-precise vertex
+with a `κ₂ ≥ 1` tail is instead forced (⟹ TRUE) is a question about the joint 3-adic
+distribution of `ν₃(c−1)` and `ν₃(c−2^τ)` along reachable κ-paths, whose deciding
+configurations sit at depth ≈ 3²¹ and are computationally invisible. The earlier
+`mid`-non-constructibility witnesses (`IsGoal_projectDown_not_reflects`,
+`kappa_no_canonical_depth_cut`) are subsumed: `WPath_first_witness_split` *does*
+canonically select `mid` (the first witness), so the difficulty is no longer
+"which `mid`" but the arithmetic `κ₂ ≥ 1` on its suffix.
 
 A weaker but **fully uniform** rung also exists and is proven:
 `analyticBarrier_for_words : S216BarrierForWords m Q (−Q + 1)` for all `m ≥ 1, Q`.
@@ -135,14 +181,24 @@ Level 0  Collatz conjecture
 Level 1b  S202 alternative fully resolved
    ▲ OPEN     (+ subcritical-access branch, not formalized)
 Level 1a  defect ≥ m  for all m   (uniform slope barrier)
-   ▲ OPEN     (reachable via EITHER Level 2″ OR Level 2-split below)
+   ▲ OPEN     (reachable via EITHER Level 2″ OR Level 2-split/2-BBE below)
    ├─────────────────────────────┐
-Level 2-split  KappaPathSplit m Q  (prefix-κ≥m ∧ suffix-κ≥1) + m=1 base
-   ┊ OPEN  ── crux = the split point `mid` (no canonical depth cut)
+Level 2-split / 2-BBE  KappaPathSplit m Q  ≡  BlockBoundaryExists m Q
+   ┊ OPEN  ── crux now = κ₂≥1 on the first-m-precision suffix (NOT "which mid")
    ┊  R2 brick PROVEN (05-30): projπ precision functor lifts (m+1)-κ-path
    ┊          ↦ m-κ-path, same κ (InvKappaPreciseEdge_projectDown / WPath_projectDown);
-   ┊          but IsGoal_projectDown_not_reflects ⇒ projπ many-to-one, mid NOT pinned;
-   ┊          Caveat C: InvStart wrong cylinder for m≥2 until migrated to aS202_at m
+   ┊  STRUCTURAL-SPLIT half PROVEN (05-30): WPath_first_witness_split canonically
+   ┊          selects mid = FIRST m-precision vertex; invStart_succ_not_mPrecise ⇒
+   ┊          trap only at END; reduction blockBoundaryExists_of_firstMPrecisionSuffix‐
+   ┊          Positive discharges every conjunct EXCEPT κ₂≥1
+   ┊  ▼
+   ┊  Level 2-BBE-resid  FirstMPrecisionSuffixPositive m Q  (κ₂≥1 on that suffix)
+   ┊     ✗?  UNDETERMINED ── the genuine crux; one-edge dlog jump
+   ┊        (oneEdge_rhoPlus_law) can lift ρ₊ across the full 22-digit gap in ONE
+   ┊        edge ⇒ first m-precision vertex = goal (R1 trap, FALSE) unless an
+   ┊        intermediate m-precise vertex with κ₂≥1 tail is forced (TRUE); deciding
+   ┊        configs at 3-adic depth ≈ 3²¹, computationally invisible (probes: ν₃-jump ≤ 10)
+   ┊  Caveat C (inherited): InvStart wrong cylinder for m≥2 until migrated to aS202_at m
 Level 2″  uniform-in-m κ certificate / analytic Φ
    ┊ OPEN  ── ρ₊ edge calculus COMPLETE (all 4 laws); LTE engine in place,
    ┊          but now known to be SEPARATE from the (dead) cylinder→ν₃ route
@@ -370,10 +426,12 @@ but the *path* to them no longer runs through the (dead) LTE/dlog bridge.
 The previous frontier item — discharge `CylinderForcesVal22` — is **closed
 negatively** (refuted, 05-29). The LTE/dlog bridge route is dead. **Note (05-30):**
 this DAG is the *analytic-Φ* route; a **parallel** route now exists — the committed
-`WPath`-split `KappaPathSplit` (Level 2-split, §5.-1), whose R2 brick is proven.
-The two below are the highest-leverage items *on the analytic route*; the
-split-route frontier (`InvStart` migration → split point `mid` / R1) is ranked in
-§5.-1 and the document summary.
+`WPath`-split `KappaPathSplit`, re-packaged as `BlockBoundaryExists` (Level 2-BBE,
+§5.-2), whose R2 brick and **entire structural-split half** are now proven, leaving
+the single residual `FirstMPrecisionSuffixPositive` (§5.-2). The two below are the
+highest-leverage items *on the analytic route*; the split-route frontier (now the
+arithmetic `κ₂ ≥ 1` residual, plus the `InvStart` migration) is ranked in §5.-2 and
+the document summary.
 
 1. **Analytic Φ from the now-complete ρ₊ edge calculus (Level 2″) via the
    ADDITIVE-DEFECT bound.** Attempt a finite-slice κ-potential `Φ` uniform in `m`
@@ -456,6 +514,95 @@ none is conjecturally close.**
 ---
 
 ## 5. Change log (verified passes)
+
+### 5.-2 BlockBoundaryExists attack pass — 2026-05-30 (verified, 0 sorry / 0 axiom, independently axiom-audited)
+
+**This pass attacks the single committed open core `BlockBoundaryExists m Q`**
+(KappaSplitReduction.lean, lines 72–80) — the re-packaged residue of `KappaPath‐
+Split`. The committed target, matched verbatim by an explicit ascription on the
+reduction lemma, is: every level-`(m+1)` κ-path from `InvStart (m+1)` to a goal with
+`goal.j ≤ Q` splits as prefix `InvStart (m+1) ⟶ mid` ++ suffix `mid ⟶ goal` with
+`κ = κ₁ + κ₂`, `vs = vs₁ ++ vs₂`, `projπ m mid` an `m`-goal, `mid.j ≤ Q`, and
+`1 ≤ κ₂`. Proving it ∀`m` (+ the committed `m=1` base + `uniform_slope_barrier_of_block`)
+⟹ the S202 slope barrier `defect ≥ m` for ALL `m`.
+
+One new file, namespace `CollatzLean4.Admissible`, **0 sorry, 0 axiom**, built clean
+against cached Mathlib (`lake build CollatzLean4.BlockBoundaryWork` → exit 0, well
+clear of the `Cert_m1_Q10` blow-up; olean at
+`.lake/build/lib/lean/CollatzLean4/BlockBoundaryWork.olean`; only the specific module
+built; root aggregator untouched):
+
+- `CollatzLean4/CollatzLean4/BlockBoundaryWork.lean` (imports `KappaSplitReduction`,
+  `Nu3UnitInvariance`; hence the committed `projπ` functor, the ρ₊/δ₊ transition
+  laws, and the analytic-barrier infrastructure transitively)
+
+**The decomposition (honest, NOT the τ=1-zero line).** `BlockBoundaryExists` splits
+into a fully-discharged **structural half** and a single isolated **arithmetic
+residual**:
+
+| Lemma | Statement | Role |
+|---|---|---|
+| **`WPath_first_witness_split`** (F1) | generic, fully unconditional: for any weighted edge predicate `E` and `DecidablePred P` with `P t`, `WPath E s t w vs` splits as prefix `s ⟶ mid` (interior `vs₁`) ++ suffix `mid ⟶ t` (interior `vs₂`) with `w=w₁+w₂`, `vs=vs₁++vs₂`, `P mid`, and the **firstness** witness `∀ x ∈ vs₁, P x → x = mid` (`mid` = FIRST `P`-target). Pure induction on `vs`. | **The carrier**: canonically selects the split point — "split at the first witness", not previously in the repo |
+| `projMPrecise` + `instDecidableProjMPrecise` | `projMPrecise m v := IsGoal (projπ m v) (22m+2)` (⟺ `v.c ≡ 1 mod 3^(22m+2+v.j)` ⟺ δ₊(v) ≤ 22), as a `DecidablePred` | The level-`m` precision predicate F1 instantiates at |
+| `projMPrecise_of_isGoal_succ` | `IsGoal v (22(m+1)+2) → projMPrecise m v` | The `P`-at-endpoint hypothesis F1 needs (repackages committed `IsGoal_projectDown`) |
+| **`invStart_succ_not_mPrecise`** | TRUE arithmetic content: `1 ≤ m → ¬ projMPrecise m (InvStart (m+1))` (because `projπ m (InvStart (m+1)) = InvStart m` and `aS202 = 1+3^22 ≢ 1 mod 3^(22m+2)` since `22m+2 ≥ 24 > 22`) | The first `m`-precision point is strictly AFTER the start ⟹ the R1 trap (empty suffix ⟹ κ₂=0) can re-appear only at the END, never the start |
+| **`FirstMPrecisionSuffixPositive`** | the sharper residual Prop (NAMED, not asserted): on the suffix from the FIRST `m`-precision vertex `mid` to the goal — handed the firstness data `∀ x ∈ vs₁, projMPrecise m x → x = mid` — `1 ≤ κ₂` | **The single remaining open obligation**; provably non-circular (firstness is strictly more data than the bare `(m+1)`-barrier) |
+| **`blockBoundaryExists_of_firstMPrecisionSuffixPositive`** | **HEADLINE reduction**: `FirstMPrecisionSuffixPositive m Q → BlockBoundaryExists m Q`. F1 + `IsGoal_projectDown` + `WPath_kappa_j_monotone` discharge every conjunct of the target except `1 ≤ κ₂`, which is exactly the residual. Lands DEFINITIONALLY on the committed target (verified by explicit ascription). | **The structural-split half is fully DISCHARGED**; only the κ₂ arithmetic remains |
+| `rhoPlus_le_cap`, `deltaPlus_le_cap` | `ρ₊(c,r) ≤ r`, `δ₊(c,r) ≤ r` | Cap bookkeeping for the δ₊ laws |
+| `zeroEdge_tau1_deltaPlus_nondecr`, `zeroEdge_tau3_deltaPlus_nondecr` | τ=1/τ=3 zero-edge: `δ₊(v) ≤ δ₊(v')` (RESET to max) | δ₊ engine: odd-τ zeros raise the deficit |
+| **`kappaEdge_kappaNeg1_deltaPlus_nondecr`** | the κ=−1 (only κ-lowering) edge is a τ=1 zero ⟹ `δ₊(v) ≤ δ₊(v')` | **The verified obstruction**: κ-spending edges DESTROY precision (lower κ₂ *and* raise δ₊) |
+| `zeroEdge_tau2_deltaPlus_eq` | τ=2 zero-edge: `δ₊(v') = δ₊(v)` (UNCHANGED) | δ₊ drops are carried only by one-edges (or even-τ ≥ 4 zeros) |
+
+**Truth verdict on `BlockBoundaryExists`: UNDETERMINED**, leaning toward "the κ-route
+as currently conceived cannot close it." Two things are *settled negatively* and one
+is genuinely open:
+
+1. **The task-favoured line is refuted.** "mid = LAST `m`-precision point ⟹ suffix
+   has no τ=1 zeros ⟹ κ₂ = n_one ≥ 1" fails twice over: (a) the `(m+1)`-goal *is* an
+   `m`-goal (committed `IsGoal_projectDown`), so the LAST `m`-precision vertex is the
+   goal itself — empty suffix, `κ₂ = 0`, the exact R1 trap; (b) even reading it as
+   "first `m`-precision point", a "no `m`-precise interior" selector does NOT forbid
+   τ=1/τ=3 zeros, because those edges target NON-`m`-precise successors
+   (`c' ≡ 2 mod 3`; committed `oddZeroEdge_breaks_mPrecision`). So `κ₂ = n_one −
+   n_τ1zero` is NOT pinned to `≥ 1` by any precision argument; the implication is a
+   non-sequitur. The δ₊ laws here make this precise: a τ=1 zero both subtracts 1 from
+   κ₂ and resets δ₊ to max, demanding *more* downstream one-edges, of unbounded
+   discrete-log magnitude `ν₃(c − 2^τ)`.
+
+2. **The genuine open content is the one-edge discrete-log jump.** By
+   `oneEdge_rhoPlus_law` (ρ₊(c') = ν₃(c − 2^τ)) a single one-edge can lift ρ₊ across
+   the entire final 22-digit gap, making the first (= only) `m`-precision vertex
+   coincide with the goal — a *uniform* R1 trap ⟹ `BlockBoundaryExists` FALSE.
+   Whether that single-edge final lift can ALWAYS be performed from a non-`m`-precise
+   source, or whether some intermediate `m`-precise vertex with a `κ₂ ≥ 1` tail is
+   forced (⟹ TRUE), is a question about the joint 3-adic distribution of `ν₃(c−1)` and
+   `ν₃(c−2^τ)` along reachable κ-paths. The deciding configurations live at 3-adic
+   depth ≈ 3²¹ (the discrete-log wall) and are **computationally invisible**:
+   real-graph probes (m=1, 300k states) top out at a single-edge ρ₊ jump of ν₃ = 10
+   < 22 — no counterexample exhibitable, no proof reachable by enumeration.
+
+**Axiom footprint (independently re-audited via `#print axioms`).** Build confirmed
+(exit 0, olean produced); 0 `sorry`, 0 custom `axiom` (all grep hits for
+sorry/admit/axiom are in prose docstrings only). The two headline lemmas
+(`WPath_first_witness_split`, `blockBoundaryExists_of_firstMPrecisionSuffixPositive`)
+depend on **only** `{propext, Quot.sound}` — *cleaner* than the allowed set. The
+remaining proof-carrying lemmas stay within `{propext, Classical.choice, Quot.sound}`
+plus, on `invStart_succ_not_mPrecise` alone, the pre-existing permitted
+`aS202_decomp._native.native_decide.ax_1_1` (the aS202 anchor, **not** introduced
+here). No `sorryAx`, no new custom axiom. All 13 declarations typecheck against their
+stated signatures; the reduction lands definitionally on the committed target in
+KappaSplitReduction.lean.
+
+**Net effect on the ladder.** A new core rung **Level 2-BBE** (`BlockBoundaryExists`,
+OPEN/UNDETERMINED) is named; its **structural-split half** (**Level 2-BBE-split**) is
+PROVEN; and its lone residual (**Level 2-BBE-resid** = `FirstMPrecisionSuffix‐
+Positive`) is isolated as a sharper, provably-non-circular named Prop. The prior
+`mid`-non-constructibility obstruction is **subsumed** — `WPath_first_witness_split`
+canonically selects `mid`, so the crux migrates from "which `mid`" to the arithmetic
+`κ₂ ≥ 1` on its suffix. Levels 2″/1a/1b/0 are **unchanged**. The route to Collatz is
+**not materially advanced**: it is still gated behind the OPEN/UNDETERMINED residual
+(now sharply localized), the subcritical-access branch, and the external Bandújar
+reduction.
 
 ### 5.-1 KappaPathSplit R2-functor pass — 2026-05-30 (verified, axiom-audited)
 
@@ -654,9 +801,9 @@ Independently re-audited: `#print axioms` on all four theorems stays within
 ### Document summary (7 lines)
 
 1. This is the κ-precise **slope-barrier sub-route**, explicitly *not* a Collatz proof; Ladder Levels 4→2′ are machine-checked and the κ-cert ⟹ `defect ≥ m` reduction is PROVEN/non-circular, but discharged unconditionally only for `m = 1`.
-2. **Headline of the 2026-05-30 pass: the R2 brick of the committed open core `KappaPathSplit` is proven** — a κ-preserving precision-reduction **functor** `projπ` lifts a level-`(m+1)` κ-path to a level-`m` κ-path of the *same* κ (`InvKappaPreciseEdge_projectDown`, `WPath_projectDown`, `kappaProjectsDown_holds`; `KappaSplitWork.lean`, 0 sorry, built in 8.4s, no `Cert_m1_Q10`), discharging R2's precision-tower step as a theorem.
-3. **The same pass sharpens the obstruction, it does not close the core:** `IsGoal_projectDown_not_reflects` proves `projπ` is many-to-one (witness `⟨0,1+3^24⟩`), so a projected prefix at an `m`-goal does NOT pin down the level-`(m+1)` split point `mid` — a second formal witness (beside `kappa_no_canonical_depth_cut`) that `mid` is the genuine crux. Flagged Caveat C: `InvStart` is the wrong cylinder for `m ≥ 2` until migrated to `aS202_at m`.
-4. **Ladder update:** new sub-rungs **Level 2-split** (the `WPath`-split route, OPEN — crux = `mid`) and **Level 2-split-R2** (the functor, PROVEN 05-30); `KappaPathSplit` is **reduced, not closed**. (Prior 05-29: Level 2-bridge `OPEN → REFUTED`, new Level 4-truth; the LTE/dlog slope-barrier route stays dead.) Axiom audit: pure functor core on `{propext, Quot.sound}`; the three `InvStart`-touching lemmas add only the pre-existing `aS202_decomp._native` anchor; no `sorryAx`, no new custom axiom.
-5. The κ-`WPath`-split route is now a **distinct, live alternative** to the analytic-Φ route into Level 1a; both remain OPEN, but the split route's residue is concentrated, locatable, and partly discharged (R2 done; R1 + split point + `InvStart` migration remain).
-6. Levels 2″/1a (uniform-in-`m`), 1b (subcritical-access branch), 0 (Bandújar reduction) remain OPEN/EXTERNAL; the route to Collatz is **not materially advanced** — it is still gated behind the full `KappaPathSplit` (now reduced but with its crux untouched) and the external Bandújar reduction.
-7. Single most valuable next formal step: **the `InvStart`-migration lemma** (`projπ m (InvStart (m+1)) = InvStart m` re-proven on the coherent tower `aS202_at m`, a clean `native_decide`-checkable step) — it lifts Caveat C and makes the proven R2 brick usable for `m ≥ 2`, the necessary precondition before any attack on the split point `mid` / R1 can rest on solid ground.
+2. **Headline of the 2026-05-30 BlockBoundaryExists pass: the entire structural-split half of the single committed open core `BlockBoundaryExists m Q` is proven** — the generic first-witness path split `WPath_first_witness_split` canonically selects `mid` = the FIRST `m`-precision vertex, and the valid reduction `blockBoundaryExists_of_firstMPrecisionSuffixPositive : FirstMPrecisionSuffixPositive m Q → BlockBoundaryExists m Q` discharges **every conjunct of the committed target except `κ₂ ≥ 1`** (`BlockBoundaryWork.lean`, 0 sorry, 0 axiom, build-verified, no `Cert_m1_Q10`).
+3. **The lone residual is now isolated as one sharper, provably-non-circular named Prop `FirstMPrecisionSuffixPositive`** (on the suffix from the first `m`-precision vertex to the goal, `κ₂ ≥ 1`). Supporting TRUE bricks: `invStart_succ_not_mPrecise` (the start is NOT `m`-precise ⟹ the R1 trap can re-appear only at the END) and the δ₊ per-edge monotonicity laws (`kappaEdge_kappaNeg1_deltaPlus_nondecr`: the only κ-lowering edge DESTROYS precision).
+4. **Truth verdict: UNDETERMINED**, leaning "the κ-route as conceived cannot close it." The task-favoured "LAST `m`-precision point / no τ=1 zeros" line is **refuted** (the last `m`-precision point IS the goal ⟹ empty suffix; τ=1/τ=3 zeros target non-`m`-precise successors so the selector does not forbid them). The genuine crux is the **one-edge discrete-log jump** (`oneEdge_rhoPlus_law` can lift ρ₊ across the full 22-digit gap in one edge), whose deciding configs sit at 3-adic depth ≈ 3²¹ and are computationally invisible (probes: ν₃-jump ≤ 10 < 22) — so neither a counterexample nor a proof is reachable by enumeration.
+5. **Ladder update:** new rungs **Level 2-BBE** (`BlockBoundaryExists`, OPEN/UNDETERMINED), **Level 2-BBE-split** (structural half, PROVEN 05-30), **Level 2-BBE-resid** (the residual, OPEN); the prior `mid`-non-constructibility obstruction is **subsumed** (the split now canonically picks `mid`, so the crux migrates from "which `mid`" to the arithmetic `κ₂ ≥ 1`). Axiom audit: the two headline lemmas on `{propext, Quot.sound}` only; rest within the allowed set + the pre-existing `aS202_decomp._native` anchor on one lemma; no `sorryAx`, no new custom axiom. (Earlier same day: Level 2-split-R2 functor PROVEN; prior 05-29: Level 2-bridge REFUTED, Level 4-truth added — LTE/dlog route stays dead.)
+6. Levels 2″/1a (uniform-in-`m`), 1b (subcritical-access branch), 0 (Bandújar reduction) remain OPEN/EXTERNAL; the route to Collatz is **not materially advanced** — it is now gated behind a single sharply-localized arithmetic residual whose truth is itself undetermined, plus the unformalized subcritical branch and the external Bandújar reduction.
+7. Single most valuable next step: **decide `FirstMPrecisionSuffixPositive`** — i.e. settle whether the one-edge discrete-log lift can always carry ρ₊ across the final 22-digit gap from a non-`m`-precise source (⟹ `BlockBoundaryExists` FALSE, killing the κ-route, a major honest finding) or whether an intermediate `m`-precise vertex with a `κ₂ ≥ 1` tail is forced (⟹ TRUE); this is a sharp 3-adic question about the joint distribution of `ν₃(c−1)` and `ν₃(c−2^τ)`, and is the gate before any further uniform-`m` progress (the `InvStart`→`aS202_at m` migration of Caveat C remains a clean prerequisite for `m ≥ 2`).

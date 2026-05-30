@@ -347,6 +347,23 @@ theorem dlog_three_c_add_one_eq_ratio (c j : ℕ) (hco : Nat.Coprime c 3) :
   have hmul := dlog_mul k hk hc hr
   rwa [hcr] at hmul
 
+/-! ### One-edge reachability in dlog coordinates: the τ-shift orbit -/
+
+/-- `2` is a unit in `ZMod (3^k)`. -/
+theorem isUnit_two (k : ℕ) : IsUnit (2 : ZMod (3 ^ k)) := by
+  have hcast : ((2 : ℕ) : ZMod (3 ^ k)) = (2 : ZMod (3 ^ k)) := by push_cast; ring
+  rw [← hcast, ZMod.isUnit_iff_coprime]
+  exact (by decide : Nat.Coprime 2 3).pow_right k
+
+/-- `dlog(2^E) ≡ E` — the discrete log of a power of the base is the exponent. With `dlog_mul`,
+a one-edge `WPath` of total weight `w` telescopes (via `oneWalk_residue`'s `s.c ≡ 2^w·t.c`) to
+`dlog(s.c) ≡ w + dlog(t.c)`: the one-edge-reachable dlog-residues form the explicit orbit
+`{dlog(start) − Στ}` (stated here as the building block; the full path telescope is a direct but
+elaboration-heavy corollary, omitted for build performance). -/
+theorem dlog_two_pow (k : ℕ) (hk : 1 ≤ k) (E : ℕ) :
+    dlog k ((2 : ZMod (3 ^ k)) ^ E) ≡ E [MOD 2 * 3 ^ (k - 1)] :=
+  (two_pow_eq_iff_modEq k hk).mp (two_pow_dlog k hk ((isUnit_two k).pow E))
+
 /-! ### The open arithmetic core: the affine `x ↦ 3x+1` in dlog coordinates -/
 
 /-- **The affine dlog jump.** `affineDlogJump c j` is the change in discrete log at level `j+1`

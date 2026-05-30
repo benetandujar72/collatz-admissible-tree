@@ -203,6 +203,48 @@ theorem zeroEdge_dlog_shift (m : ℕ) {v v' : InvVertex} {ω : Int}
     rw [pow_add, hcu, hedge, hcu']
   exact (two_pow_eq_iff_modEq k hk).mp key
 
+/-- **Cross-level dlog compatibility (the discrete-log tower).** For a residue coprime to 3,
+the discrete log at the coarser level `j` is that at the finer level `j+1` reduced mod the
+coarser order: `dlog_j(c) ≡ dlog_{j+1}(c) (mod 2·3^{j-1})`. (The projection
+`ZMod 3^{j+1} → ZMod 3^j` is a ring hom fixing 2.) This is how a zero-edge's finer-level dlog
+relates down the tower — half of the 3x+1 reindexing; the other half (the affine `x↦3x+1`
+itself in dlog coordinates) is the open core. -/
+theorem dlog_reduce (c j : ℕ) (hj : 1 ≤ j) (hco : Nat.Coprime c 3) :
+    dlog j ((c : ZMod (3 ^ j)))
+      ≡ dlog (j + 1) ((c : ZMod (3 ^ (j + 1)))) [MOD 2 * 3 ^ (j - 1)] := by
+  have hunit_j : IsUnit ((c : ZMod (3 ^ j))) :=
+    (ZMod.isUnit_iff_coprime c (3 ^ j)).mpr (hco.pow_right j)
+  have hunit_j1 : IsUnit ((c : ZMod (3 ^ (j + 1)))) :=
+    (ZMod.isUnit_iff_coprime c (3 ^ (j + 1))).mpr (hco.pow_right (j + 1))
+  have hd1 := two_pow_dlog (j + 1) (by omega) hunit_j1
+  have hmod1 : (2 : ℕ) ^ (dlog (j + 1) ((c : ZMod (3 ^ (j + 1))))) ≡ c [MOD 3 ^ (j + 1)] := by
+    apply (ZMod.natCast_eq_natCast_iff _ _ _).mp
+    push_cast
+    rw [hd1]
+  have hdvd : 3 ^ j ∣ 3 ^ (j + 1) := pow_dvd_pow 3 (Nat.le_succ j)
+  have hmodj : (2 : ℕ) ^ (dlog (j + 1) ((c : ZMod (3 ^ (j + 1))))) ≡ c [MOD 3 ^ j] :=
+    Nat.ModEq.of_dvd hdvd hmod1
+  have hd1j : (2 : ZMod (3 ^ j)) ^ (dlog (j + 1) ((c : ZMod (3 ^ (j + 1))))) = (c : ZMod (3 ^ j)) := by
+    have h := (ZMod.natCast_eq_natCast_iff _ _ _).mpr hmodj
+    push_cast at h
+    exact h
+  have hd2j : (2 : ZMod (3 ^ j)) ^ (dlog j ((c : ZMod (3 ^ j)))) = (c : ZMod (3 ^ j)) :=
+    two_pow_dlog j hj hunit_j
+  exact (two_pow_eq_iff_modEq j hj).mp (by rw [hd2j, hd1j])
+
+/-! ### The open arithmetic core: the affine `x ↦ 3x+1` in dlog coordinates -/
+
+/-- **The affine dlog jump — the open quantity.** `affineDlogJump c j` is the change in discrete
+log at level `j+1` induced by the Collatz affine map `x ↦ 3x+1`:
+`dlog_{j+1}(3c+1) − dlog_{j+1}(c)`. Unlike a one-edge (a clean shift by `τ`), this has NO closed
+form — it couples the additive `+1` (2-adic side) with the multiplicative discrete log (3-adic
+side). Its distribution along reachable κ-paths is the irreducible open arithmetic of Wall B,
+and is precisely the 2-adic ⊗ 3-adic coupling (Wall ②) localized to a single step. Named here,
+deliberately NOT computed — that is the genuine open problem. -/
+noncomputable def affineDlogJump (c j : ℕ) : ℤ :=
+  (dlog (j + 1) ((3 * c + 1 : ℕ) : ZMod (3 ^ (j + 1))) : ℤ)
+    - (dlog (j + 1) ((c : ℕ) : ZMod (3 ^ (j + 1))) : ℤ)
+
 /-! ### The reachable discrete-log residue set (Wall-B Tier-2 carrier) -/
 
 /-- **The reachable discrete-log residue set.** The discrete logs of the c-coordinates of

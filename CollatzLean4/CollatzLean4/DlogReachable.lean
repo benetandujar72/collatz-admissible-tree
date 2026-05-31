@@ -140,13 +140,20 @@ theorem invReachable_InX (m : ℕ) {v : InvVertex} (hv : InvReachable m v) : InX
   · exact h.2.1
 
 /-- **A goal vertex has discrete log 0.** `IsGoal v R` (`v.c ≡ 1 mod 3^{R+j}`) forces
-`dlog(v.c) ≡ 0 (mod 2·3^{R+j-1})`. So the ENDPOINTS of the slope-barrier residual's suffix — the
-first-m-precision vertex `mid` (≡ 1 at the m-level) and the goal — both sit at dlog 0; hence the
-NET discrete-log shift along the suffix is `≡ 0`. Combined with the edge cocycle
-(`oneEdge_dlog_shift`/`zeroEdge_dlog_shift`: each edge shifts dlog by `τ`), this is a genuine
-linear constraint `Σ τ ≡ 0` on the suffix's edge multiset — a structural handle on the open κ-sign
-core `FirstMPrecisionSuffixPositive` that brings the verified dlog machinery to bear on the actual
-Wall-B barrier. -/
+`dlog(v.c) ≡ 0 (mod 2·3^{R+j-1})` at the vertex's OWN modulus `3^{R+j}`. This is a true, useful
+fact about goal vertices and is used downstream.
+
+CAUTION (corrected S240): this does NOT yield a `Σ τ ≡ 0` constraint on the slope-barrier
+residual's suffix, contrary to the original 469c050 narrative. The goal sits at dlog 0 at the
+WORKING level `B = 22(m+1)+2+j`, but the first-m-precision vertex `mid` has `mid.c ≡ 1` only at
+the COARSER m-level modulus `3^{22m+2+j}` (def of `projMPrecise`) — a factor `3^22` below `B`. So
+`dlog_B(mid.c)` is FREE over the order-`3^22` coset (the 22 ternary digits of the `[m,m+1)`
+window); this free fibre IS the project's "depth-3^21 invisibility" (`22(m+1)+2 − (22m+2) = 22`).
+Telescoping the edge cocycle then yields only an IDENTITY (true for every path), not a constraint —
+and `Σ τ` could not bound `sign κ₂` anyway (`τ↦κ` is non-linear: a `τ=4` one-edge has `κ=+1`, a
+`τ=1` zero-edge has `κ=−1`; and `Σ τ > 0` as an integer, the `≡0` being purely modular). The
+`Σ τ ≡ 0` handle is VACUOUS. The honest open core is the constrained reachability of the
+`dlog=2` / `c≡4` trap cylinder (the mod-9 deep-jump uniqueness lemma, S240). -/
 theorem isGoal_dlog_zero (R : ℕ) (hR : 1 ≤ R) {v : InvVertex} (h : InvVertex.IsGoal v R) :
     dlog (R + v.j) ((v.c : ZMod (3 ^ (R + v.j)))) ≡ 0 [MOD 2 * 3 ^ (R + v.j - 1)] := by
   have hk : 1 ≤ R + v.j := by omega

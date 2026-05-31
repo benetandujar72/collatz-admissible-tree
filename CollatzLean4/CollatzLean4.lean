@@ -50,3 +50,4 @@ import CollatzLean4.DiscreteLog
 import CollatzLean4.DlogReachable
 import CollatzLean4.Coupling
 import CollatzLean4.SyracuseMeasure
+import CollatzLean4.OneEdgeMod9

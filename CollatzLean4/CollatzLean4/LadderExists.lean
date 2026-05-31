@@ -226,7 +226,7 @@ theorem entry_zeroEdge (m : ℕ) (hm : 1 ≤ m) :
     ∃ (c1 W : ℕ),
       InvEdgeZero (22 * (m + 1) + 2) (InvStart (m + 1)) ⟨1, c1⟩ ((tau c1 : Int) - 2) ∧
       tau c1 = 4 ∧
-      c1 = 2 ^ W % 3 ^ (22 * (m + 1) + 2 + 1) ∧ W % 6 = 4 := by
+      c1 = 2 ^ W % 3 ^ (22 * (m + 1) + 2 + 1) ∧ W % 6 = 4 ∧ c1 % 9 = 7 := by
   set R := 22 * (m + 1) + 2 with hRdef
   have hStart : (InvStart (m + 1)).c = aS202 := invStart_c_eq_aS202 (m + 1) (by omega)
   have ha9 : aS202 % 9 = 1 := S206_a_mod9
@@ -268,13 +268,68 @@ theorem entry_zeroEdge (m : ℕ) (hm : 1 ≤ m) :
   have htau : tau c1 = 4 := tau_class_seven c1 hc19
   have hc3 : c1 % 3 = 1 := by omega
   obtain ⟨W, hc1eq, hW6⟩ := unit_eq_two_pow_mod9 (R + 1) c1 hR2 hc3 hc1lt hc19
-  refine ⟨c1, W, ?_, htau, hc1eq, hW6⟩
+  refine ⟨c1, W, ?_, htau, hc1eq, hW6, hc19⟩
   refine ⟨?_, InX_class_seven c1 hc19, ?_, rfl⟩
   · show (1 : ℕ) = (InvStart (m + 1)).j + 1
     rfl
   · show (3 * (InvStart (m + 1)).c + 1) % 3 ^ (R + 1) = (2 ^ tau c1 * c1) % 3 ^ (R + 1)
     rw [hStart, htau]
     exact hcons
+
+/-! ### Lemma 6 — assembly: the canonical-first-split device is refuted -/
+
+/-- The deep one-edge `trap = ⟨1, 4⟩ → goal = ⟨1, 1⟩` (weight `τ = tau 1 = 2`, κ = +1). -/
+theorem deep_edge (R : ℕ) :
+    InvKappaPreciseEdge R ⟨1, 2 ^ 2 % 3 ^ (R + 1)⟩ ⟨1, 1⟩ 1 := by
+  refine Or.inl ⟨2, ⟨rfl, Or.inl rfl, ?_, ?_⟩, rfl⟩
+  · show (2 ^ 2 % 3 ^ (R + 1)) % 3 ^ (R + 1) = (2 ^ tau 1 * 1) % 3 ^ (R + 1)
+    rw [Nat.mod_mod_of_dvd _ (dvd_refl _)]
+    simp only [show tau 1 = 2 from rfl, mul_one]
+  · show (2 : Int) = (tau 1 : Int)
+    simp [show tau 1 = 2 from rfl]
+
+/-- **The negative theorem (S240 Phase 1).**  `FirstMPrecisionSuffixPositive` is FALSE for every
+`m ≥ 1`, `Q ≥ 1`: the canonical-first-split reduction device of the Wall-B barrier is REFUTED.
+
+Witness: the path `InvStart(m+1) → s1 (entry zero-edge) → … (one-edge ladder) → trap=⟨1,4⟩ →
+goal=⟨1,1⟩ (deep one-edge)`.  Every prefix vertex is class 4 or 7 (mod 9), hence non-`m`-precise
+(the shield), so the goal is the FIRST `m`-precise vertex.  In the first-witness split this forces
+`mid = goal`, `vs₂ = []`, `κ₂ = 0 < 1`, contradicting the residual.
+
+(This kills only this proof DEVICE — the barrier itself survives, being existential over the split.) -/
+theorem not_firstMPrecisionSuffixPositive {m Q : ℕ} (hm : 1 ≤ m) (hQ : 1 ≤ Q) :
+    ¬ FirstMPrecisionSuffixPositive m Q := by
+  intro h_res
+  have hRw : 1 ≤ 22 * (m + 1) + 2 := by omega
+  obtain ⟨c1, W, h_entry_edge, htau, hc1eq, hW6, hc19⟩ := entry_zeroEdge m hm
+  have h_entry_kappa : InvKappaPreciseEdge (22 * (m + 1) + 2) (InvStart (m + 1)) ⟨1, c1⟩ 0 :=
+    Or.inr (Or.inr ⟨_, h_entry_edge, by show 2 ≤ tau c1; omega, rfl⟩)
+  rw [hc1eq] at h_entry_kappa
+  have h_entry_path :
+      WPath (InvKappaPreciseEdge (22 * (m + 1) + 2)) (InvStart (m + 1))
+        ⟨1, 2 ^ W % 3 ^ (22 * (m + 1) + 2 + 1)⟩ 0
+        [⟨1, 2 ^ W % 3 ^ (22 * (m + 1) + 2 + 1)⟩] :=
+    ⟨0, 0, h_entry_kappa, ⟨rfl, rfl⟩, by ring⟩
+  obtain ⟨vs_lad, κ_lad, h_ladder, hκ_lad, h_shield⟩ :=
+    ladder_exists (22 * (m + 1) + 2) hRw W (Or.inr hW6) (by omega)
+  have h_el := WPath_kappa_concat h_entry_path h_ladder
+  have h_full := WPath_snoc (deep_edge (22 * (m + 1) + 2)) h_el
+  have hIsGoal : InvVertex.IsGoal (⟨1, 1⟩ : InvVertex) (22 * (m + 1) + 2) := rfl
+  have hMidPrec : projMPrecise m (⟨1, 1⟩ : InvVertex) := projMPrecise_of_isGoal_succ hIsGoal
+  have hSuffix : WPath (InvKappaPreciseEdge (22 * (m + 1) + 2)) ⟨1, 1⟩ ⟨1, 1⟩ 0 [] := ⟨rfl, rfl⟩
+  have hjQ : (⟨1, 1⟩ : InvVertex).j ≤ Q := hQ
+  have hFirst : ∀ x ∈ (([⟨1, 2 ^ W % 3 ^ (22 * (m + 1) + 2 + 1)⟩] ++ vs_lad)
+      ++ [(⟨1, 1⟩ : InvVertex)]), projMPrecise m x → x = ⟨1, 1⟩ := by
+    intro x hx hp
+    rcases List.mem_append.mp hx with hx1 | hx2
+    · rcases List.mem_append.mp hx1 with hxs1 | hxlad
+      · rw [List.mem_singleton] at hxs1; subst hxs1
+        exact absurd hp (ladder_vertex_not_mPrecise
+          (Or.inr (class_seven_of_mod6 (22 * (m + 1) + 2 + 1) W (by omega) hW6)))
+      · exact absurd hp (ladder_vertex_not_mPrecise (h_shield x hxlad))
+    · rw [List.mem_singleton] at hx2; exact hx2
+  have hcontra := h_res hIsGoal hjQ h_full hSuffix hMidPrec hFirst
+  exact absurd hcontra (by norm_num)
 
 end CollatzLean4.Admissible
 

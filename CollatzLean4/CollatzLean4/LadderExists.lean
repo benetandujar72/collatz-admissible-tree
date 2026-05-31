@@ -101,6 +101,44 @@ theorem ladder_step_four (R d : ℕ) (hR : 1 ≤ R) (h : d % 6 = 2) (hd : 8 ≤ 
   have hX : InX (2 ^ (d - 4) % 3 ^ (R + 1)) := InX_class_seven _ hcl
   exact Or.inl ⟨_, oneEdge_two_pow R d 4 hR (by omega) hτ hX, rfl⟩
 
+/-! ### Lemma 5 helpers — the modular inverse of `2^τ` mod `3^k` -/
+
+/-- `2 · invMod2(3^k) ≡ 1 (mod 3^k)`: `invMod2 M = (M+1)/2` is the inverse of 2 for odd `M`. -/
+theorem two_mul_invMod2 (k : ℕ) (hk : 1 ≤ k) : (2 * invMod2 (3 ^ k)) % 3 ^ k = 1 := by
+  have h1lt : 1 < 3 ^ k := by
+    calc (1 : ℕ) < 3 := by norm_num
+      _ = 3 ^ 1 := (pow_one 3).symm
+      _ ≤ 3 ^ k := Nat.pow_le_pow_right (by norm_num) hk
+  have hodd : 3 ^ k % 2 = 1 := by rw [Nat.pow_mod]; norm_num
+  have hval : 2 * invMod2 (3 ^ k) = 3 ^ k + 1 := by unfold invMod2; omega
+  rw [hval, Nat.add_mod_left, Nat.mod_eq_of_lt h1lt]
+
+/-- `2^τ · invMod2Pow τ (3^k) ≡ 1 (mod 3^k)`. -/
+theorem invMod2Pow_cancel (τ k : ℕ) (hk : 1 ≤ k) :
+    (2 ^ τ * invMod2Pow τ (3 ^ k)) % 3 ^ k = 1 := by
+  have h1lt : 1 < 3 ^ k := by
+    calc (1 : ℕ) < 3 := by norm_num
+      _ = 3 ^ 1 := (pow_one 3).symm
+      _ ≤ 3 ^ k := Nat.pow_le_pow_right (by norm_num) hk
+  have hA : (2 * invMod2 (3 ^ k)) % 3 ^ k = 1 := two_mul_invMod2 k hk
+  unfold invMod2Pow
+  have e1 : (2 ^ τ * (invMod2 (3 ^ k) ^ τ % 3 ^ k)) % 3 ^ k
+      = (2 ^ τ * invMod2 (3 ^ k) ^ τ) % 3 ^ k :=
+    (Nat.mod_modEq _ _).mul_left _
+  rw [e1, ← mul_pow, Nat.pow_mod, hA, one_pow, Nat.mod_eq_of_lt h1lt]
+
+/-- `invMod2Pow 4 (3^k) ≡ 4 (mod 9)` (the inverse of `2^4 ≡ 7 mod 9` is `4`). -/
+theorem invMod2Pow_four_mod9 (k : ℕ) (hk : 2 ≤ k) : invMod2Pow 4 (3 ^ k) % 9 = 4 := by
+  have hcancel : (2 ^ 4 * invMod2Pow 4 (3 ^ k)) % 3 ^ k = 1 := invMod2Pow_cancel 4 k (by omega)
+  have h9 : (9 : ℕ) ∣ 3 ^ k := by
+    rw [show (9 : ℕ) = 3 ^ 2 from by norm_num]; exact pow_dvd_pow 3 hk
+  have h9eq : (2 ^ 4 * invMod2Pow 4 (3 ^ k)) % 9 = 1 := by
+    rw [← Nat.mod_mod_of_dvd _ h9, hcancel]
+  rw [Nat.mul_mod] at h9eq
+  have h16 : (2 : ℕ) ^ 4 % 9 = 7 := by norm_num
+  rw [h16] at h9eq
+  omega
+
 /-! ### Lemma 4 — existence of the trap-reaching ladder (strong induction on `d`) -/
 
 /-- **The ladder exists.**  From any `⟨1, 2^d % 3^(R+1)⟩` with `d ≡ 2 or 4 (mod 6)` and `d ≥ 2`,
@@ -143,6 +181,102 @@ theorem ladder_exists (R : ℕ) (hR : 1 ≤ R) :
           · exact Or.inl (class_four_of_mod6 (R + 1) (d - 2) (by omega) (by omega))
           · exact hshield' x hmem
 
+/-- `2^(e%6) ≡ 7 (mod 9)` forces `e % 6 = 4` (standalone, fresh variable — avoids whnf on the
+irreducible `dlog`-derived `W` inside a heavy context). -/
+theorem mod6_of_two_pow_mod9_seven (e : ℕ) (h : 2 ^ (e % 6) % 9 = 7) : e % 6 = 4 := by
+  have hlt : e % 6 < 6 := Nat.mod_lt _ (by norm_num)
+  generalize hj : e % 6 = j at h hlt
+  interval_cases j <;> revert h <;> decide
+
+/-- A unit `c1 ≡ 7 (mod 9)` (with `c1 < 3^k`, `k ≥ 2`) is `2^W % 3^k` for some `W ≡ 4 (mod 6)`.
+The exponent `k` is a BARE variable so `ZMod (3^k)`'s instances do not `whnf` the compound
+`22(m+1)+3` exponent (which loops); the caller instantiates `k := 22(m+1)+3`. -/
+theorem unit_eq_two_pow_mod9 (k c1 : ℕ) (hk : 2 ≤ k) (hc3 : c1 % 3 = 1)
+    (hc1lt : c1 < 3 ^ k) (hc19 : c1 % 9 = 7) :
+    ∃ W, c1 = 2 ^ W % 3 ^ k ∧ W % 6 = 4 := by
+  have hco : Nat.Coprime c1 3 := by
+    have hnd : ¬ (3 ∣ c1) := by intro hd; omega
+    exact Nat.coprime_comm.mp ((Nat.prime_three.coprime_iff_not_dvd).mpr hnd)
+  have hunit : IsUnit ((c1 : ZMod (3 ^ k))) :=
+    (ZMod.isUnit_iff_coprime c1 (3 ^ k)).mpr (hco.pow_right _)
+  obtain ⟨W, hW⟩ := exists_two_pow_eq_of_isUnit k (by omega) hunit
+  have hc1eq : c1 = 2 ^ W % 3 ^ k := by
+    have hmod : (2 ^ W : ℕ) % 3 ^ k = c1 % 3 ^ k := by
+      have hh : (2 ^ W : ℕ) ≡ c1 [MOD 3 ^ k] := by
+        apply (ZMod.natCast_eq_natCast_iff _ _ _).mp; push_cast; exact hW
+      exact hh
+    rw [hmod, Nat.mod_eq_of_lt hc1lt]
+  have h9dvd : (9 : ℕ) ∣ 3 ^ k := by
+    rw [show (9 : ℕ) = 3 ^ 2 from by norm_num]; exact pow_dvd_pow 3 hk
+  refine ⟨W, hc1eq, ?_⟩
+  apply mod6_of_two_pow_mod9_seven
+  rw [← two_pow_mod_nine]
+  calc 2 ^ W % 9 = (2 ^ W % 3 ^ k) % 9 := (Nat.mod_mod_of_dvd _ h9dvd).symm
+    _ = c1 % 9 := by rw [← hc1eq]
+    _ = 7 := hc19
+
+/-! ### Lemma 5 — the entry zero-edge `InvStart(m+1) → s1` (class 7) -/
+
+/-- **The entry edge.**  From `InvStart(m+1)` (class 1, no one-edge) a single zero-edge (weight
+`τ−2 = 2`, hence κ=0) reaches a class-7 vertex `s1 = ⟨1, c1⟩` with `c1 = (3·aS202+1)·2^{-4} mod M`.
+`c1` is a unit, so `c1 = 2^W % M` for `W = dlog(c1)`, and `W ≡ 4 (mod 6)` (forced by class 7) —
+`W` is the existential bridge to the ladder, never computed.  aS202's value is never used beyond
+`aS202 ≡ 1 (mod 9)`. -/
+theorem entry_zeroEdge (m : ℕ) (hm : 1 ≤ m) :
+    ∃ (c1 W : ℕ),
+      InvEdgeZero (22 * (m + 1) + 2) (InvStart (m + 1)) ⟨1, c1⟩ ((tau c1 : Int) - 2) ∧
+      tau c1 = 4 ∧
+      c1 = 2 ^ W % 3 ^ (22 * (m + 1) + 2 + 1) ∧ W % 6 = 4 := by
+  set R := 22 * (m + 1) + 2 with hRdef
+  have hStart : (InvStart (m + 1)).c = aS202 := invStart_c_eq_aS202 (m + 1) (by omega)
+  have ha9 : aS202 % 9 = 1 := S206_a_mod9
+  have h3a9 : (3 * aS202 + 1) % 9 = 4 := by omega
+  have hR1 : 1 ≤ R + 1 := by omega
+  have hR2 : 2 ≤ R + 1 := by omega
+  have h9dvd : (9 : ℕ) ∣ 3 ^ (R + 1) := by
+    rw [show (9 : ℕ) = 3 ^ 2 from by norm_num]; exact pow_dvd_pow 3 hR2
+  have hMpos : 0 < 3 ^ (R + 1) := by positivity
+  have hM1lt : 1 < 3 ^ (R + 1) := by
+    calc (1 : ℕ) < 3 := by norm_num
+      _ = 3 ^ 1 := (pow_one 3).symm
+      _ ≤ 3 ^ (R + 1) := Nat.pow_le_pow_right (by norm_num) hR1
+  have hinv9 : invMod2Pow 4 (3 ^ (R + 1)) % 9 = 4 := invMod2Pow_four_mod9 (R + 1) hR2
+  set c1 := ((3 * aS202 + 1) * invMod2Pow 4 (3 ^ (R + 1))) % 3 ^ (R + 1) with hc1def
+  clear_value c1
+  have hc19 : c1 % 9 = 7 := by
+    have e : c1 % 9 = ((3 * aS202 + 1) % 9 * (invMod2Pow 4 (3 ^ (R + 1)) % 9)) % 9 := by
+      rw [hc1def, Nat.mod_mod_of_dvd _ h9dvd, Nat.mul_mod]
+    rw [e, h3a9, hinv9]
+  have hc1lt : c1 < 3 ^ (R + 1) := by rw [hc1def]; exact Nat.mod_lt _ hMpos
+  have hcons : (3 * aS202 + 1) % 3 ^ (R + 1) = (2 ^ 4 * c1) % 3 ^ (R + 1) := by
+    have hcancelMod : (2 ^ 4 * invMod2Pow 4 (3 ^ (R + 1))) % 3 ^ (R + 1) = 1 :=
+      invMod2Pow_cancel 4 (R + 1) hR1
+    have hkey : 2 ^ 4 * c1 ≡ 3 * aS202 + 1 [MOD 3 ^ (R + 1)] := by
+      calc 2 ^ 4 * c1
+          = 2 ^ 4 * (((3 * aS202 + 1) * invMod2Pow 4 (3 ^ (R + 1))) % 3 ^ (R + 1)) := by
+            rw [hc1def]
+        _ ≡ 2 ^ 4 * ((3 * aS202 + 1) * invMod2Pow 4 (3 ^ (R + 1))) [MOD 3 ^ (R + 1)] :=
+            (Nat.mod_modEq _ _).mul_left _
+        _ = (3 * aS202 + 1) * (2 ^ 4 * invMod2Pow 4 (3 ^ (R + 1))) := by ring
+        _ ≡ (3 * aS202 + 1) * 1 [MOD 3 ^ (R + 1)] := by
+            have hc : (2 ^ 4 * invMod2Pow 4 (3 ^ (R + 1))) ≡ 1 [MOD 3 ^ (R + 1)] := by
+              unfold Nat.ModEq; rw [hcancelMod, Nat.mod_eq_of_lt hM1lt]
+            exact hc.mul_left _
+        _ = 3 * aS202 + 1 := by rw [mul_one]
+    exact hkey.symm
+  clear hinv9 hc1def
+  have htau : tau c1 = 4 := tau_class_seven c1 hc19
+  have hc3 : c1 % 3 = 1 := by omega
+  obtain ⟨W, hc1eq, hW6⟩ := unit_eq_two_pow_mod9 (R + 1) c1 hR2 hc3 hc1lt hc19
+  refine ⟨c1, W, ?_, htau, hc1eq, hW6⟩
+  refine ⟨?_, InX_class_seven c1 hc19, ?_, rfl⟩
+  · show (1 : ℕ) = (InvStart (m + 1)).j + 1
+    rfl
+  · show (3 * (InvStart (m + 1)).c + 1) % 3 ^ (R + 1) = (2 ^ tau c1 * c1) % 3 ^ (R + 1)
+    rw [hStart, htau]
+    exact hcons
+
 end CollatzLean4.Admissible
+
 
 

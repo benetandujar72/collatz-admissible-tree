@@ -32,6 +32,7 @@ obtains only "almost all". We start at 1 and build up, with calm.
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
 import Mathlib.Analysis.SpecificLimits.Basic
+import CollatzLean4.CycleEquation
 
 namespace CollatzLean4.Admissible
 
@@ -71,5 +72,75 @@ Tao's Syracuse random variable; the next milestone pushes it forward under the o
 noncomputable def valSeqPMF : (m : ℕ) → PMF (Fin m → ℕ)
   | 0 => PMF.pure (Fin.elim0)
   | (m + 1) => (valSeqPMF m).bind fun a => valPMF.map (Fin.snoc a)
+
+/-- The valuation tuple `a : Fin m → ℕ` extended to a sequence `ℕ → ℕ` (zero past `m`), so the
+deterministic `partialA`/`cycleC` (defined on `ℕ → ℕ`) apply. Only indices `< m` are used. -/
+def extendVal {m : ℕ} (a : Fin m → ℕ) : ℕ → ℕ :=
+  fun i => if h : i < m then a ⟨i, h⟩ else 0
+
+/-- **The Syracuse offset map (Milestone 3 core).** Given the valuation tuple `a : Fin m → ℕ`, the
+residue `2^{-A_m}·C_m ∈ ZMod (3^m)` (with `A_m = Σ aᵢ = partialA`, `C_m = cycleC`) — exactly the
+residue the EXACT identity `2^{A_m}·a_m ≡ C_m (mod 3^m)` solves for. Reuses the deterministic
+`partialA`/`cycleC`, tying the distribution to the proven identity. -/
+noncomputable def syracuseOffset {m : ℕ} (a : Fin m → ℕ) : ZMod (3 ^ m) :=
+  Ring.inverse ((2 : ZMod (3 ^ m)) ^ (partialA (extendVal a) m))
+    * ((cycleC (extendVal a) m : ℕ) : ZMod (3 ^ m))
+
+/-- **The Syracuse law (Milestone 3) = Tao's Syracuse random variable `Syrac(ℤ/3^m)`.** The
+pushforward of the valuation-sequence law under the offset map: the distribution of the residue of
+an `m`-step Syracuse orbit mod `3^m` when the valuations are i.i.d. Geometric(2). -/
+noncomputable def syracuseLaw (m : ℕ) : PMF (ZMod (3 ^ m)) :=
+  (valSeqPMF m).map syracuseOffset
+
+/-- **The offset is correct.** `2^{A_m}·syracuseOffset a = C_m` in `ZMod (3^m)` — the offset map
+genuinely solves the exact Syracuse identity (so `syracuseLaw` is the law of the actual residue,
+not a vacuous definition). From the unit-ness of `2^{A_m}` and `Ring.mul_inverse_cancel`. -/
+theorem syracuseOffset_spec {m : ℕ} (a : Fin m → ℕ) :
+    (2 : ZMod (3 ^ m)) ^ (partialA (extendVal a) m) * syracuseOffset a
+      = ((cycleC (extendVal a) m : ℕ) : ZMod (3 ^ m)) := by
+  have h2 : IsUnit (2 : ZMod (3 ^ m)) := by
+    have hcast : ((2 : ℕ) : ZMod (3 ^ m)) = (2 : ZMod (3 ^ m)) := by push_cast; ring
+    rw [← hcast, ZMod.isUnit_iff_coprime]
+    exact (by decide : Nat.Coprime 2 3).pow_right m
+  unfold syracuseOffset
+  rw [← mul_assoc, Ring.mul_inverse_cancel _ (h2.pow _), one_mul]
+
+/-! ### Support ⊆ units (the easy half of Tao's support, deterministic) -/
+
+/-- The offset constant `cycleC k m` is coprime to 3 (for `m ≥ 1`): `cycleC k (m'+1) = 3·cycleC + 2^A`
+is `≡ 2^A ≢ 0 (mod 3)`. -/
+theorem cycleC_coprime_three (k : ℕ → ℕ) (m : ℕ) (hm : 1 ≤ m) : Nat.Coprime (cycleC k m) 3 := by
+  obtain ⟨m', rfl⟩ := Nat.exists_eq_succ_of_ne_zero (by omega : m ≠ 0)
+  have hrec : cycleC k (m' + 1) = 3 * cycleC k m' + 2 ^ (partialA k m') := rfl
+  have h3 : ¬ (3 : ℕ) ∣ cycleC k (m' + 1) := by
+    rw [hrec]
+    have hnd : ¬ (3 : ℕ) ∣ 2 ^ (partialA k m') := by
+      intro hd; have := Nat.Prime.dvd_of_dvd_pow Nat.prime_three hd; omega
+    omega
+  exact ((Nat.prime_three.coprime_iff_not_dvd).mpr h3).symm
+
+/-- **The Syracuse offset is always a unit** (`m ≥ 1`): `2^{-A_m}·C_m` is a product of two units
+(`2^{A_m}` and `C_m`, both coprime to 3). So the Syracuse residue avoids the multiples of 3. -/
+theorem syracuseOffset_isUnit {m : ℕ} (hm : 1 ≤ m) (a : Fin m → ℕ) :
+    IsUnit (syracuseOffset a) := by
+  have h2 : IsUnit (2 : ZMod (3 ^ m)) := by
+    have hcast : ((2 : ℕ) : ZMod (3 ^ m)) = (2 : ZMod (3 ^ m)) := by push_cast; ring
+    rw [← hcast, ZMod.isUnit_iff_coprime]
+    exact (by decide : Nat.Coprime 2 3).pow_right m
+  unfold syracuseOffset
+  refine IsUnit.mul ?_ ?_
+  · apply IsUnit.of_mul_eq_one
+    exact Ring.inverse_mul_cancel _ (h2.pow _)
+  · exact (ZMod.isUnit_iff_coprime _ _).mpr ((cycleC_coprime_three (extendVal a) m hm).pow_right m)
+
+/-- **Support ⊆ units (Tao's support, easy half).** Every residue in the support of `syracuseLaw m`
+(`m ≥ 1`) is a unit mod `3^m` — the Syracuse random variable "always avoids multiples of 3", as an
+exact deterministic fact via `PMF.mem_support_map_iff`. The HARD half (every unit IS attained = the
+offset map is surjective onto units) is the remaining reachability frontier. -/
+theorem syracuseLaw_support_isUnit {m : ℕ} (hm : 1 ≤ m) {b : ZMod (3 ^ m)}
+    (hb : b ∈ (syracuseLaw m).support) : IsUnit b := by
+  rw [syracuseLaw, PMF.mem_support_map_iff] at hb
+  obtain ⟨a, _, rfl⟩ := hb
+  exact syracuseOffset_isUnit hm a
 
 end CollatzLean4.Admissible

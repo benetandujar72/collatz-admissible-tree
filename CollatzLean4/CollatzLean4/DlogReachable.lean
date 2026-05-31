@@ -139,6 +139,27 @@ theorem invReachable_InX (m : ℕ) {v : InvVertex} (hv : InvReachable m v) : InX
   · exact h.2.1
   · exact h.2.1
 
+/-- **A goal vertex has discrete log 0.** `IsGoal v R` (`v.c ≡ 1 mod 3^{R+j}`) forces
+`dlog(v.c) ≡ 0 (mod 2·3^{R+j-1})`. So the ENDPOINTS of the slope-barrier residual's suffix — the
+first-m-precision vertex `mid` (≡ 1 at the m-level) and the goal — both sit at dlog 0; hence the
+NET discrete-log shift along the suffix is `≡ 0`. Combined with the edge cocycle
+(`oneEdge_dlog_shift`/`zeroEdge_dlog_shift`: each edge shifts dlog by `τ`), this is a genuine
+linear constraint `Σ τ ≡ 0` on the suffix's edge multiset — a structural handle on the open κ-sign
+core `FirstMPrecisionSuffixPositive` that brings the verified dlog machinery to bear on the actual
+Wall-B barrier. -/
+theorem isGoal_dlog_zero (R : ℕ) (hR : 1 ≤ R) {v : InvVertex} (h : InvVertex.IsGoal v R) :
+    dlog (R + v.j) ((v.c : ZMod (3 ^ (R + v.j)))) ≡ 0 [MOD 2 * 3 ^ (R + v.j - 1)] := by
+  have hk : 1 ≤ R + v.j := by omega
+  have hmod : (v.c : ℕ) ≡ 1 [MOD 3 ^ (R + v.j)] := h
+  have hc1 : ((v.c : ℕ) : ZMod (3 ^ (R + v.j))) = (1 : ZMod (3 ^ (R + v.j))) := by
+    have h2 := (ZMod.natCast_eq_natCast_iff _ _ _).mpr hmod
+    rw [Nat.cast_one] at h2
+    exact h2
+  rw [hc1]
+  have h1 : (2 : ZMod (3 ^ (R + v.j))) ^ (dlog (R + v.j) (1 : ZMod (3 ^ (R + v.j)))) = 1 :=
+    two_pow_dlog (R + v.j) hk isUnit_one
+  exact (two_pow_eq_iff_modEq (R + v.j) hk).mp (h1.trans (pow_zero _).symm)
+
 /-- **One-edge discrete-log shift (the structural content of the reachable set).** Along a
 one-edge `v → v'` (same j-level), the discrete log shifts by exactly the edge weight `τ`:
 `dlog(v.c) ≡ τ + dlog(v'.c) (mod 2·3^{R+j-1})`, where `τ = tau v'.c`. So one-edges

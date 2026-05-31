@@ -143,4 +143,36 @@ theorem syracuseLaw_support_isUnit {m : ℕ} (hm : 1 ≤ m) {b : ZMod (3 ^ m)}
   obtain ⟨a, _, rfl⟩ := hb
   exact syracuseOffset_isUnit hm a
 
+/-! ### The remaining target, crystallized: full support ⟺ offset surjective onto units -/
+
+/-- `valSeqPMF m` has FULL support: every valuation tuple occurs (each coordinate `valPMF` does).
+By induction via `support_bind`/`support_map` + `valPMF_pos`. -/
+theorem mem_valSeqPMF_support : ∀ {m : ℕ} (a : Fin m → ℕ), a ∈ (valSeqPMF m).support
+  | 0, a => by rw [valSeqPMF, PMF.mem_support_pure_iff]; exact Subsingleton.elim _ _
+  | (m + 1), a => by
+      rw [valSeqPMF, PMF.mem_support_bind_iff]
+      refine ⟨Fin.init a, mem_valSeqPMF_support (Fin.init a), ?_⟩
+      rw [PMF.mem_support_map_iff]
+      exact ⟨a (Fin.last m), (valPMF_pos _).ne', Fin.snoc_init_self a⟩
+
+/-- **The remaining milestone, crystallized.** Since `valSeqPMF` has full support, Tao's FULL
+SUPPORT statement (`support(syracuseLaw m) = units`) reduces EXACTLY to: the offset map is
+SURJECTIVE onto the units of `ZMod (3^m)`. The `⊆` direction is already proven
+(`syracuseLaw_support_isUnit`); the `⊇` direction is precisely this surjectivity = the inverse-
+Collatz transitivity on units (`r_m = 2^{-a_{m-1}}(3 r_{m-1}+1)`) — the one remaining, tractable
+(non-Fourier) target. -/
+theorem syracuseLaw_full_support_iff (m : ℕ) :
+    (∀ u : ZMod (3 ^ m), IsUnit u → u ∈ (syracuseLaw m).support)
+      ↔ (∀ u : ZMod (3 ^ m), IsUnit u → ∃ a : Fin m → ℕ, syracuseOffset a = u) := by
+  constructor
+  · intro h u hu
+    have hmem := h u hu
+    rw [syracuseLaw, PMF.mem_support_map_iff] at hmem
+    obtain ⟨a, _, ha⟩ := hmem
+    exact ⟨a, ha⟩
+  · intro h u hu
+    obtain ⟨a, ha⟩ := h u hu
+    rw [syracuseLaw, PMF.mem_support_map_iff]
+    exact ⟨a, mem_valSeqPMF_support a, ha⟩
+
 end CollatzLean4.Admissible

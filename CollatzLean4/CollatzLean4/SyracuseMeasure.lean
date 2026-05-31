@@ -30,6 +30,7 @@ obtains only "almost all". We start at 1 and build up, with calm.
 -/
 
 import Mathlib.Probability.ProbabilityMassFunction.Basic
+import Mathlib.Probability.ProbabilityMassFunction.Constructions
 import Mathlib.Analysis.SpecificLimits.Basic
 
 namespace CollatzLean4.Admissible
@@ -56,5 +57,19 @@ noncomputable def valPMF : PMF ℕ :=
 /-- The valuation law assigns mass `0` to `k = 0` is FALSE here — index `k` encodes valuation `k+1`,
 so `valPMF 0 = 2⁻¹` is the mass of valuation `1` (the most likely). Basic value lemma. -/
 @[simp] theorem valPMF_apply (k : ℕ) : valPMF k = (2 : ℝ≥0∞)⁻¹ ^ (k + 1) := rfl
+
+/-- Every valuation has positive probability: `valPMF` has full support on `ℕ` (the 2-adic
+valuation `ν₂(3n+1)` is unbounded). -/
+theorem valPMF_pos (k : ℕ) : 0 < valPMF k := by
+  rw [valPMF_apply, pos_iff_ne_zero]
+  exact pow_ne_zero _ (by simp)
+
+/-- **The valuation-sequence law (Milestone 2).** The joint law of `m` independent valuations,
+`valSeqPMF m : PMF (Fin m → ℕ)`, each coordinate distributed as `valPMF`, built by appending one
+fresh valuation at a time via `Fin.snoc`. This is the product law of `(a₀,…,a_{m-1})` underlying
+Tao's Syracuse random variable; the next milestone pushes it forward under the offset map. -/
+noncomputable def valSeqPMF : (m : ℕ) → PMF (Fin m → ℕ)
+  | 0 => PMF.pure (Fin.elim0)
+  | (m + 1) => (valSeqPMF m).bind fun a => valPMF.map (Fin.snoc a)
 
 end CollatzLean4.Admissible

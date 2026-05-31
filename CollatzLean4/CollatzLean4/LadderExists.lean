@@ -331,6 +331,102 @@ theorem not_firstMPrecisionSuffixPositive {m Q : ℕ} (hm : 1 ≤ m) (hQ : 1 ≤
   have hcontra := h_res hIsGoal hjQ h_full hSuffix hMidPrec hFirst
   exact absurd hcontra (by norm_num)
 
+/-! ### The barrier obligation itself is refuted: ¬ BlockBoundaryExists -/
+
+/-- The endpoint `t` of a `WPath` is in its vertex list, unless the list is empty (then `t = s`). -/
+theorem WPath_target_mem {V : Type} {E : V → V → Int → Prop} {s t : V} {w : Int}
+    {vs : List V} (h : WPath E s t w vs) : vs = [] ∨ t ∈ vs := by
+  induction vs generalizing s w with
+  | nil => exact Or.inl rfl
+  | cons v vs' ih =>
+      right
+      simp only [WPath] at h
+      obtain ⟨ω₁, ω₂, _, hrest, _⟩ := h
+      rcases ih hrest with h0 | hmem
+      · subst h0
+        simp only [WPath] at hrest
+        obtain ⟨rfl, _⟩ := hrest
+        simp
+      · exact List.mem_cons_of_mem _ hmem
+
+/-- **The Wall-B barrier obligation is FALSE.**  `BlockBoundaryExists m Q`
+(KappaSplitReduction.lean:72 — "the entire open content of the uniform-in-m slope-barrier route")
+is refuted by the SAME trap-reaching witness as `not_firstMPrecisionSuffixPositive`.  It requires an
+ON-PATH split point `mid` that is BOTH m-precise AND has suffix `κ₂ ≥ 1`.  On the witness, the shield
+makes every non-goal vertex non-m-precise, so the only m-precise vertex is the goal — which sits at
+the END (in the suffix `vs₂`, since `κ₂ ≥ 1 ⟹ vs₂ ≠ []`), hence is NOT in the prefix `vs₁` that `mid`
+lives in.  So `mid` is a class-4/7 (non-m-precise) vertex or `InvStart` — contradicting m-precision.
+
+CONSEQUENCE: the uniform-in-m route reduces the (true) slope barrier to a FALSE `Prop`; the
+m-precision coupling of the split point (added to dodge the R1 trap, `outerBlockIncrement_false`) is
+itself defeated by the trap.  The route needs a decomposition that does NOT require the split to be
+m-precise.  (This kills the route's formulation, not the barrier mathematics.) -/
+theorem not_blockBoundaryExists {m Q : ℕ} (hm : 1 ≤ m) (hQ : 1 ≤ Q) :
+    ¬ BlockBoundaryExists m Q := by
+  intro h_block
+  have hRw : 1 ≤ 22 * (m + 1) + 2 := by omega
+  obtain ⟨c1, W, h_entry_edge, htau, hc1eq, hW6, hc19⟩ := entry_zeroEdge m hm
+  have h_entry_kappa : InvKappaPreciseEdge (22 * (m + 1) + 2) (InvStart (m + 1)) ⟨1, c1⟩ 0 :=
+    Or.inr (Or.inr ⟨_, h_entry_edge, by show 2 ≤ tau c1; omega, rfl⟩)
+  rw [hc1eq] at h_entry_kappa
+  have h_entry_path :
+      WPath (InvKappaPreciseEdge (22 * (m + 1) + 2)) (InvStart (m + 1))
+        ⟨1, 2 ^ W % 3 ^ (22 * (m + 1) + 2 + 1)⟩ 0
+        [⟨1, 2 ^ W % 3 ^ (22 * (m + 1) + 2 + 1)⟩] :=
+    ⟨0, 0, h_entry_kappa, ⟨rfl, rfl⟩, by ring⟩
+  obtain ⟨vs_lad, κ_lad, h_ladder, hκ_lad, h_shield⟩ :=
+    ladder_exists (22 * (m + 1) + 2) hRw W (Or.inr hW6) (by omega)
+  have h_el := WPath_kappa_concat h_entry_path h_ladder
+  have h_full := WPath_snoc (deep_edge (22 * (m + 1) + 2)) h_el
+  have hIsGoal : InvVertex.IsGoal (⟨1, 1⟩ : InvVertex) (22 * (m + 1) + 2) := rfl
+  have hjQ : (⟨1, 1⟩ : InvVertex).j ≤ Q := hQ
+  obtain ⟨mid, κ₁, κ₂, vs₁, vs₂, h_pre, h_suf, _h_sum, h_vs, h_mid_prec, _h_mid_j, h_κ₂⟩ :=
+    h_block hIsGoal hjQ h_full
+  set s1c := 2 ^ W % 3 ^ (22 * (m + 1) + 2 + 1) with hs1c
+  have hs1c9 : s1c % 9 = 7 := by rw [hs1c]; exact class_seven_of_mod6 _ W (by omega) hW6
+  -- κ₂ ≥ 1 ⟹ the suffix is nonempty ⟹ the goal lives in vs₂
+  have hvs2 : vs₂ ≠ [] := by
+    intro h0; rw [h0] at h_suf; simp only [WPath] at h_suf
+    obtain ⟨_, hk⟩ := h_suf; rw [hk] at h_κ₂; norm_num at h_κ₂
+  have hgoal_vs2 : (⟨1, 1⟩ : InvVertex) ∈ vs₂ := by
+    rcases WPath_target_mem h_suf with h0 | hm'
+    · exact absurd h0 hvs2
+    · exact hm'
+  -- the goal does NOT occur in the prefix part [s1] ++ vs_lad
+  have hgoal_notin : (⟨1, 1⟩ : InvVertex) ∉ ([⟨1, s1c⟩] ++ vs_lad) := by
+    intro hmem
+    rcases List.mem_append.mp hmem with h1 | h2
+    · rw [List.mem_singleton] at h1; injection h1 with _ hb; omega
+    · rcases h_shield _ h2 with h | h <;> exact absurd h (by decide)
+  -- hence the goal is not in vs₁ (it is uniquely at the end, inside vs₂)
+  have hgoal_notin_vs1 : (⟨1, 1⟩ : InvVertex) ∉ vs₁ := by
+    intro hmem
+    have h2 : 2 ≤ (vs₁ ++ vs₂).count (⟨1, 1⟩ : InvVertex) := by
+      rw [List.count_append]
+      have ha := List.count_pos_iff.mpr hmem
+      have hb := List.count_pos_iff.mpr hgoal_vs2
+      omega
+    have hfull_count : (([⟨1, s1c⟩] ++ vs_lad) ++ [⟨1, 1⟩] : List InvVertex).count ⟨1, 1⟩ = 1 := by
+      rw [List.count_append, List.count_eq_zero.mpr hgoal_notin]
+      decide
+    rw [← h_vs, hfull_count] at h2
+    omega
+  -- mid is on the path; classify it
+  rcases WPath_target_mem h_pre with h0 | hmid
+  · rw [h0] at h_pre; simp only [WPath] at h_pre; obtain ⟨rfl, _⟩ := h_pre
+    exact (invStart_succ_not_mPrecise hm) h_mid_prec
+  · have hmid_ne : mid ≠ (⟨1, 1⟩ : InvVertex) := fun he => hgoal_notin_vs1 (he ▸ hmid)
+    have hmid_full : mid ∈ ([⟨1, s1c⟩] ++ vs_lad) := by
+      have hin : mid ∈ vs₁ ++ vs₂ := List.mem_append_left _ hmid
+      rw [← h_vs] at hin
+      rcases List.mem_append.mp hin with h' | h'
+      · exact h'
+      · rw [List.mem_singleton] at h'; exact absurd h' hmid_ne
+    rcases List.mem_append.mp hmid_full with h' | h'
+    · rw [List.mem_singleton] at h'; subst h'
+      exact (ladder_vertex_not_mPrecise (Or.inr hs1c9)) h_mid_prec
+    · exact (ladder_vertex_not_mPrecise (h_shield _ h')) h_mid_prec
+
 end CollatzLean4.Admissible
 
 

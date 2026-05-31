@@ -52,3 +52,4 @@ import CollatzLean4.Coupling
 import CollatzLean4.SyracuseMeasure
 import CollatzLean4.OneEdgeMod9
 import CollatzLean4.ZeroEdgeFreeSuffix
+import CollatzLean4.LadderRefutation

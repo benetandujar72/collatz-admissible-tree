@@ -417,6 +417,179 @@ theorem syr_no_nontrivial_3cycle (a : ℕ) (ha : 0 < a) (h : (Syr^[3]) a = a) :
     have ha1 : a ≤ 1 := Nat.le_of_dvd (by norm_num) hadvd
     omega
 
+/-- The twenty compositions of `7` into four parts `≥ 1` give a period-4 `A = 7` right-hand side
+`27 + 9·2^x + 3·2^{x+y} + 2^{x+y+z}` (with `x+y+z ≤ 6`) never divisible by `47`. Finite `decide`
+over `Fin 5³`, kept out of the main proof to avoid a 64-branch `interval_cases` blowup. -/
+theorem comp7_not_div_47 :
+    ∀ (x y z : Fin 5), 1 ≤ x.val → 1 ≤ y.val → 1 ≤ z.val → x.val + y.val + z.val ≤ 6 →
+      ¬ (47 ∣ (27 + 9 * 2 ^ x.val + 3 * 2 ^ (x.val + y.val) + 2 ^ (x.val + y.val + z.val))) := by
+  decide
+
+/-- **No nontrivial 4-cycle (period m = 4, UNCONDITIONAL, Baker-free).** Any point of period
+dividing 4 under `Syr` is the fixed point `1`. Same technique as period 3, scaled to four
+elements: multiplying the four step identities gives `abcd·(2^A − 81) = 27·e₃ + 9·e₂ + 3·e₁ + 1`
+(`e_k` the elementary symmetric sums), with `A = k₀+k₁+k₂+k₃`; the corridor forces `2^A > 81`,
+i.e. `A ≥ 7`. If `A ≥ 8` then `2^A ≥ 256` and `175·abcd ≤ 27e₃+9e₂+3e₁+1` with `e₃ ≤ 4abcd`,
+`e₂ ≤ 6abcd`, `e₁ ≤ 4abcd` forces `abcd ≤ 1`, hence `a = 1`. If `A = 7` the telescoped additive
+equation `47a = 27 + 9·2^{k₀} + 3·2^{k₀+k₁} + 2^{k₀+k₁+k₂}` has, over the twenty compositions of
+7 into four parts `≥ 1`, right-hand sides none of which is divisible by `47` — so no integer `a`.
+Settles period 4 without transcendence. -/
+theorem syr_no_nontrivial_4cycle (a : ℕ) (ha : 0 < a) (h : (Syr^[4]) a = a) :
+    a = 1 := by
+  set b := Syr a with hbdef
+  set c := Syr b with hcdef
+  set d := Syr c with hddef
+  have hda : Syr d = a := by
+    have h4 := h
+    rw [show (4 : ℕ) = 3 + 1 from rfl, Function.iterate_succ_apply',
+        Function.iterate_succ_apply', Function.iterate_succ_apply',
+        Function.iterate_one] at h4
+    rw [← hbdef, ← hcdef, ← hddef] at h4
+    exact h4
+  set k0 := padicValNat 2 (3 * a + 1) with hk0def
+  set k1 := padicValNat 2 (3 * b + 1) with hk1def
+  set k2 := padicValNat 2 (3 * c + 1) with hk2def
+  set k3 := padicValNat 2 (3 * d + 1) with hk3def
+  have hi : 2 ^ k0 * b = 3 * a + 1 := Syr_step a
+  have hii : 2 ^ k1 * c = 3 * b + 1 := Syr_step b
+  have hiii : 2 ^ k2 * d = 3 * c + 1 := Syr_step c
+  have hiv : 2 ^ k3 * a = 3 * d + 1 := by
+    have hs := Syr_step d; rw [hda] at hs; exact hs
+  have ha_odd : ¬ 2 ∣ a := by rw [← hda]; exact Syr_not_two_dvd d
+  have hb_odd : ¬ 2 ∣ b := by rw [hbdef]; exact Syr_not_two_dvd a
+  have hc_odd : ¬ 2 ∣ c := by rw [hcdef]; exact Syr_not_two_dvd b
+  have hd_odd : ¬ 2 ∣ d := by rw [hddef]; exact Syr_not_two_dvd c
+  have hk0 : 1 ≤ k0 := one_le_val_three_mul_add_one ha_odd
+  have hk1 : 1 ≤ k1 := one_le_val_three_mul_add_one hb_odd
+  have hk2 : 1 ≤ k2 := one_le_val_three_mul_add_one hc_odd
+  have hk3 : 1 ≤ k3 := one_le_val_three_mul_add_one hd_odd
+  have hb1 : 1 ≤ b := by
+    rcases Nat.eq_zero_or_pos b with h0 | h0
+    · exfalso; rw [h0, Nat.mul_zero] at hi; omega
+    · exact h0
+  have hc1 : 1 ≤ c := by
+    rcases Nat.eq_zero_or_pos c with h0 | h0
+    · exfalso; rw [h0, Nat.mul_zero] at hii; omega
+    · exact h0
+  have hd1 : 1 ≤ d := by
+    rcases Nat.eq_zero_or_pos d with h0 | h0
+    · exfalso; rw [h0, Nat.mul_zero] at hiii; omega
+    · exact h0
+  -- ADDITIVE: 2^(k0+k1+k2+k3)·a = 81a + 27 + 9·2^k0 + 3·2^(k0+k1) + 2^(k0+k1+k2)
+  have hadd : 2 ^ (k0 + k1 + k2 + k3) * a
+      = 81 * a + 27 + 9 * 2 ^ k0 + 3 * 2 ^ (k0 + k1) + 2 ^ (k0 + k1 + k2) := by
+    have e4 : 2 ^ (k0 + k1 + k2 + k3) * a = 2 ^ (k0 + k1 + k2) * (2 ^ k3 * a) := by
+      rw [pow_add]; ring
+    have e3 : 2 ^ (k0 + k1 + k2) * d = 2 ^ (k0 + k1) * (2 ^ k2 * d) := by rw [pow_add]; ring
+    have e2 : 2 ^ (k0 + k1) * c = 2 ^ k0 * (2 ^ k1 * c) := by rw [pow_add]; ring
+    calc 2 ^ (k0 + k1 + k2 + k3) * a
+        = 2 ^ (k0 + k1 + k2) * (2 ^ k3 * a) := e4
+      _ = 2 ^ (k0 + k1 + k2) * (3 * d + 1) := by rw [hiv]
+      _ = 3 * (2 ^ (k0 + k1 + k2) * d) + 2 ^ (k0 + k1 + k2) := by ring
+      _ = 3 * (2 ^ (k0 + k1) * (2 ^ k2 * d)) + 2 ^ (k0 + k1 + k2) := by rw [e3]
+      _ = 3 * (2 ^ (k0 + k1) * (3 * c + 1)) + 2 ^ (k0 + k1 + k2) := by rw [hiii]
+      _ = 9 * (2 ^ (k0 + k1) * c) + 3 * 2 ^ (k0 + k1) + 2 ^ (k0 + k1 + k2) := by ring
+      _ = 9 * (2 ^ k0 * (2 ^ k1 * c)) + 3 * 2 ^ (k0 + k1) + 2 ^ (k0 + k1 + k2) := by rw [e2]
+      _ = 9 * (2 ^ k0 * (3 * b + 1)) + 3 * 2 ^ (k0 + k1) + 2 ^ (k0 + k1 + k2) := by rw [hii]
+      _ = 27 * (2 ^ k0 * b) + 9 * 2 ^ k0 + 3 * 2 ^ (k0 + k1) + 2 ^ (k0 + k1 + k2) := by ring
+      _ = 27 * (3 * a + 1) + 9 * 2 ^ k0 + 3 * 2 ^ (k0 + k1) + 2 ^ (k0 + k1 + k2) := by rw [hi]
+      _ = 81 * a + 27 + 9 * 2 ^ k0 + 3 * 2 ^ (k0 + k1) + 2 ^ (k0 + k1 + k2) := by ring
+  -- MULTIPLICATIVE
+  have hmul : 2 ^ (k0 + k1 + k2 + k3) * (a * b * c * d)
+      = 81 * (a * b * c * d)
+        + 27 * (a * b * c + a * b * d + a * c * d + b * c * d)
+        + 9 * (a * b + a * c + a * d + b * c + b * d + c * d)
+        + 3 * (a + b + c + d) + 1 := by
+    have hprod : (2 ^ k0 * b) * (2 ^ k1 * c) * (2 ^ k2 * d) * (2 ^ k3 * a)
+        = (3 * a + 1) * (3 * b + 1) * (3 * c + 1) * (3 * d + 1) := by rw [hi, hii, hiii, hiv]
+    have lhs : (2 ^ k0 * b) * (2 ^ k1 * c) * (2 ^ k2 * d) * (2 ^ k3 * a)
+        = 2 ^ (k0 + k1 + k2 + k3) * (a * b * c * d) := by rw [pow_add, pow_add, pow_add]; ring
+    rw [lhs] at hprod
+    rw [hprod]; ring
+  have habcd_pos : 0 < a * b * c * d := by positivity
+  have hcorr : 81 < 2 ^ (k0 + k1 + k2 + k3) := by
+    by_contra hle
+    rw [not_lt] at hle
+    have hbad : 2 ^ (k0 + k1 + k2 + k3) * (a * b * c * d) ≤ 81 * (a * b * c * d) :=
+      Nat.mul_le_mul_right _ hle
+    omega
+  have hAge7 : 7 ≤ k0 + k1 + k2 + k3 := by
+    by_contra hlt
+    rw [not_le] at hlt
+    have hle : 2 ^ (k0 + k1 + k2 + k3) ≤ 2 ^ 6 :=
+      Nat.pow_le_pow_right (by norm_num) (by omega)
+    norm_num at hle; omega
+  rcases Nat.lt_or_ge (k0 + k1 + k2 + k3) 8 with hA7 | hA8
+  · -- A = 7 ⟹ 47a = 27 + 9·2^k0 + 3·2^(k0+k1) + 2^(k0+k1+k2)
+    have hAeq : k0 + k1 + k2 + k3 = 7 := by omega
+    rw [hAeq] at hadd
+    norm_num at hadd
+    have h7a : 47 * a = 27 + 9 * 2 ^ k0 + 3 * 2 ^ (k0 + k1) + 2 ^ (k0 + k1 + k2) := by omega
+    have hk0u : k0 ≤ 4 := by omega
+    have hk1u : k1 ≤ 4 := by omega
+    have hk2u : k2 ≤ 4 := by omega
+    have hk012 : k0 + k1 + k2 ≤ 6 := by omega
+    -- 47 ∣ RHS would follow from h7a, contradicting comp7_not_div_47
+    have hdvd : 47 ∣ (27 + 9 * 2 ^ k0 + 3 * 2 ^ (k0 + k1) + 2 ^ (k0 + k1 + k2)) :=
+      ⟨a, by omega⟩
+    exact absurd hdvd
+      (comp7_not_div_47 ⟨k0, by omega⟩ ⟨k1, by omega⟩ ⟨k2, by omega⟩ hk0 hk1 hk2 hk012)
+  · -- A ≥ 8 ⟹ 175abcd ≤ symmetric ⟹ abcd = 1 ⟹ a = 1
+    have hbig : 256 ≤ 2 ^ (k0 + k1 + k2 + k3) := by
+      calc (256 : ℕ) = 2 ^ 8 := by norm_num
+        _ ≤ 2 ^ (k0 + k1 + k2 + k3) := Nat.pow_le_pow_right (by norm_num) hA8
+    have h256 : 256 * (a * b * c * d) ≤ 2 ^ (k0 + k1 + k2 + k3) * (a * b * c * d) :=
+      Nat.mul_le_mul_right _ hbig
+    have h175 : 175 * (a * b * c * d)
+        ≤ 27 * (a * b * c + a * b * d + a * c * d + b * c * d)
+          + 9 * (a * b + a * c + a * d + b * c + b * d + c * d)
+          + 3 * (a + b + c + d) + 1 := by omega
+    have m1 : a * b * c ≤ a * b * c * d := Nat.le_mul_of_pos_right _ hd1
+    have m2 : a * b * d ≤ a * b * c * d := by
+      calc a * b * d ≤ a * b * d * c := Nat.le_mul_of_pos_right _ hc1
+        _ = a * b * c * d := by ring
+    have m3 : a * c * d ≤ a * b * c * d := by
+      calc a * c * d ≤ a * c * d * b := Nat.le_mul_of_pos_right _ hb1
+        _ = a * b * c * d := by ring
+    have m4 : b * c * d ≤ a * b * c * d := by
+      calc b * c * d ≤ b * c * d * a := Nat.le_mul_of_pos_right _ ha
+        _ = a * b * c * d := by ring
+    have p1 : a * b ≤ a * b * c * d := by
+      calc a * b ≤ a * b * (c * d) := Nat.le_mul_of_pos_right _ (Nat.mul_pos hc1 hd1)
+        _ = a * b * c * d := by ring
+    have p2 : a * c ≤ a * b * c * d := by
+      calc a * c ≤ a * c * (b * d) := Nat.le_mul_of_pos_right _ (Nat.mul_pos hb1 hd1)
+        _ = a * b * c * d := by ring
+    have p3 : a * d ≤ a * b * c * d := by
+      calc a * d ≤ a * d * (b * c) := Nat.le_mul_of_pos_right _ (Nat.mul_pos hb1 hc1)
+        _ = a * b * c * d := by ring
+    have p4 : b * c ≤ a * b * c * d := by
+      calc b * c ≤ b * c * (a * d) := Nat.le_mul_of_pos_right _ (Nat.mul_pos ha hd1)
+        _ = a * b * c * d := by ring
+    have p5 : b * d ≤ a * b * c * d := by
+      calc b * d ≤ b * d * (a * c) := Nat.le_mul_of_pos_right _ (Nat.mul_pos ha hc1)
+        _ = a * b * c * d := by ring
+    have p6 : c * d ≤ a * b * c * d := by
+      calc c * d ≤ c * d * (a * b) := Nat.le_mul_of_pos_right _ (Nat.mul_pos ha hb1)
+        _ = a * b * c * d := by ring
+    have s1 : a ≤ a * b * c * d := by
+      calc a ≤ a * (b * c * d) := Nat.le_mul_of_pos_right _ (by positivity)
+        _ = a * b * c * d := by ring
+    have s2 : b ≤ a * b * c * d := by
+      calc b ≤ b * (a * c * d) := Nat.le_mul_of_pos_right _ (by positivity)
+        _ = a * b * c * d := by ring
+    have s3 : c ≤ a * b * c * d := by
+      calc c ≤ c * (a * b * d) := Nat.le_mul_of_pos_right _ (by positivity)
+        _ = a * b * c * d := by ring
+    have s4 : d ≤ a * b * c * d := by
+      calc d ≤ d * (a * b * c) := Nat.le_mul_of_pos_right _ (by positivity)
+        _ = a * b * c * d := by ring
+    have habcd1 : a * b * c * d ≤ 1 := by omega
+    have habcd_eq : a * b * c * d = 1 := le_antisymm habcd1 habcd_pos
+    have hadvd : a ∣ 1 := ⟨b * c * d, by rw [← habcd_eq]; ring⟩
+    have ha1 : a ≤ 1 := Nat.le_of_dvd (by norm_num) hadvd
+    omega
+
 /-- **The cycle conjecture** (the "no nontrivial cycles" half of Collatz): the
 only positive periodic point of `Syr` is `a = 1`. The period-1 and period-2 cases
 are PROVEN unconditionally (`syr_no_nontrivial_fixedpoint`,

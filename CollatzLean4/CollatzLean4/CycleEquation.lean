@@ -270,6 +270,153 @@ theorem syr_no_nontrivial_2cycle (a : ℕ) (ha : 0 < a) (h : (Syr^[2]) a = a) :
   have hab_b : b ≤ a * b := le_mul_of_one_le_left (Nat.zero_le b) ha
   omega
 
+/-- `Syr n` is always odd (we divide out every factor of 2 of `3n+1`). -/
+theorem Syr_not_two_dvd (n : ℕ) : ¬ 2 ∣ Syr n := by
+  haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  intro hdvd
+  have hpos : 3 * n + 1 ≠ 0 := by omega
+  have hval : 2 ^ (padicValNat 2 (3 * n + 1)) * Syr n = 3 * n + 1 := Syr_step n
+  obtain ⟨t, ht⟩ := hdvd
+  rw [ht] at hval
+  have heq : 3 * n + 1 = 2 ^ (padicValNat 2 (3 * n + 1) + 1) * t := by
+    rw [pow_succ]
+    calc 3 * n + 1 = 2 ^ (padicValNat 2 (3 * n + 1)) * (2 * t) := hval.symm
+      _ = 2 ^ (padicValNat 2 (3 * n + 1)) * 2 * t := by ring
+  exact pow_succ_padicValNat_not_dvd hpos ⟨t, heq⟩
+
+/-- For odd `a`, `ν₂(3a+1) ≥ 1` (since `3a+1` is even). -/
+theorem one_le_val_three_mul_add_one {a : ℕ} (ha : ¬ 2 ∣ a) :
+    1 ≤ padicValNat 2 (3 * a + 1) := by
+  haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  have hdvd : 2 ∣ 3 * a + 1 := by omega
+  have hne : padicValNat 2 (3 * a + 1) ≠ 0 := by
+    rw [Ne, padicValNat.eq_zero_iff]
+    push_neg
+    exact ⟨by norm_num, by omega, hdvd⟩
+  omega
+
+/-- **No nontrivial 3-cycle (period m = 3, UNCONDITIONAL, Baker-free).** Any point of
+period dividing 3 under `Syr` is the fixed point `1`. Proof: multiplying the three step
+identities gives `abc·(2^A − 27) = 9(ab+bc+ca)+3(a+b+c)+1` with `A = k₀+k₁+k₂`. The
+corridor forces `2^A > 27`, i.e. `A ≥ 5`. If `A ≥ 6` then `2^A ≥ 64` and the bound
+`37abc ≤ 9(ab+bc+ca)+3(a+b+c)+1` forces `a = b = c = 1`. If `A = 5` the telescoped
+additive equation `5a = 9 + 3·2^{k₀} + 2^{k₀+k₁}` has, over the six compositions of 5
+into three parts `≥ 1` (the elements are odd, so `kᵢ ≥ 1`), right-hand sides
+`{19,23,29,31,37,49}` — none divisible by 5, so no integer `a`. Settles period 3 without
+transcendence. -/
+theorem syr_no_nontrivial_3cycle (a : ℕ) (ha : 0 < a) (h : (Syr^[3]) a = a) :
+    a = 1 := by
+  set b := Syr a with hbdef
+  set c := Syr b with hcdef
+  have hca : Syr c = a := by
+    have h3 := h
+    rw [show (3 : ℕ) = 2 + 1 from rfl, Function.iterate_succ_apply',
+        Function.iterate_succ_apply', Function.iterate_one] at h3
+    rw [← hbdef, ← hcdef] at h3
+    exact h3
+  set k0 := padicValNat 2 (3 * a + 1) with hk0def
+  set k1 := padicValNat 2 (3 * b + 1) with hk1def
+  set k2 := padicValNat 2 (3 * c + 1) with hk2def
+  have hi : 2 ^ k0 * b = 3 * a + 1 := Syr_step a
+  have hii : 2 ^ k1 * c = 3 * b + 1 := Syr_step b
+  have hiii : 2 ^ k2 * a = 3 * c + 1 := by
+    have hs := Syr_step c; rw [hca] at hs; exact hs
+  have ha_odd : ¬ 2 ∣ a := by rw [← hca]; exact Syr_not_two_dvd c
+  have hb_odd : ¬ 2 ∣ b := by rw [hbdef]; exact Syr_not_two_dvd a
+  have hc_odd : ¬ 2 ∣ c := by rw [hcdef]; exact Syr_not_two_dvd b
+  have hk0 : 1 ≤ k0 := one_le_val_three_mul_add_one ha_odd
+  have hk1 : 1 ≤ k1 := one_le_val_three_mul_add_one hb_odd
+  have hk2 : 1 ≤ k2 := one_le_val_three_mul_add_one hc_odd
+  have hb1 : 1 ≤ b := by
+    rcases Nat.eq_zero_or_pos b with h0 | h0
+    · exfalso; rw [h0, Nat.mul_zero] at hi; omega
+    · exact h0
+  have hc1 : 1 ≤ c := by
+    rcases Nat.eq_zero_or_pos c with h0 | h0
+    · exfalso; rw [h0, Nat.mul_zero] at hii; omega
+    · exact h0
+  -- ADDITIVE: 2^(k0+k1+k2)·a = 27a + 9 + 3·2^k0 + 2^(k0+k1)
+  have hadd : 2 ^ (k0 + k1 + k2) * a = 27 * a + 9 + 3 * 2 ^ k0 + 2 ^ (k0 + k1) := by
+    have e3 : 2 ^ (k0 + k1 + k2) * a = 2 ^ (k0 + k1) * (2 ^ k2 * a) := by
+      rw [pow_add]; ring
+    have e2 : 2 ^ (k0 + k1) * c = 2 ^ k0 * (2 ^ k1 * c) := by rw [pow_add]; ring
+    calc 2 ^ (k0 + k1 + k2) * a
+        = 2 ^ (k0 + k1) * (2 ^ k2 * a) := e3
+      _ = 2 ^ (k0 + k1) * (3 * c + 1) := by rw [hiii]
+      _ = 3 * (2 ^ (k0 + k1) * c) + 2 ^ (k0 + k1) := by ring
+      _ = 3 * (2 ^ k0 * (2 ^ k1 * c)) + 2 ^ (k0 + k1) := by rw [e2]
+      _ = 3 * (2 ^ k0 * (3 * b + 1)) + 2 ^ (k0 + k1) := by rw [hii]
+      _ = 9 * (2 ^ k0 * b) + 3 * 2 ^ k0 + 2 ^ (k0 + k1) := by ring
+      _ = 9 * (3 * a + 1) + 3 * 2 ^ k0 + 2 ^ (k0 + k1) := by rw [hi]
+      _ = 27 * a + 9 + 3 * 2 ^ k0 + 2 ^ (k0 + k1) := by ring
+  -- MULTIPLICATIVE: 2^(k0+k1+k2)·abc = 27abc + 9(ab+bc+ca) + 3(a+b+c) + 1
+  have hmul : 2 ^ (k0 + k1 + k2) * (a * b * c)
+      = 27 * (a * b * c) + 9 * (a * b + b * c + c * a) + 3 * (a + b + c) + 1 := by
+    have hprod : (2 ^ k0 * b) * (2 ^ k1 * c) * (2 ^ k2 * a)
+        = (3 * a + 1) * (3 * b + 1) * (3 * c + 1) := by rw [hi, hii, hiii]
+    have lhs : (2 ^ k0 * b) * (2 ^ k1 * c) * (2 ^ k2 * a)
+        = 2 ^ (k0 + k1 + k2) * (a * b * c) := by rw [pow_add, pow_add]; ring
+    rw [lhs] at hprod
+    rw [hprod]; ring
+  have habc_pos : 0 < a * b * c := by positivity
+  have hcorr : 27 < 2 ^ (k0 + k1 + k2) := by
+    by_contra hle
+    rw [not_lt] at hle
+    have hbad : 2 ^ (k0 + k1 + k2) * (a * b * c) ≤ 27 * (a * b * c) :=
+      Nat.mul_le_mul_right _ hle
+    omega
+  have hAge5 : 5 ≤ k0 + k1 + k2 := by
+    by_contra hlt
+    rw [not_le] at hlt
+    have hle : 2 ^ (k0 + k1 + k2) ≤ 2 ^ 4 :=
+      Nat.pow_le_pow_right (by norm_num) (by omega)
+    norm_num at hle; omega
+  rcases Nat.lt_or_ge (k0 + k1 + k2) 6 with hA5 | hA6
+  · -- A = 5 ⟹ 5a = 9 + 3·2^k0 + 2^(k0+k1); finite composition check
+    have hAeq : k0 + k1 + k2 = 5 := by omega
+    rw [hAeq] at hadd
+    norm_num at hadd
+    have h5a : 5 * a = 9 + 3 * 2 ^ k0 + 2 ^ (k0 + k1) := by omega
+    have hk0u : k0 ≤ 3 := by omega
+    have hk1u : k1 ≤ 3 := by omega
+    have hk01 : k0 + k1 ≤ 4 := by omega
+    clear_value k0 k1 k2
+    clear hk0def hk1def hk2def hbdef hcdef
+    interval_cases k0 <;> interval_cases k1 <;> (try norm_num at h5a) <;> omega
+  · -- A ≥ 6 ⟹ 37abc ≤ 9(ab+bc+ca)+3(a+b+c)+1 ⟹ abc = 1 ⟹ a = 1
+    have hbig : 64 ≤ 2 ^ (k0 + k1 + k2) := by
+      calc (64 : ℕ) = 2 ^ 6 := by norm_num
+        _ ≤ 2 ^ (k0 + k1 + k2) := Nat.pow_le_pow_right (by norm_num) hA6
+    have h64 : 64 * (a * b * c) ≤ 2 ^ (k0 + k1 + k2) * (a * b * c) :=
+      Nat.mul_le_mul_right _ hbig
+    have h37 : 37 * (a * b * c) ≤ 9 * (a * b + b * c + c * a) + 3 * (a + b + c) + 1 := by
+      omega
+    have hs1 : a * b + b * c + c * a ≤ 3 * (a * b * c) := by
+      have h1 : a * b ≤ a * b * c := Nat.le_mul_of_pos_right _ hc1
+      have h2 : b * c ≤ a * b * c := by
+        calc b * c ≤ b * c * a := Nat.le_mul_of_pos_right _ ha
+          _ = a * b * c := by ring
+      have h3 : c * a ≤ a * b * c := by
+        calc c * a ≤ c * a * b := Nat.le_mul_of_pos_right _ hb1
+          _ = a * b * c := by ring
+      omega
+    have hs2 : a + b + c ≤ 3 * (a * b * c) := by
+      have h1 : a ≤ a * b * c := by
+        calc a ≤ a * (b * c) := Nat.le_mul_of_pos_right _ (by positivity)
+          _ = a * b * c := by ring
+      have h2 : b ≤ a * b * c := by
+        calc b ≤ b * (a * c) := Nat.le_mul_of_pos_right _ (by positivity)
+          _ = a * b * c := by ring
+      have h3 : c ≤ a * b * c := by
+        calc c ≤ c * (a * b) := Nat.le_mul_of_pos_right _ (by positivity)
+          _ = a * b * c := by ring
+      omega
+    have habc1 : a * b * c ≤ 1 := by omega
+    have habc_eq : a * b * c = 1 := le_antisymm habc1 habc_pos
+    have hadvd : a ∣ 1 := ⟨b * c, by rw [← habc_eq]; ring⟩
+    have ha1 : a ≤ 1 := Nat.le_of_dvd (by norm_num) hadvd
+    omega
+
 /-- **The cycle conjecture** (the "no nontrivial cycles" half of Collatz): the
 only positive periodic point of `Syr` is `a = 1`. The period-1 and period-2 cases
 are PROVEN unconditionally (`syr_no_nontrivial_fixedpoint`,

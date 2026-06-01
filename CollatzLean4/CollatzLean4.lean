@@ -54,3 +54,4 @@ import CollatzLean4.OneEdgeMod9
 import CollatzLean4.ZeroEdgeFreeSuffix
 import CollatzLean4.LadderRefutation
 import CollatzLean4.LadderExists
+import CollatzLean4.CycleReduction

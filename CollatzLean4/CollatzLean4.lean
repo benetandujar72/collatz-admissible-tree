@@ -60,3 +60,4 @@ import CollatzLean4.CollatzBridge
 import CollatzLean4.BitlenPotential
 import CollatzLean4.FaithfulBarrier
 import CollatzLean4.AttractorNoGo
+import CollatzLean4.F2Collatz

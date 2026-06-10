@@ -75,8 +75,16 @@ impedir el teorema: la dificultad entera NO es solo "falta Baker efectivo".
 
 ## 4. Próximo arco
 
-1. **Formalización 𝔽₂[x]** (~2 sesiones, primera mundial; las leyes de grado son las
-   gemelas exactas de `size_two_pow_mul`/`size_three_mul_add_one`; Mason–Stothers ya
-   está en Mathlib). Esqueleto de firmas en memoria de sesión.
+1. ~~**Formalización 𝔽₂[x]**~~ ✅ **HECHA** (S243, `F2Collatz.lean`): el teorema HMYZ
+   completo `collatz_F2X : ∀ f ≠ 0, ∃ k, T^[k] f = 1`, primera formalización conocida.
+   Las leyes de grado EXACTAS (gemelas de `size_two_pow_mul`/`size_three_mul_add_one`),
+   la no-divergencia puntual `deg(T^[k]f) ≤ deg f + 1`, y la salida de meseta por el
+   **telescopio de meseta** `x·(T²f+1) = (x+1)·(f+1)` (más fino que el argumento de
+   orden multiplicativo de la literatura: cada paso de meseta consume exactamente un
+   factor `x` de `f+1` — álgebra de anillos pura, sin Frobenius). Axiomas:
+   {propext, Classical.choice, Quot.sound}. El experimento de control queda
+   teorema-vs-teorema dentro del propio repo.
 2. Paper 1 (obstrucciones machine-checked) — outline en `PAPER1_OUTLINE.md`.
 3. Gate híbrido (1 run de agente) — brasa lenta.
+4. Bonus 𝔽₂[x] (opcional): `gap_isUnit_iff` — la clasificación Frobenius–Catalan
+   `x^A + (x+1)^m = 1 ⟺ A = m = 2^k` (candidata a PR de Mathlib).

@@ -627,6 +627,118 @@ theorem syr_no_cycle_below_16266 (hver : SyrVerifiedUpTo (2 ^ 29)) :
     (by norm_num) (by norm_num) (by norm_num) hlow hcert
   simpa using h
 
+/-! ### The MASTER CORRIDOR — one inequality, two shadows (S241 unification)
+
+The S241 methodology review observed that the cycle window (`m·log₂3 < A < 2m`,
+CycleReduction step 1b) and the divergence bit-budget (`PhiBitlen`, BitlenPotential.lean)
+are the SAME multiplicative telescope read at the two endpoints.  This section states the
+unifying theorem ONCE:
+
+    `3^q · a₀  <  2^{A_q} · Syr^[q](a₀)  ≤  4^q · a₀`        (the master corridor)
+
+for EVERY positive Syracuse orbit segment (no cycle hypothesis).  The two shadows:
+  * CYCLES (`Syr^[q] a₀ = a₀`): cancel `a₀` — the bilateral window `3^q < 2^{A_q} ≤ 4^q`
+    (re-derived below as a consistency check against step 1b);
+  * DIVERGENCE: read the sizes — `A_q + size(Syr^[q] a₀) ≤ 2q + size(a₀) + O(1)`, the
+    exact form of the bit-length budget whose `/4`-floored local version is `PhiBitlen`'s
+    edge system.  The whole program's archimedean content is this one inequality. -/
+
+/-- Non-strict lower product bound: `3^q · Π aᵢ ≤ Π (3aᵢ + 1)`. -/
+theorem seqProd_ge_three_pow (a : ℕ → ℕ) :
+    ∀ q, 3 ^ q * seqProd a q ≤ seqProd (fun i => 3 * a i + 1) q := by
+  intro q
+  induction q with
+  | zero => simp [seqProd]
+  | succ q ih =>
+      show 3 ^ (q + 1) * (seqProd a q * a q)
+        ≤ seqProd (fun i => 3 * a i + 1) q * (3 * a q + 1)
+      calc 3 ^ (q + 1) * (seqProd a q * a q)
+          = (3 ^ q * seqProd a q) * (3 * a q) := by rw [pow_succ]; ring
+        _ ≤ seqProd (fun i => 3 * a i + 1) q * (3 * a q + 1) :=
+            Nat.mul_le_mul ih (by omega)
+
+/-- Strict lower product bound (`q ≥ 1`, entries positive):
+`3^q · Π aᵢ < Π (3aᵢ + 1)`. -/
+theorem seqProd_gt_three_pow (a : ℕ → ℕ) (q : ℕ) (hq : 1 ≤ q)
+    (ha : ∀ i, i < q → 1 ≤ a i) :
+    3 ^ q * seqProd a q < seqProd (fun i => 3 * a i + 1) q := by
+  obtain ⟨q', rfl⟩ : ∃ q', q = q' + 1 := ⟨q - 1, by omega⟩
+  have hP' : 0 < seqProd a q' :=
+    seqProd_pos a q' (fun i hi => by have := ha i (by omega); omega)
+  have hle : 3 ^ q' * seqProd a q' ≤ seqProd (fun i => 3 * a i + 1) q' :=
+    seqProd_ge_three_pow a q'
+  have hpos : 0 < 3 ^ q' * seqProd a q' := by positivity
+  show 3 ^ (q' + 1) * (seqProd a q' * a q')
+    < seqProd (fun i => 3 * a i + 1) q' * (3 * a q' + 1)
+  calc 3 ^ (q' + 1) * (seqProd a q' * a q')
+      = (3 ^ q' * seqProd a q') * (3 * a q') := by rw [pow_succ]; ring
+    _ < (3 ^ q' * seqProd a q') * (3 * a q' + 1) :=
+        mul_lt_mul_of_pos_left (by omega) hpos
+    _ ≤ seqProd (fun i => 3 * a i + 1) q' * (3 * a q' + 1) :=
+        Nat.mul_le_mul hle (le_refl _)
+
+/-- **THE MASTER CORRIDOR.**  Every positive Syracuse orbit segment satisfies
+`3^q · a₀ < 2^{A_q} · Syr^[q](a₀) ≤ 4^q · a₀` — no cycle hypothesis.  One inequality;
+cycles and the divergence bit-budget are its two endpoint readings. -/
+theorem syr_master_corridor (a0 q : ℕ) (ha : 0 < a0) (hq : 1 ≤ q) :
+    3 ^ q * a0 < 2 ^ cycleA a0 q * (Syr^[q]) a0 ∧
+      2 ^ cycleA a0 q * (Syr^[q]) a0 ≤ 4 ^ q * a0 := by
+  have hstep : ∀ i, 2 ^ (cycleK a0 i) * (Syr^[i + 1]) a0 = 3 * (Syr^[i]) a0 + 1 := by
+    intro i
+    rw [Function.iterate_succ_apply']
+    exact Syr_step ((Syr^[i]) a0)
+  have htel : 2 ^ cycleA a0 q * seqProd (fun i => (Syr^[i + 1]) a0) q
+      = seqProd (fun i => 3 * (Syr^[i]) a0 + 1) q :=
+    cycle_mul_telescope (fun i => (Syr^[i]) a0) (cycleK a0) hstep q
+  have hshift : seqProd (fun i => (Syr^[i + 1]) a0) q * a0
+      = seqProd (fun i => (Syr^[i]) a0) q * (Syr^[q]) a0 :=
+    seqProd_shift (fun i => (Syr^[i]) a0) q
+  have hposall : ∀ i, i < q → 1 ≤ (Syr^[i]) a0 := fun i _ => syr_iterate_pos a0 ha i
+  have hP : 0 < seqProd (fun i => (Syr^[i]) a0) q :=
+    seqProd_pos (fun i => (Syr^[i]) a0) q hposall
+  -- the key product identity (no cycle hypothesis): 2^A · P · Syr^[q] = T · a₀
+  have hkey : 2 ^ cycleA a0 q * (seqProd (fun i => (Syr^[i]) a0) q * (Syr^[q]) a0)
+      = seqProd (fun i => 3 * (Syr^[i]) a0 + 1) q * a0 := by
+    calc 2 ^ cycleA a0 q * (seqProd (fun i => (Syr^[i]) a0) q * (Syr^[q]) a0)
+        = 2 ^ cycleA a0 q * (seqProd (fun i => (Syr^[i + 1]) a0) q * a0) := by
+          rw [hshift]
+      _ = (2 ^ cycleA a0 q * seqProd (fun i => (Syr^[i + 1]) a0) q) * a0 := by ring
+      _ = seqProd (fun i => 3 * (Syr^[i]) a0 + 1) q * a0 := by rw [htel]
+  constructor
+  · -- lower: 3^q · a₀ < 2^A · Syr^[q] a₀
+    have hlow := seqProd_gt_three_pow (fun i => (Syr^[i]) a0) q hq hposall
+    have hstrict : seqProd (fun i => (Syr^[i]) a0) q * (3 ^ q * a0)
+        < seqProd (fun i => (Syr^[i]) a0) q
+            * (2 ^ cycleA a0 q * (Syr^[q]) a0) := by
+      calc seqProd (fun i => (Syr^[i]) a0) q * (3 ^ q * a0)
+          = (3 ^ q * seqProd (fun i => (Syr^[i]) a0) q) * a0 := by ring
+        _ < (seqProd (fun i => 3 * (Syr^[i]) a0 + 1) q) * a0 :=
+            mul_lt_mul_of_pos_right hlow ha
+        _ = seqProd (fun i => (Syr^[i]) a0) q
+              * (2 ^ cycleA a0 q * (Syr^[q]) a0) := by rw [← hkey]; ring
+    exact Nat.lt_of_mul_lt_mul_left hstrict
+  · -- upper: 2^A · Syr^[q] a₀ ≤ 4^q · a₀
+    have hup := seqProd_le_four_pow (fun i => (Syr^[i]) a0) q hposall
+    have hle : seqProd (fun i => (Syr^[i]) a0) q
+          * (2 ^ cycleA a0 q * (Syr^[q]) a0)
+        ≤ seqProd (fun i => (Syr^[i]) a0) q * (4 ^ q * a0) := by
+      calc seqProd (fun i => (Syr^[i]) a0) q * (2 ^ cycleA a0 q * (Syr^[q]) a0)
+          = seqProd (fun i => 3 * (Syr^[i]) a0 + 1) q * a0 := by rw [← hkey]; ring
+        _ ≤ (4 ^ q * seqProd (fun i => (Syr^[i]) a0) q) * a0 :=
+            Nat.mul_le_mul hup (le_refl _)
+        _ = seqProd (fun i => (Syr^[i]) a0) q * (4 ^ q * a0) := by ring
+    exact Nat.le_of_mul_le_mul_left hle hP
+
+/-- Consistency shadow 1 (cycles): the master corridor re-derives the bilateral window
+`3^q < 2^{A_q} ≤ 4^q` for cycles — matching `syr_cycle_corridor'`/`syr_cycle_A_le_two_mul`. -/
+theorem syr_master_corridor_cycle (a0 q : ℕ) (ha : 0 < a0) (hq : 1 ≤ q)
+    (hcyc : (Syr^[q]) a0 = a0) :
+    3 ^ q < 2 ^ cycleA a0 q ∧ 2 ^ cycleA a0 q ≤ 4 ^ q := by
+  obtain ⟨hlow, hup⟩ := syr_master_corridor a0 q ha hq
+  rw [hcyc] at hlow hup
+  exact ⟨lt_of_mul_lt_mul_right hlow (Nat.zero_le a0),
+    Nat.le_of_mul_le_mul_right hup ha⟩
+
 /-! ### The abstract effective-linear-form socket (for any future Baker input) -/
 
 /-- **Abstract effective linear-form-in-logs hypothesis.**  `EffectiveLinearForm Φ` says the gap

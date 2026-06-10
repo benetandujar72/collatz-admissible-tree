@@ -56,3 +56,4 @@ import CollatzLean4.LadderRefutation
 import CollatzLean4.LadderExists
 import CollatzLean4.CycleReduction
 import CollatzLean4.ReachUnits
+import CollatzLean4.CollatzBridge

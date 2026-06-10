@@ -38,3 +38,4 @@ tools/s233_diagnose_edges.py
 tools/s238_export_psi.py
 tools/s238_sweep_corrected.py
 tools/s238_tables_corrected/
+.markitdown/

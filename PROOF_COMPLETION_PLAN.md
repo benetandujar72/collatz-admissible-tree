@@ -9,6 +9,33 @@
 
 ## 1. TL;DR (read this first)
 
+> **2026-06-01 EXECUTIVE UPDATE (S240–S242) — supersedes the κ-route sections below.**
+> The S240–S242 arc settled the κ-route's fate with THEOREMS and replaced the
+> certificate frontier with closed forms. (a) **Obstructions, machine-checked**: the
+> per-block κ-induction is CIRCULAR (`KappaPathSplit ⟺ barrier(m+1)`); the
+> canonical-first-split device is FALSE (`not_firstMPrecisionSuffixPositive`,
+> `not_blockBoundaryExists`); NO congruence invariant exists at any finite modulus
+> (`invReachable_units` — every unit cylinder is reachable, ReachUnits.lean); NO
+> 3-adically continuous potential certifies the barrier in ANY codomain (ℤ-collapse +
+> `no_decaying_modulus_corrector` via the ±1 attractor identities, AttractorNoGo.lean);
+> the tropical/Green class is refuted with a witness; the Sturmian reduction is dead.
+> (b) **Closed forms**: `PhiBitlen` (BitlenPotential.lean) proves the bounded κ barrier
+> from the bit criterion `4(m+Q)+1 ≤ size(start)` — no search, no tables; with the
+> faithful `aS202_at` starts (FaithfulBarrier.lean): **m=2 up to Q=16, m=3 up to Q=23,
+> anchor-free** (AS202Lift de-anchored: 9 native_decide → kernel decide). Every
+> (bitlen, j)-linear potential provably dies at Q ~ 22m. (c) **Cycle half**: m=1–4
+> unconditional; bilateral window `m·log₂3 < A < 2m`; master corridor
+> `3^q·a₀ < 2^A·Syr^[q]a₀ ≤ 4^q·a₀` (no cycle hypothesis); full Hercher pipeline —
+> no cycle of period < 16 266 conditional only on `SyrVerifiedUpTo 2²⁹`, with the
+> literature-shaped bridge `CollatzVerifiedUpTo (3X+1) → SyrVerifiedUpTo X`.
+> (d) **The difficulty, named**: all residual walls are ONE object — the archimedean
+> Sturmian carry process of rotation number log₂3; the 𝔽₂[x] twin (HMYZ 2008,
+> Behajaina–Paran, Monks conjugation) is a THEOREM because degrees carry-free, and
+> its naive "function-field Baker" is FALSE without harming the theorem. Open, named:
+> the hybrid (Green-singular + Hölder) corner and CMS (carry Mason–Stothers).
+> See `FRONTIER_STATUS.md` (2026-06-01) for the consolidated table and
+> `PAPER1_OUTLINE.md` for the write-up skeleton.
+
 The Lean development formalizes the **κ-precise slope-barrier sub-route** of the
 S202 alternative. Concretely, it proves — *unconditionally and machine-checked* —
 that a Bellman–Ford closure certificate over the κ-weighted inverse-cylinder graph

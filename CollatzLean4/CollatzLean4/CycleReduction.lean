@@ -381,6 +381,198 @@ theorem syr_cycle_gap_mul_frontier_lt {X₀ : ℕ} (hver : SyrVerifiedUpTo X₀)
       < (2 ^ cycleA a0 m - 3 ^ m) * a0 := mul_lt_mul_of_pos_left hX0 hgap
     _ = cycleCm a0 m := syr_cycle_gap_eq a0 m h
 
+/-! ### Step 3 — the continued-fraction (mediant) exclusion, fully integer-arithmetic
+
+The Lean image of the Hercher-style ratchet, with NO real logarithms anywhere:
+
+  * the multiplicative cycle equation + the frontier give the SANDWICH
+    `3^m < 2^{A_m}` and `2^{A_m}·V^m ≤ 3^m·(V+1)^m` with `V := 3X₀`
+    (per-factor: `(3aᵢ+1)·V ≤ 3aᵢ·(V+1) ⟺ X₀ ≤ aᵢ`);
+  * a CONSECUTIVE CONVERGENT PAIR `L/Λ < log₂3 < U/Υ` of the continued fraction of
+    `log₂3` enters as three INTEGER certificates: unimodularity `U·Λ = L·Υ + 1`, the
+    lower side `2^L < 3^Λ`, and the quality bound `3^Υ·(V+1)^Υ < 2^U·V^Υ`;
+  * the sandwich forces `L/Λ < A/m < U/Υ` (pure power-comparison juggling), and the
+    UNIMODULAR MEDIANT IDENTITY `m = Λ·(Um − AΥ) + Υ·(AΛ − Lm)` forces `m ≥ Λ + Υ`.
+
+Concrete instances below: the pair `84/53 < log₂3 < 485/306` (M₀ = 359, X₀ = 2²⁰) and
+`1054/665 < log₂3 < 24727/15601` (M₀ = 16266, X₀ = 2²⁹).  Both X₀ are far below the
+verified frontier of the literature (`704·2⁶⁰`, Barina 2020), but `SyrVerifiedUpTo X₀`
+remains an EXPLICIT HYPOTHESIS throughout — stated, never asserted. -/
+
+/-- Distributing a constant through the running product: `Π (c·aᵢ) = c^m · Π aᵢ`. -/
+theorem seqProd_const_mul (c : ℕ) (a : ℕ → ℕ) :
+    ∀ m, seqProd (fun i => c * a i) m = c ^ m * seqProd a m := by
+  intro m
+  induction m with
+  | zero => simp [seqProd]
+  | succ m ih =>
+      show seqProd (fun i => c * a i) m * (c * a m) = c ^ (m + 1) * (seqProd a m * a m)
+      rw [ih, pow_succ]
+      ring
+
+/-- **The frontier product bound.**  If every `3aᵢ ≥ V` below `m`, then
+`Π(3aᵢ+1) · V^m ≤ Π(3aᵢ) · (V+1)^m` (per-factor: `(3a+1)V ≤ 3a(V+1) ⟺ V ≤ 3a`). -/
+theorem seqProd_frontier_le (a : ℕ → ℕ) (V : ℕ) :
+    ∀ m, (∀ i, i < m → V ≤ 3 * a i) →
+      seqProd (fun i => 3 * a i + 1) m * V ^ m
+        ≤ seqProd (fun i => 3 * a i) m * (V + 1) ^ m := by
+  intro m
+  induction m with
+  | zero => intro _; simp [seqProd]
+  | succ m ih =>
+      intro hV
+      have h1 := ih fun i hi => hV i (by omega)
+      have h2 : (3 * a m + 1) * V ≤ 3 * a m * (V + 1) := by
+        have := hV m (by omega)
+        nlinarith
+      show seqProd (fun i => 3 * a i + 1) m * (3 * a m + 1) * V ^ (m + 1)
+        ≤ seqProd (fun i => 3 * a i) m * (3 * a m) * (V + 1) ^ (m + 1)
+      calc seqProd (fun i => 3 * a i + 1) m * (3 * a m + 1) * V ^ (m + 1)
+          = (seqProd (fun i => 3 * a i + 1) m * V ^ m) * ((3 * a m + 1) * V) := by
+            rw [pow_succ]; ring
+        _ ≤ (seqProd (fun i => 3 * a i) m * (V + 1) ^ m) * (3 * a m * (V + 1)) :=
+            Nat.mul_le_mul h1 h2
+        _ = seqProd (fun i => 3 * a i) m * (3 * a m) * (V + 1) ^ (m + 1) := by
+            rw [pow_succ]; ring
+
+/-- **The frontier sandwich (upper side).**  A nontrivial cycle above the frontier `X₀`
+satisfies `2^{A_m} · (3X₀)^m ≤ 3^m · (3X₀+1)^m`. -/
+theorem syr_cycle_frontier_sandwich {X₀ : ℕ} (hver : SyrVerifiedUpTo X₀)
+    {a0 m : ℕ} (ha : 0 < a0) (hm : 0 < m) (h : (Syr^[m]) a0 = a0) (hne : a0 ≠ 1) :
+    2 ^ cycleA a0 m * (3 * X₀) ^ m ≤ 3 ^ m * (3 * X₀ + 1) ^ m := by
+  have helem := syr_cycle_elements_above_frontier hver ha hm h hne
+  have hV : ∀ i, i < m → 3 * X₀ ≤ 3 * (Syr^[i]) a0 := fun i _ =>
+    Nat.mul_le_mul (le_refl 3) (le_of_lt (helem i))
+  have hP : 0 < seqProd (fun i => (Syr^[i]) a0) m :=
+    seqProd_pos (fun i => (Syr^[i]) a0) m (fun i _ => syr_iterate_pos a0 ha i)
+  have hmul := syr_cycle_mul_equation a0 m ha h
+  have hfront := seqProd_frontier_le (fun i => (Syr^[i]) a0) (3 * X₀) m hV
+  have hconst : seqProd (fun i => 3 * (Syr^[i]) a0) m
+      = 3 ^ m * seqProd (fun i => (Syr^[i]) a0) m :=
+    seqProd_const_mul 3 (fun i => (Syr^[i]) a0) m
+  have hre : seqProd (fun i => (Syr^[i]) a0) m * (2 ^ cycleA a0 m * (3 * X₀) ^ m)
+      ≤ seqProd (fun i => (Syr^[i]) a0) m * (3 ^ m * (3 * X₀ + 1) ^ m) := by
+    calc seqProd (fun i => (Syr^[i]) a0) m * (2 ^ cycleA a0 m * (3 * X₀) ^ m)
+        = (2 ^ cycleA a0 m * seqProd (fun i => (Syr^[i]) a0) m) * (3 * X₀) ^ m := by
+          ring
+      _ = seqProd (fun i => 3 * (Syr^[i]) a0 + 1) m * (3 * X₀) ^ m := by rw [hmul]
+      _ ≤ seqProd (fun i => 3 * (Syr^[i]) a0) m * (3 * X₀ + 1) ^ m := hfront
+      _ = seqProd (fun i => (Syr^[i]) a0) m * (3 ^ m * (3 * X₀ + 1) ^ m) := by
+          rw [hconst]; ring
+  exact Nat.le_of_mul_le_mul_left hre hP
+
+/-- **The unimodular mediant bound (pure ℕ).**  If `U·Λ = L·Υ + 1` and the fraction
+`A/m` lies strictly between `L/Λ` and `U/Υ` (`Lm < AΛ`, `AΥ < Um`), then `m ≥ Λ + Υ` —
+the mediant identity `m = Λ·(Um − AΥ) + Υ·(AΛ − Lm)`. -/
+theorem mediant_period_bound {L Λ U Υ A m : ℕ}
+    (huni : U * Λ = L * Υ + 1)
+    (h1 : L * m < A * Λ) (h2 : A * Υ < U * m) :
+    Λ + Υ ≤ m := by
+  have e1 : Λ * (A * Υ) + Λ ≤ Λ * (U * m) := by
+    have h2' : A * Υ + 1 ≤ U * m := h2
+    calc Λ * (A * Υ) + Λ = Λ * (A * Υ + 1) := by ring
+      _ ≤ Λ * (U * m) := Nat.mul_le_mul (le_refl Λ) h2'
+  have e2 : Υ * (L * m) + Υ ≤ Υ * (A * Λ) := by
+    have h1' : L * m + 1 ≤ A * Λ := h1
+    calc Υ * (L * m) + Υ = Υ * (L * m + 1) := by ring
+      _ ≤ Υ * (A * Λ) := Nat.mul_le_mul (le_refl Υ) h1'
+  have e3 : Λ * (U * m) = Υ * (L * m) + m := by
+    calc Λ * (U * m) = (U * Λ) * m := by ring
+      _ = (L * Υ + 1) * m := by rw [huni]
+      _ = Υ * (L * m) + m := by ring
+  have e4 : Λ * (A * Υ) = Υ * (A * Λ) := by ring
+  omega
+
+/-- Conditional cycle exclusion below a period bound (the step-3 deliverable shape). -/
+def NoSyrCycleBelowPeriod (M₀ : ℕ) : Prop :=
+  ∀ a m : ℕ, 0 < a → 0 < m → m < M₀ → (Syr^[m]) a = a → a = 1
+
+/-- **Step 3 (the mediant exclusion).**  Given the verification hypothesis up to `X₀`
+and a consecutive convergent pair `L/Λ < log₂3 < U/Υ` certified by three INTEGER facts —
+unimodularity, the lower side `2^L < 3^Λ`, and the quality bound
+`3^Υ·(3X₀+1)^Υ < 2^U·(3X₀)^Υ` — every nontrivial Syracuse cycle has period `≥ Λ + Υ`. -/
+theorem syr_mediant_exclusion {X₀ L Λ U Υ : ℕ}
+    (hver : SyrVerifiedUpTo X₀) (hΛ : 0 < Λ) (hΥ : 0 < Υ)
+    (huni : U * Λ = L * Υ + 1)
+    (hlow : 2 ^ L < 3 ^ Λ)
+    (hcert : 3 ^ Υ * (3 * X₀ + 1) ^ Υ < 2 ^ U * (3 * X₀) ^ Υ) :
+    NoSyrCycleBelowPeriod (Λ + Υ) := by
+  intro a m ha hm hmlt hcyc
+  by_contra hne
+  have hcorr : 3 ^ m < 2 ^ cycleA a m := syr_cycle_corridor' a m hm hcyc
+  -- lower side: L/Λ < A/m, i.e. L·m < A·Λ
+  have hAL : L * m < cycleA a m * Λ := by
+    by_contra hle
+    push_neg at hle
+    have h1 : (3 : ℕ) ^ (m * Λ) < 2 ^ (cycleA a m * Λ) := by
+      have h0 : ((3 : ℕ) ^ m) ^ Λ < ((2 : ℕ) ^ cycleA a m) ^ Λ :=
+        Nat.pow_lt_pow_left hcorr (by omega)
+      calc (3 : ℕ) ^ (m * Λ) = ((3 : ℕ) ^ m) ^ Λ := by rw [pow_mul]
+        _ < ((2 : ℕ) ^ cycleA a m) ^ Λ := h0
+        _ = 2 ^ (cycleA a m * Λ) := by rw [pow_mul]
+    have h2 : (2 : ℕ) ^ (L * m) < 3 ^ (Λ * m) := by
+      have h0 : ((2 : ℕ) ^ L) ^ m < ((3 : ℕ) ^ Λ) ^ m :=
+        Nat.pow_lt_pow_left hlow (by omega)
+      calc (2 : ℕ) ^ (L * m) = ((2 : ℕ) ^ L) ^ m := by rw [pow_mul]
+        _ < ((3 : ℕ) ^ Λ) ^ m := h0
+        _ = 3 ^ (Λ * m) := by rw [pow_mul]
+    have h3 : (2 : ℕ) ^ (cycleA a m * Λ) ≤ 2 ^ (L * m) :=
+      Nat.pow_le_pow_right (by norm_num) hle
+    have hc : (3 : ℕ) ^ (Λ * m) = 3 ^ (m * Λ) := by rw [Nat.mul_comm]
+    omega
+  -- upper side: A/m < U/Υ, i.e. A·Υ < U·m
+  have hAU : cycleA a m * Υ < U * m := by
+    by_contra hge
+    push_neg at hge
+    have hs := syr_cycle_frontier_sandwich hver ha hm hcyc hne
+    have hsΥ : (2 ^ cycleA a m * (3 * X₀) ^ m) ^ Υ
+        ≤ (3 ^ m * (3 * X₀ + 1) ^ m) ^ Υ := Nat.pow_le_pow_left hs Υ
+    have e1 : ((2 : ℕ) ^ U * (3 * X₀) ^ Υ) ^ m = 2 ^ (U * m) * (3 * X₀) ^ (Υ * m) := by
+      ring
+    have e2 : ((2 : ℕ) ^ cycleA a m * (3 * X₀) ^ m) ^ Υ
+        = 2 ^ (cycleA a m * Υ) * (3 * X₀) ^ (Υ * m) := by
+      ring
+    have e3 : ((3 : ℕ) ^ m * (3 * X₀ + 1) ^ m) ^ Υ
+        = ((3 : ℕ) ^ Υ * (3 * X₀ + 1) ^ Υ) ^ m := by
+      ring
+    have hpow : (2 : ℕ) ^ (U * m) ≤ 2 ^ (cycleA a m * Υ) :=
+      Nat.pow_le_pow_right (by norm_num) hge
+    have hfin : ((2 : ℕ) ^ U * (3 * X₀) ^ Υ) ^ m
+        ≤ ((3 : ℕ) ^ Υ * (3 * X₀ + 1) ^ Υ) ^ m := by
+      calc ((2 : ℕ) ^ U * (3 * X₀) ^ Υ) ^ m
+          = 2 ^ (U * m) * (3 * X₀) ^ (Υ * m) := e1
+        _ ≤ 2 ^ (cycleA a m * Υ) * (3 * X₀) ^ (Υ * m) :=
+            Nat.mul_le_mul hpow (le_refl _)
+        _ = ((2 : ℕ) ^ cycleA a m * (3 * X₀) ^ m) ^ Υ := e2.symm
+        _ ≤ (3 ^ m * (3 * X₀ + 1) ^ m) ^ Υ := hsΥ
+        _ = ((3 : ℕ) ^ Υ * (3 * X₀ + 1) ^ Υ) ^ m := e3
+    have hroot : (2 : ℕ) ^ U * (3 * X₀) ^ Υ ≤ 3 ^ Υ * (3 * X₀ + 1) ^ Υ := by
+      by_contra hgt
+      push_neg at hgt
+      have := Nat.pow_lt_pow_left hgt (n := m) (by omega)
+      omega
+    omega
+  have := mediant_period_bound huni hAL hAU
+  omega
+
+/-- **Concrete instance, convergent pair `84/53 < log₂3 < 485/306`** (unimodular:
+`485·53 = 84·306 + 1`): conditional on verification up to `2²⁰ ≈ 10⁶`, no nontrivial
+Syracuse cycle of period below `359`. -/
+theorem syr_no_cycle_below_359 (hver : SyrVerifiedUpTo (2 ^ 20)) :
+    NoSyrCycleBelowPeriod 359 := by
+  have h := syr_mediant_exclusion (L := 84) (Λ := 53) (U := 485) (Υ := 306) hver
+    (by norm_num) (by norm_num) (by norm_num) (by decide) (by decide)
+  simpa using h
+
+/- LARGER INSTANCES (honest scope note).  The next consecutive pair
+`1054/665 < log₂3 < 24727/15601` (unimodular: `24727·665 = 1054·15601 + 1`, certificates
+verified numerically) would give `NoSyrCycleBelowPeriod 16266` from `SyrVerifiedUpTo 2²⁹`.
+The mathematics is identical; the blocker is purely technical: `decide`'s elaborator-side
+reduction unfolds `Nat.pow` UNARILY, so exponent `15601` exceeds any sane `maxRecDepth`
+(the kernel's GMP arithmetic itself would be fast).  A pow-by-squaring certificate helper
+(staging `x^{2k} = (x^k)^2` as explicit lemmas) would unlock arbitrary convergent pairs;
+deferred. -/
+
 /-! ### The abstract effective-linear-form socket (for any future Baker input) -/
 
 /-- **Abstract effective linear-form-in-logs hypothesis.**  `EffectiveLinearForm Φ` says the gap

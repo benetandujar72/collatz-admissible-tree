@@ -14,7 +14,7 @@ m-th cylinder, satisfying the **defining modular equation**
 \]
 
 For each `m`, the value is hard-coded; the proof of correctness is by
-`native_decide` (pure modular arithmetic). Future cylinders are added
+`decide` (pure modular arithmetic). Future cylinders are added
 by extending the `match`.
 
 **Significance**: this is the building block for `m ≥ 2` cert lifting.
@@ -40,49 +40,49 @@ def aS202_at : Nat → Nat
 mod `3^24`. -/
 theorem aS202_at_1_fixed_point :
     (2^43 - 3^22) * aS202_at 1 % (3^24) = BS202 % (3^24) := by
-  native_decide
+  decide
 
 /-- For `m = 2`, `aS202_at 2` satisfies the S202 fixed-point equation
 mod `3^46`. -/
 theorem aS202_at_2_fixed_point :
     (2^43 - 3^22) * aS202_at 2 % (3^46) = BS202 % (3^46) := by
-  native_decide
+  decide
 
 /-- For `m = 3`, `aS202_at 3` satisfies the S202 fixed-point equation
 mod `3^68`. -/
 theorem aS202_at_3_fixed_point :
     (2^43 - 3^22) * aS202_at 3 % (3^68) = BS202 % (3^68) := by
-  native_decide
+  decide
 
 /-! ### Consistency with the Lean-default `aS202` -/
 
 /-- For `m = 1`, the precomputed representative matches the Lean-default
 `aS202 = 1 + 3^22`. -/
-theorem aS202_at_1_eq_aS202 : aS202_at 1 = aS202 := by native_decide
+theorem aS202_at_1_eq_aS202 : aS202_at 1 = aS202 := by decide
 
 /-- For `m = 2`, the precomputed representative AGREES with `aS202`
 modulo `3^24` (consistency with the lower-precision representative). -/
 theorem aS202_at_2_mod_3_24 : aS202_at 2 % (3^24) = aS202 := by
-  native_decide
+  decide
 
 /-- For `m = 2`, the precomputed representative DIFFERS from
 `aS202 = 1 + 3^22` modulo `3^46` — capturing the higher-precision
 3-adic digits that the Lean-default representation drops. -/
 theorem aS202_at_2_ne_aS202_mod_3_46 :
-    aS202_at 2 % (3^46) ≠ aS202 % (3^46) := by native_decide
+    aS202_at 2 % (3^46) ≠ aS202 % (3^46) := by decide
 
 /-- For `m = 3`, the representative AGREES with `aS202_at 2`
 modulo `3^46` (coherence in the 3-adic Cauchy sequence). -/
 theorem aS202_at_3_mod_3_46 : aS202_at 3 % (3^46) = aS202_at 2 := by
-  native_decide
+  decide
 
 /-! ### Bound for use as `InvVertex.c`
 
 Each representative is bounded by its modulus (canonical Nat form). -/
 
-theorem aS202_at_1_lt_3_24 : aS202_at 1 < 3^24 := by native_decide
-theorem aS202_at_2_lt_3_46 : aS202_at 2 < 3^46 := by native_decide
-theorem aS202_at_3_lt_3_68 : aS202_at 3 < 3^68 := by native_decide
+theorem aS202_at_1_lt_3_24 : aS202_at 1 < 3^24 := by decide
+theorem aS202_at_2_lt_3_46 : aS202_at 2 < 3^46 := by decide
+theorem aS202_at_3_lt_3_68 : aS202_at 3 < 3^68 := by decide
 
 /-! ### Modular characterisation: `aS202_at m + 3^(22m+2) ℤ ⊆ S202` cylinder
 
@@ -94,7 +94,7 @@ lower-precision `aS202`. -/
 /-- For m=1: the precomputed representative is IN the m=1 cylinder
 (since equal to `aS202` mod `3^24`). -/
 theorem aS202_at_1_in_cylinder : aS202_at 1 % (3^24) = aS202 % (3^24) := by
-  native_decide
+  decide
 
 /-- For m=2: the precomputed representative is NOT in the cylinder
 defined by `aS202` at precision `3^46`. The two representatives

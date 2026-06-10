@@ -58,3 +58,4 @@ import CollatzLean4.CycleReduction
 import CollatzLean4.ReachUnits
 import CollatzLean4.CollatzBridge
 import CollatzLean4.BitlenPotential
+import CollatzLean4.FaithfulBarrier

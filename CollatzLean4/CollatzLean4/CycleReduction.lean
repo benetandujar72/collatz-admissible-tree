@@ -555,6 +555,41 @@ theorem syr_mediant_exclusion {X₀ L Λ U Υ : ℕ}
   have := mediant_period_bound huni hAL hAU
   omega
 
+/-! #### Pow-by-squaring certificates (unlocking large convergent pairs)
+
+`decide` reduces `Nat.pow` by UNARY unfolding, overflowing `maxRecDepth` for exponents
+beyond ~a thousand (the kernel's GMP arithmetic itself is fast).  `fastPowAux` is binary
+exponentiation, STRUCTURALLY recursive in a fuel parameter — reduction depth `≈ fuel`
+(64 suffices for any exponent `< 2⁶⁴`), with one GMP multiplication per level. -/
+
+/-- Fuel-bounded binary exponentiation (kernel-reducible at logarithmic depth). -/
+def fastPowAux : ℕ → ℕ → ℕ → ℕ
+  | 0, _, _ => 1
+  | fuel + 1, x, n =>
+      if n = 0 then 1 else fastPowAux fuel x (n / 2) ^ 2 * x ^ (n % 2)
+
+/-- `fastPowAux` computes the power, given sufficient fuel. -/
+theorem fastPow_eq : ∀ (fuel x n : ℕ), n < 2 ^ fuel → fastPowAux fuel x n = x ^ n := by
+  intro fuel
+  induction fuel with
+  | zero =>
+      intro x n hn
+      rw [pow_zero] at hn
+      have h0 : n = 0 := by omega
+      subst h0
+      rfl
+  | succ fuel ih =>
+      intro x n hn
+      show (if n = 0 then 1 else fastPowAux fuel x (n / 2) ^ 2 * x ^ (n % 2)) = x ^ n
+      by_cases h0 : n = 0
+      · rw [if_pos h0, h0, pow_zero]
+      · have hdiv : n / 2 < 2 ^ fuel := by
+          have h2 : (2 : ℕ) ^ (fuel + 1) = 2 ^ fuel * 2 := pow_succ 2 fuel
+          omega
+        rw [if_neg h0, ih x (n / 2) hdiv, ← pow_mul, ← pow_add]
+        congr 1
+        omega
+
 /-- **Concrete instance, convergent pair `84/53 < log₂3 < 485/306`** (unimodular:
 `485·53 = 84·306 + 1`): conditional on verification up to `2²⁰ ≈ 10⁶`, no nontrivial
 Syracuse cycle of period below `359`. -/
@@ -564,14 +599,33 @@ theorem syr_no_cycle_below_359 (hver : SyrVerifiedUpTo (2 ^ 20)) :
     (by norm_num) (by norm_num) (by norm_num) (by decide) (by decide)
   simpa using h
 
-/- LARGER INSTANCES (honest scope note).  The next consecutive pair
-`1054/665 < log₂3 < 24727/15601` (unimodular: `24727·665 = 1054·15601 + 1`, certificates
-verified numerically) would give `NoSyrCycleBelowPeriod 16266` from `SyrVerifiedUpTo 2²⁹`.
-The mathematics is identical; the blocker is purely technical: `decide`'s elaborator-side
-reduction unfolds `Nat.pow` UNARILY, so exponent `15601` exceeds any sane `maxRecDepth`
-(the kernel's GMP arithmetic itself would be fast).  A pow-by-squaring certificate helper
-(staging `x^{2k} = (x^k)^2` as explicit lemmas) would unlock arbitrary convergent pairs;
-deferred. -/
+/-- **Concrete instance, convergent pair `1054/665 < log₂3 < 24727/15601`** (unimodular:
+`24727·665 = 1054·15601 + 1`): conditional on verification up to `2²⁹ ≈ 5.4·10⁸` (far
+below the literature's `704·2⁶⁰`), no nontrivial Syracuse cycle of period below `16266`.
+The pow-by-squaring certificates (`fastPowAux`, ~150 000-digit integers) are checked by
+the KERNEL at logarithmic recursion depth. -/
+theorem syr_no_cycle_below_16266 (hver : SyrVerifiedUpTo (2 ^ 29)) :
+    NoSyrCycleBelowPeriod 16266 := by
+  have hlow : (2 : ℕ) ^ 1054 < 3 ^ 665 := by
+    rw [show ((2 : ℕ) ^ 1054) = fastPowAux 64 2 1054 from
+          (fastPow_eq 64 2 1054 (by norm_num)).symm,
+        show ((3 : ℕ) ^ 665) = fastPowAux 64 3 665 from
+          (fastPow_eq 64 3 665 (by norm_num)).symm]
+    decide
+  have hcert : (3 : ℕ) ^ 15601 * (3 * 2 ^ 29 + 1) ^ 15601
+      < 2 ^ 24727 * (3 * 2 ^ 29) ^ 15601 := by
+    rw [show ((3 : ℕ) ^ 15601) = fastPowAux 64 3 15601 from
+          (fastPow_eq 64 3 15601 (by norm_num)).symm,
+        show ((3 * 2 ^ 29 + 1 : ℕ) ^ 15601) = fastPowAux 64 (3 * 2 ^ 29 + 1) 15601 from
+          (fastPow_eq 64 (3 * 2 ^ 29 + 1) 15601 (by norm_num)).symm,
+        show ((2 : ℕ) ^ 24727) = fastPowAux 64 2 24727 from
+          (fastPow_eq 64 2 24727 (by norm_num)).symm,
+        show ((3 * 2 ^ 29 : ℕ) ^ 15601) = fastPowAux 64 (3 * 2 ^ 29) 15601 from
+          (fastPow_eq 64 (3 * 2 ^ 29) 15601 (by norm_num)).symm]
+    decide
+  have h := syr_mediant_exclusion (L := 1054) (Λ := 665) (U := 24727) (Υ := 15601) hver
+    (by norm_num) (by norm_num) (by norm_num) hlow hcert
+  simpa using h
 
 /-! ### The abstract effective-linear-form socket (for any future Baker input) -/
 

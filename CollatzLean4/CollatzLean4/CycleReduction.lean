@@ -295,6 +295,92 @@ theorem syr_cycle_window (a0 m : ℕ) (ha : 2 ≤ a0) (hm : 0 < m)
     3 ^ m < 2 ^ cycleA a0 m ∧ cycleA a0 m < 2 * m :=
   ⟨syr_cycle_corridor' a0 m hm h, syr_cycle_A_lt_two_mul a0 m ha hm h⟩
 
+/-! ### Step 2 — the verification-frontier coupling
+
+The engine of the modern cycle bounds (Eliahou 1993 → Simons–de Weger 2005 → Hercher 2022):
+a nontrivial cycle's elements all exceed the computational verification frontier `X₀`,
+because a cycle element is a periodic point, and a periodic point whose orbit reaches `1`
+IS `1`.  We take the verification fact as an EXPLICIT HYPOTHESIS (`SyrVerifiedUpTo X₀`) —
+stated, never asserted.  (Real-world instance: Collatz convergence is verified for all
+`n ≤ 704·2⁶⁰ ≈ 8.1·10²⁰`, Barina, *J. Supercomputing* 2020; bridging that statement about
+the full Collatz map to `SyrVerifiedUpTo` for the accelerated odd map is an elementary but
+separate step, not done here.)
+
+Combined with step 1's gap identity `(2^{A_m} − 3^m)·a₀ = C_m`, the frontier forces the
+QUANTITATIVE bound `(2^{A_m} − 3^m)·X₀ < C_m` — the input the continued-fraction step
+(step 3) consumes. -/
+
+/-- `n` reaches the fixed point `1` under the Syracuse iteration. -/
+def SyrReaches1 (n : ℕ) : Prop := ∃ k, (Syr^[k]) n = 1
+
+/-- The computational verification hypothesis: every positive `n ≤ X₀` reaches `1`.
+STATED as an explicit hypothesis, never asserted. -/
+def SyrVerifiedUpTo (X₀ : ℕ) : Prop := ∀ n, 0 < n → n ≤ X₀ → SyrReaches1 n
+
+/-- A periodic point is fixed by every multiple of its period. -/
+theorem syr_periodic_mul (a m : ℕ) (h : (Syr^[m]) a = a) :
+    ∀ q, (Syr^[q * m]) a = a := by
+  intro q
+  induction q with
+  | zero => rw [Nat.zero_mul]; rfl
+  | succ q ih =>
+      have hadd : (q + 1) * m = m + q * m := by ring
+      rw [hadd, Function.iterate_add_apply, ih, h]
+
+/-- **A periodic point that reaches `1` is `1`.**  Reduce the hitting time mod the period,
+then close the cycle through the fixed point `1`. -/
+theorem syr_periodic_eq_one_of_reaches (a m : ℕ) (hm : 0 < m)
+    (h : (Syr^[m]) a = a) (hr : SyrReaches1 a) : a = 1 := by
+  obtain ⟨k, hk⟩ := hr
+  have hper : (Syr^[k / m * m]) a = a := syr_periodic_mul a m h (k / m)
+  have hred : (Syr^[k % m]) a = 1 := by
+    have h1 : (Syr^[k % m + k / m * m]) a = (Syr^[k % m]) ((Syr^[k / m * m]) a) :=
+      Function.iterate_add_apply Syr (k % m) (k / m * m) a
+    rw [hper, Nat.mod_add_div'] at h1
+    rw [← h1]
+    exact hk
+  have hrm : k % m < m := Nat.mod_lt k hm
+  calc a = (Syr^[m]) a := h.symm
+    _ = (Syr^[(m - k % m) + k % m]) a := by rw [Nat.sub_add_cancel (le_of_lt hrm)]
+    _ = (Syr^[m - k % m]) ((Syr^[k % m]) a) :=
+        Function.iterate_add_apply Syr (m - k % m) (k % m) a
+    _ = (Syr^[m - k % m]) 1 := by rw [hred]
+    _ = 1 := syr_iterate_one _
+
+/-- **Every element of a nontrivial cycle exceeds the verification frontier.**  Each
+`Syr^[i] a` is itself a periodic point; were it `≤ X₀`, the verification hypothesis would
+make it reach `1`, forcing it — and then `a` itself — to equal `1`. -/
+theorem syr_cycle_elements_above_frontier {X₀ : ℕ} (hver : SyrVerifiedUpTo X₀)
+    {a m : ℕ} (ha : 0 < a) (hm : 0 < m) (h : (Syr^[m]) a = a) (hne : a ≠ 1) :
+    ∀ i, X₀ < (Syr^[i]) a := by
+  intro i
+  by_contra hle
+  push_neg at hle
+  have hbpos : 0 < (Syr^[i]) a := syr_iterate_pos a ha i
+  have hbper : (Syr^[m]) ((Syr^[i]) a) = (Syr^[i]) a := by
+    calc (Syr^[m]) ((Syr^[i]) a)
+        = (Syr^[m + i]) a := (Function.iterate_add_apply Syr m i a).symm
+      _ = (Syr^[i + m]) a := by rw [Nat.add_comm]
+      _ = (Syr^[i]) ((Syr^[m]) a) := Function.iterate_add_apply Syr i m a
+      _ = (Syr^[i]) a := by rw [h]
+  have hb1 : (Syr^[i]) a = 1 :=
+    syr_periodic_eq_one_of_reaches _ m hm hbper (hver _ hbpos hle)
+  exact hne (syr_periodic_eq_one_of_reaches a m hm h ⟨i, hb1⟩)
+
+/-- **The quantitative frontier bound (step 1 ⊗ step 2).**  For a nontrivial cycle,
+`(2^{A_m} − 3^m) · X₀ < C_m` — the gap times the verification frontier is beaten by the
+cycle constant.  This is the exact input of the continued-fraction step. -/
+theorem syr_cycle_gap_mul_frontier_lt {X₀ : ℕ} (hver : SyrVerifiedUpTo X₀)
+    {a0 m : ℕ} (ha : 0 < a0) (hm : 0 < m) (h : (Syr^[m]) a0 = a0) (hne : a0 ≠ 1) :
+    (2 ^ cycleA a0 m - 3 ^ m) * X₀ < cycleCm a0 m := by
+  have hX0 : X₀ < a0 := by
+    have h0 := syr_cycle_elements_above_frontier hver ha hm h hne 0
+    exact h0
+  have hgap : 0 < 2 ^ cycleA a0 m - 3 ^ m := syr_cycle_gap_pos a0 m hm h
+  calc (2 ^ cycleA a0 m - 3 ^ m) * X₀
+      < (2 ^ cycleA a0 m - 3 ^ m) * a0 := mul_lt_mul_of_pos_left hX0 hgap
+    _ = cycleCm a0 m := syr_cycle_gap_eq a0 m h
+
 /-! ### The abstract effective-linear-form socket (for any future Baker input) -/
 
 /-- **Abstract effective linear-form-in-logs hypothesis.**  `EffectiveLinearForm Φ` says the gap

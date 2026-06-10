@@ -1,0 +1,896 @@
+% =====================================================================
+% Paper 1 — Machine-checked obstructions and closed-form barriers
+% for the Collatz inverse tree.
+% Draft v0 (S243, 2026-06-11).  Build: pdflatex/latexmk (Overleaf-ready).
+% Repository: https://github.com/benetandujar72/collatz-admissible-tree
+% =====================================================================
+\documentclass[11pt]{amsart}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage[hidelinks]{hyperref}
+\usepackage{microtype}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{lemma}[theorem]{Lemma}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{question}[theorem]{Question}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\Syr}{\operatorname{Syr}}
+\newcommand{\size}{\operatorname{size}}
+\newcommand{\InvStart}{\operatorname{Start}}
+\newcommand{\lean}[1]{\texttt{#1}}
+\newcommand{\F}{\mathbb{F}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\nuthree}{\nu_3}
+\newcommand{\nutwo}{\nu_2}
+
+\title[Machine-checked obstructions for the Collatz inverse tree]%
+{Machine-checked obstructions for potential-based approaches to the
+Collatz conjecture, with closed-form bounded barriers}
+
+\author{Benet Andújar Mata}
+\address{Barcelona, Spain}
+\email{bandujar@xtec.cat}
+\thanks{The formalization was co-developed with the AI assistant Claude
+(Anthropic) in Lean~4 over Mathlib; see \S\ref{sec:methodology} for the
+methodology and the human/machine division of labour.  The Lean artifact is
+available at
+\url{https://github.com/benetandujar72/collatz-admissible-tree}.}
+
+\date{June 2026 — draft v0}
+
+\begin{document}
+
+\begin{abstract}
+We formalize, in Lean~4 over a single verified graph model --- the admissible
+inverse cylinder tree of the accelerated Syracuse map --- a complete
+obstruction map for the natural ``local potential'' proof strategies aimed at
+the divergence half of the Collatz problem, together with the strongest
+closed-form positive results those obstructions permit.  The negative results
+are theorems, not heuristics: the per-block induction is provably circular;
+no congruence invariant separates start from goal at any finite modulus
+(every unit cylinder is reachable); no $3$-adically continuous potential ---
+in any codomain --- certifies the barrier; and the linear bit-length class,
+which does certify the barrier in a closed form up to an exact bit criterion,
+dies at the very next step, even after being enriched with singular poles at
+the two attractors (an LP-duality argument whose rational Farkas certificates
+are themselves checked in Lean).  The positive results include a closed-form
+bit-length potential proving the bounded $\kappa$-barrier without search, and
+a machine-checked formalization of the Eliahou--Simons--de Weger--Hercher
+cycle pipeline.  The residual difficulty is isolated as a single named
+phenomenon --- the archimedean Sturmian carry process of rotation number
+$\log_2 3$ --- for which the function-field analogue over $\F_2[x]$, here
+formalized end-to-end including a new sharper ``plateau telescope'' proof,
+serves as a control experiment.  All headline theorems depend only on the
+three standard Lean axioms.  The Collatz conjecture itself remains, of
+course, wide open; the contribution is a machine-checked map of where its
+difficulty does and does not live.
+\end{abstract}
+
+\maketitle
+\setcounter{tocdepth}{1}
+\tableofcontents
+
+% =====================================================================
+\section{Introduction}\label{sec:intro}
+
+The Collatz (or $3n+1$) conjecture asserts that iterating
+$n \mapsto n/2$ ($n$ even), $n \mapsto 3n+1$ ($n$ odd) from any positive
+integer eventually reaches $1$.  It famously splits into two independent
+halves: \emph{no nontrivial cycles}, and \emph{no divergent orbits}.  Both
+are open; for the state of the art see Lagarias's surveys
+\cite{Lagarias1985,Lagarias2010}, Tao's almost-everywhere result
+\cite{Tao2019}, the cycle exclusions of Simons--de~Weger \cite{SimonsDeWeger2005}
+and Hercher \cite{Hercher2023}, and the computational verification frontier
+\cite{Barina2021,OliveiraESilva2010}.
+
+This paper reports on a formalization programme (sessions S189--S243 of an
+ongoing human--AI collaboration) that attacks the problem from the
+\emph{inverse} direction: instead of following orbits forward, it studies the
+tree of $3$-adic cylinders that can reach a fixed target cylinder, and asks
+for \emph{local potential functions} certifying that ``cheap'' inverse paths
+do not exist.  The programme produced positive results --- closed-form
+barriers --- but its principal output is sharper and, we believe, more
+useful: a \emph{complete, machine-checked obstruction map} showing that every
+natural potential-shaped strategy on this graph fails, for identified,
+theorem-level reasons.
+
+Why publish negative results?  Because rigorous obstruction knowledge
+redirects effort.  A recent episode in combinatorial geometry --- the
+machine-assisted refutation of a long-standing unit-distance conjecture and
+the community's rapid redeployment around the corrected landscape --- showed
+that a verified ``this cannot work, and here is the certificate'' is worth
+more than years of unrecorded failed attempts.  The Collatz literature is
+dense with potential/invariant attempts; the map below makes a large class of
+them obsolete \emph{as theorems}, each failure carrying a finite, re-checkable
+witness.
+
+\subsection*{Contributions}
+All results are formalized in Lean~4 \cite{Lean4} over Mathlib
+\cite{Mathlib2020}; the artifact builds with \emph{zero} \texttt{sorry}.
+Headline theorems (Lean names in typewriter font; the axiom audit is
+Appendix~\ref{app:axioms}):
+
+\begin{enumerate}
+\item \textbf{The per-block induction is circular} (\S\ref{sec:circular}):
+  the natural induction step is logically equivalent to the statement being
+  proven (\lean{kappaPathSplit\_of\_block},
+  \lean{uniform\_slope\_barrier\_of\_block} expose the single residual crux
+  \lean{BlockBoundaryExists}), and the two natural devices for discharging it
+  are \emph{refuted} (\lean{outerBlockIncrement\_false},
+  \lean{not\_firstMPrecisionSuffixPositive},
+  \lean{not\_blockBoundaryExists}) by an explicit astronomical one-edge
+  ladder built in closed form (\lean{ladder\_exists}).
+\item \textbf{No congruence invariant exists} (\S\ref{sec:reach}): every unit
+  residue class modulo every power of $3$ is reachable from the start
+  (\lean{invReachable\_units}); separating invariants at any finite modulus
+  are therefore impossible.
+\item \textbf{No $3$-adically continuous potential exists, in any codomain}
+  (\S\ref{sec:continuity}): discrete codomains collapse to finite moduli,
+  and for real codomains the two \emph{attractor identities}
+  $4(y-1)=3(c-1)$, $2(y+1)=3(c+1)$ force any continuity modulus $\omega$ to
+  obey $m \le \omega(22+Q)$ (\lean{no\_decaying\_modulus\_corrector}).
+\item \textbf{A closed-form positive frontier, with an exact machine-checked
+  wall} (\S\ref{sec:positive}): the potential
+  $\Phi_{\mathrm{bit}} = \lfloor(\size(c)-1)/4\rfloor + j - Q$ proves the
+  bounded $\kappa$-barrier under the bit criterion $4(m{+}Q)+1 \le
+  \size(\text{start})$ (\lean{kappa\_bounded\_barrier\_bitlen}, faithful
+  instances exactly tight at $73$ and $105$ bits); and \emph{no} member of
+  the linear class survives one step further
+  (\lean{no\_linear\_size\_potential\_m1\_Q8}).  Enriching the class with
+  singular poles at the two attractors buys exactly one more step and dies
+  (\lean{no\_hybrid\_potential\_m1\_Q9}); the Farkas certificates are
+  rational, six rows long, and checked in Lean.
+\item \textbf{The cycle pipeline, formalized} (\S\ref{sec:cycles}):
+  unconditional non-existence of Syracuse cycles of period $\le 4$; the
+  bilateral window $m\log_2 3 < A < 2m$; a one-inequality \emph{master
+  corridor} valid without any cycle hypothesis; and the full
+  Eliahou--Simons--de~Weger--Hercher reduction with kernel-checked
+  continued-fraction instances (periods $<359$ from verification up to
+  $2^{20}$; periods $<16\,266$ from $2^{29}$), connected to the literature's
+  verification statements by an explicit bridge.
+\item \textbf{The function-field control experiment, formalized end-to-end}
+  (\S\ref{sec:ff}): the Collatz analogue on $\F_2[x]$ of
+  Hicks--Mullen--Yucas--Zavislak \cite{HMYZ2008} is proven in Lean
+  (\lean{collatz\_F2X}) --- to our knowledge its first formalization ---
+  via a new \emph{plateau telescope} identity that is sharper than the
+  original multiplicative-order argument.  The same four local laws that are
+  exact over $\F_2[x]$ are lossy over $\Z$; the difficulty of the integer
+  problem is thereby exhibited theorem-against-theorem inside one artifact.
+\end{enumerate}
+
+\subsection*{What this paper does not claim}
+Nothing here proves or claims progress on the Collatz conjecture itself.
+The barriers of \S\ref{sec:positive} are finite statements about a specific
+cylinder tower; the obstructions say that a family of proof \emph{shapes}
+cannot work on this model.  We consider the honest delimitation of scope a
+feature of the machine-checked format: every theorem below means exactly
+what its Lean statement says, no more.
+
+% =====================================================================
+\section{The verified model}\label{sec:model}
+
+\subsection{The accelerated map and admissible classes}
+For odd $n \in \N_{>0}$ let
+$\Syr(n) = (3n+1)/2^{\nutwo(3n+1)}$ be the accelerated Syracuse map.  Working
+modulo $9$, the $2$-adic valuation $\tau(\alpha) := \nutwo(3\alpha+1)$ of the
+odd step is forced on the six \emph{admissible} classes
+$X_9 = \{1,2,4,5,7,8\}$ by the table
+\[
+\tau:\quad 1 \mapsto 2,\quad 2 \mapsto 1,\quad 4 \mapsto 2,\quad
+5 \mapsto 3,\quad 7 \mapsto 4,\quad 8 \mapsto 1
+\]
+(\lean{tau}, \lean{InX} in \lean{AdmissibleBasic.lean}); $\tau$ as used
+throughout is the table value of the class, with $\tau \le 4$ on $X_9$
+(\lean{tau\_le\_four}; classes $0,3,6$ never occur on odd orbits).
+
+\subsection{The inverse cylinder graph}
+Fix a base precision $R$.  Vertices are pairs $v = (j, c)$ with $j \in \N$
+(the number of \emph{zero-steps} consumed) and $c$ a residue class modulo
+$3^{R+j}$ (\lean{InvVertex}).  There are two edge families
+(\lean{InvEdgeOne}, \lean{InvEdgeZero}):
+\begin{align*}
+\text{one-edge: } (j,c) \to (j,c') &\quad\text{iff}\quad
+  c' \in X_9,\ c \equiv 2^{\tau(c')} c' \pmod{3^{R+j}},\\
+\text{zero-edge: } (j,c) \to (j{+}1,c') &\quad\text{iff}\quad
+  c' \in X_9,\ 3c+1 \equiv 2^{\tau(c')} c' \pmod{3^{R+j+1}}.
+\end{align*}
+One-edges invert a pure doubling block; zero-edges invert one odd step and
+\emph{refine the modulus by one $3$-adic digit}.  The
+\emph{$\kappa$-weights} (\lean{InvKappaPreciseEdge}) are
+\[
+\kappa(\text{one-edge}) = +1,\qquad
+\kappa(\text{zero-edge}) = \begin{cases}-1 & \tau(c')=1,\\ 0 & \tau(c')\ge 2,\end{cases}
+\]
+so that along any path $\sum \kappa = \#\text{one-edges} -
+\#\{\tau{=}1\text{ zero-edges}\}$, the combinatorial shadow of the
+\emph{defect} $D(u) = A(u) - 2q(u)$ of the corresponding forward word
+(\lean{InvPathCounts.weight\_lower\_bound}).
+
+\subsection{The start, the goal, and the barrier}
+The programme's start is the \emph{S202 cylinder}: the $3$-adic direction
+singled out by the $26$-letter word $W_{202}$ with $(A,q) = (43,22)$ and
+defect $-1$, the extremal slow-growth direction at this depth.  Concretely
+$\InvStart(m) = (0,\ a^{*} \bmod 3^{R})$ with $R = 22m+2$ and
+$a^{*} \equiv B_{202} \,(2^{43}-3^{22})^{-1} \pmod{3^{R}}$,
+$B_{202} = 919\,447\,060\,349$ (\lean{InvStart}, \lean{aS202}); pleasingly,
+at $m=1$ the canonical residue is exactly $a^{*} = 1 + 3^{22}$
+(\lean{aS202\_decomp}), of bit-size $35$.  A vertex is a \emph{goal} if its
+cylinder contains $1$, i.e.\ $c \equiv 1 \pmod{3^{R+j}}$
+(\lean{InvVertex.IsGoal}).
+
+\begin{definition}[the bounded $\kappa$-barrier; \lean{S202\_kappa\_precise\_barrier\_bounded}]
+\label{def:barrier}
+For $m, Q \in \N$, every $\kappa$-weighted inverse path from $\InvStart(m)$
+to a goal with at most $Q$ zero-edges has total $\kappa \ge m$.
+\end{definition}
+
+The semantic content on the forward side is the \emph{slope barrier}: every
+admissible word $u$ with $q(u) \le Q$ landing in the $m$-th S202 cylinder has
+defect $D(u) \ge m$
+(\lean{S202\_slope\_barrier\_from\_kappa\_precise\_potential\_bounded},
+via the verified forward--inverse correspondence \lean{S212\_forward}).
+Informally: there are no cheap inverse returns along this resonant $3$-adic
+direction.  These are finite, decidable-in-principle statements; their
+interest is as the minimal non-trivial quantitative expansion property the
+inverse-tree programme needs, and as the target all potential strategies
+below aim at.
+
+\begin{theorem}[the potential method; \lean{S202\_kappa\_precise\_barrier\_bounded\_from\_potential}]
+\label{thm:potential-method}
+Let $\Phi$ be any function from vertices to $\Z$ (or $\Q$, $\R$) such that
+\emph{(E)} $\Phi(v) \le \kappa(e) + \Phi(v')$ for every edge $e: v \to v'$ in
+the slice $j \le Q$; \emph{(G)} $\Phi(g) \le 0$ for every goal $g$ with
+$g.j \le Q$; and \emph{(S)} $\Phi(\InvStart(m)) \ge m$.  Then the bounded
+$\kappa$-barrier holds at $(m,Q)$.
+\end{theorem}
+
+Everything in \S\S\ref{sec:circular}--\ref{sec:positive} is about which
+$\Phi$ can exist.
+
+\subsection{The mod-9 rigidity}
+Two structural facts used throughout: the source class of every one-edge lies
+in $\{4,7\} \bmod 9$ (\lean{oneEdge\_source\_mod9\_in\_four\_seven};
+equivalently $2^{\tau(\alpha)}\alpha \equiv \{4,7\} \pmod 9$ for all
+$\alpha \in X_9$, \lean{two\_pow\_tau\_mul\_mod9}); and the \emph{deep-jump
+trap}: a one-edge raises $\nuthree(c-1)$ by $\ge 2$ \emph{iff} its target is
+$\equiv 1 \pmod 9$, forcing the source class $4$
+(\lean{oneEdge\_deepjump\_iff}, \lean{oneEdge\_deepjump\_source\_four}).
+The trap will reappear, unplanned, inside the LP certificates of
+\S\ref{sec:positive} --- the two obstruction families are one mechanism.
+
+% =====================================================================
+\section{Obstruction I: the induction is circular}\label{sec:circular}
+
+The natural uniform-in-$m$ strategy is induction on the precision level: cut
+each level-$(m{+}1)$ path at a distinguished vertex whose prefix projects to
+an $m$-level path (apply the induction hypothesis: $\kappa_1 \ge m$) and
+whose suffix contributes $\kappa_2 \ge 1$.  The formalization makes the
+folklore difficulty exact.
+
+\begin{theorem}[the reduction, and its single crux;
+\lean{kappaPathSplit\_of\_block}, \lean{uniform\_kappa\_barrier\_of\_block},
+\lean{uniform\_slope\_barrier\_of\_block}]
+\label{thm:split}
+Let \lean{BlockBoundaryExists}$(m,Q)$ be the statement: every level-$(m{+}1)$
+$\kappa$-path from the start to a goal of depth $\le Q$ admits a split point
+$\mathrm{mid}$ whose prefix projects onto an $m$-goal and whose suffix has
+$\kappa_2 \ge 1$.  Then a base barrier at level $m_0$ together with
+\lean{BlockBoundaryExists} at every level $\ge m_0$ yields the bounded
+$\kappa$-barrier --- and hence the slope barrier $D \ge m$ --- at every
+level $m \ge m_0$.
+\end{theorem}
+
+The entire open content of the route is thus the crux.  Both natural ways of
+discharging it are dead:
+
+\begin{theorem}[the unconditioned increment is false; \lean{outerBlockIncrement\_false}]
+The statement ``every suffix from a projected $m$-goal contributes
+$\kappa_2 \ge 1$'' is refutable outright (take the root vertex and the empty
+suffix).
+\end{theorem}
+
+\begin{theorem}[the canonical devices are false;
+\lean{not\_firstMPrecisionSuffixPositive}, \lean{not\_blockBoundaryExists}]
+\label{thm:ladder}
+The repaired devices --- choosing the \emph{first} $m$-precise vertex as the
+split, or requiring the split point itself to be $m$-precise --- are also
+refutable, for all $m, Q \ge 1$.
+\end{theorem}
+
+The refutation is constructive and, we think, the most instructive object of
+the negative half: a path consisting of one $\tau\ge2$ zero-edge (weight $0$)
+followed by an astronomical \emph{one-edge ladder} alternating between the
+classes $4$ and $7 \bmod 9$ (\lean{ladder\_exists}; the ``mod-6 shield''
+\lean{mod6\_of\_two\_pow\_mod9\_seven} keeps every rung non-$m$-precise),
+ending with a single deep one-edge into the goal $(1,1)$
+(\lean{deep\_edge}).  The ladder's length is governed by
+$\operatorname{ord}(2 \bmod 3^{R+1}) = 2\cdot 3^{R}$
+(\lean{orderOf\_two\_zmod\_three\_pow}) --- about $10^{22}$ rungs already at
+the $m=2$ precision --- yet it exists \emph{in closed form}: no enumeration
+appears anywhere in the proof.  Its suffix after the forced split has
+$\kappa_2 = 0 < 1$, contradicting the devices.  Notably, the same
+order-of-$2$ computation also disposes of all closed one-edge walks
+(\lean{closed\_oneWalk\_weight\_ge\_order}): the graph has no short
+$\kappa$-cheap cycles to exploit.
+
+\begin{remark}
+The barrier itself survives Theorem~\ref{thm:ladder} (the split is
+existential, and on the ladder path the prefix already pays $\kappa_1 \ge m$);
+what dies is every \emph{canonical} (choice-free) construction of the split.
+The induction route needs a genuinely new idea for selecting split points,
+or must be abandoned.
+\end{remark}
+
+% =====================================================================
+\section{Obstruction II: no finite-modulus invariant}\label{sec:reach}
+
+A second classical hope is a congruence invariant: a union of residue
+classes modulo $3^t$ (or any modulus) containing the start, closed under
+edges, and avoiding the goal.
+
+\begin{theorem}[reach $=$ units; \lean{invReachable\_units}]\label{thm:reach}
+For every $m \ge 1$, every $t \ge 1$ and every $z$ coprime to $3$, some
+vertex reachable from $\InvStart(m)$ satisfies $v.c \equiv z \pmod{3^t}$.
+\end{theorem}
+
+The proof is an induction on precision: each zero-edge contributes exactly
+one new $3$-adic digit, and the lifting lemma \lean{invReachable\_zero\_lift}
+(driven by \lean{two\_pow\_tau\_mul\_mod9}) realizes any prescribed next
+digit.  Consequently \emph{no} congruence invariant separates start from
+goal at any finite modulus; in particular every discrete-codomain potential
+that factors through a finite modulus is dead.  Even the ``trap'' cylinder
+of the deep-jump analysis is reached at every precision
+(\lean{invReachable\_hits\_trap}).
+
+% =====================================================================
+\section{Obstruction III: no continuous potential, in any codomain}
+\label{sec:continuity}
+
+Could $\Phi$ be $3$-adically \emph{continuous} --- depending, with decaying
+influence, on deeper and deeper digits of $c$?  For $\Z$-valued $\Phi$,
+continuity means local constancy, hence factoring through some
+$c \bmod 3^t$, dead by Theorem~\ref{thm:reach}.  The real-valued case is
+killed by two exact identities.
+
+\begin{proposition}[the attractor identities; \lean{tau2\_attractor},
+\lean{tau1\_attractor}, \lean{tau2\_attractor\_nu3}, \lean{tau1\_attractor\_nu3}]
+Along a $\tau=2$ zero-edge with target $y$, $4(y-1) = 3(c-1)$, so
+$\nuthree(y-1) = \nuthree(c-1)+1$; along a $\tau=1$ zero-edge,
+$2(y+1) = 3(c+1)$, so $\nuthree(y+1) = \nuthree(c+1)+1$.
+\end{proposition}
+
+Thus the $\tau{=}2$, class-$1$ chain converges $3$-adically to the goal $1$
+while every edge on it has $\kappa = 0$, and the $\tau{=}1$ filament
+converges to $-1$ paying $\kappa = -1$ per step.  Moreover the start sits
+\emph{on} the $+1$ attractor shell: $\nuthree(a^{*}-1) = 22$
+(\lean{nu3\_aS202\_sub\_one}; indeed $a^{*} - 1 = 3^{22}$ exactly at $m=1$).
+Following the chain from the start for $Q$ steps
+(\lean{attractor\_chain}) yields:
+
+\begin{theorem}[no decaying-modulus corrector; \lean{no\_decaying\_modulus\_corrector}]
+\label{thm:nogo-cont}
+Let $m \ge 1$ and let $\Phi:\text{vertices} \to \R$ satisfy (E), (G), (S) of
+Theorem~\ref{thm:potential-method} together with a $3$-adic continuity
+modulus $\omega$: equal $j$ and $c \equiv c' \pmod{3^t}$ imply
+$\Phi(v)-\Phi(v') \le \omega(t)$.  Then $m \le \omega(22+Q)$.
+\end{theorem}
+
+Since this holds uniformly in $Q$, no fixed decaying modulus serves any
+$m \ge 1$: $3$-adic continuity is incompatible with the contract, at every
+codomain.  Numerical companions (Appendix~\ref{app:gates}) quantify the
+failure: on certified finite regions, the empirical Hölder constant required
+at exponent $\alpha$ scales as $3^{\alpha(R+Q+\mathrm{const})}$ ---
+astronomically slack --- and a Green-type singular part centred on the
+natural pole set does not repair it (the ``interior'' depth profile is
+robust to enlarging the pole family to
+$2^{s}\{\pm1, \pm4, \pm a^{*}\}$, $s \le 8$).  The tropical (min-plus)
+variant of the same idea is refuted by an explicit six-edge quotient-graph
+witness, and the optimal-path language is the period-one $\tau{=}1$
+filament rather than a Sturmian word --- the rotation number $\log_2 3$
+enters globally, not locally (tool-level verdicts, tier T2/T3 of
+\S\ref{sec:methodology}).
+
+% =====================================================================
+\section{The positive frontier, and its exact wall}\label{sec:positive}
+
+\subsection{The closed-form barrier}
+The two integer \emph{size laws} --- with $\size(n)$ the bit length ---
+\[
+\size(2^{\tau}n) = \size(n) + \tau, \qquad
+\size(3n+1) \ge \size(n) + 1
+\]
+(\lean{size\_two\_pow\_mul}, \lean{size\_three\_mul\_add\_one}; the second is
+an inequality, and \emph{all later difficulty lives in its slack}) give edge
+estimates for the canonical residues (\lean{oneEdge\_size\_le},
+\lean{zeroEdge\_size\_le}) and hence:
+
+\begin{theorem}[the bit-length potential;
+\lean{PhiBitlen}, \lean{kappa\_bounded\_barrier\_bitlen},
+\lean{kappa\_bounded\_barrier\_bitlen\_from}]\label{thm:phibitlen}
+Define $\Phi_{\mathrm{bit}}(v) = \lfloor (\size(v.c \bmod 3^{R+j}) - 1)/4
+\rfloor + j - Q$.  Then $\Phi_{\mathrm{bit}}$ satisfies (E) and (G)
+unconditionally, and (S) holds whenever
+\[
+4(m + Q) + 1 \;\le\; \size(\text{start residue}) + 4\,j_{\text{start}}.
+\]
+Hence the bounded $\kappa$-barrier holds, in closed form and with no search,
+under the bit criterion.
+\end{theorem}
+
+Instances: at $m=1$ ($35$ bits) the criterion gives $Q \le 7$
+(\lean{kappa\_barrier\_m1\_Q7}), subsuming the per-instance BFS certificates;
+a uniform corollary covers all $m + Q \le 8$ in one stroke
+(\lean{kappa\_barrier\_of\_sum\_le\_eight}); and for the \emph{faithful}
+per-$m$ starts $a^{*}_m$ (the Caveat-C-corrected tower, \lean{aS202\_at})
+the criterion is \emph{exactly} tight:
+$m=2$, $Q \le 16$ with $4(2{+}16){+}1 = 73 = \size(a^{*}_2)$, and $m=3$,
+$Q \le 23$ with $4(3{+}23){+}1 = 105 = \size(a^{*}_3)$
+(\lean{kappa\_barrier\_at\_m2\_Q16}, \lean{kappa\_barrier\_at\_m3\_Q23}).
+All of these are kernel-checked on stored numerals; no compiled evaluation
+(\lean{native\_decide}) remains in this chain.
+
+\subsection{The wall, machine-checked on both sides}
+Is the bit criterion an artifact of $\Phi_{\mathrm{bit}}$, or the boundary of
+its whole class?  We answered this with a linear program over the feature
+coefficients, solved by constraint generation (the wall scales have
+$\sim10^8$-vertex slices, far beyond enumeration, but the LP has five
+unknowns; the separation oracle walks the graph).  Every infeasibility
+verdict carries an exact rational Farkas certificate --- finitely many true
+rows whose nonnegative combination is contradictory --- re-verified
+independently against the raw modular arithmetic.  The two $m=1$
+certificates were then formalized:
+
+\begin{theorem}[the linear class dies at $Q=8$;
+\lean{no\_linear\_size\_potential\_m1\_Q8}]\label{thm:wall}
+No $\theta_0, \theta_1, \theta_2 \in \Q$ make
+$\Phi(v) = \theta_0 + \theta_1 j + \theta_2\,\size(v.c \bmod 3^{24+j})$
+satisfy (E), (G), (S) at $(m,Q) = (1,8)$.  The certificate has four rows ---
+start, goal, one $\tau{=}1$ zero-edge, one $\tau{=}4$ one-edge --- with
+multipliers $(2,2,16,17)/37$.
+\end{theorem}
+
+With Theorem~\ref{thm:phibitlen} at $Q=7$, the wall of the bit-length class
+sits \emph{exactly} at the bit criterion, certified on both sides.
+
+\begin{theorem}[attractor poles buy exactly one step;
+\lean{no\_hybrid\_potential\_m1\_Q9}]\label{thm:hybrid}
+Enrich the class with the two singular features $\nuthree(c-1)$ and
+$\nuthree(c+1)$ (poles at the attractors of \S\ref{sec:continuity}, the zero
+residue valued at full depth).  The enriched LP is feasible at $(1,8)$ ---
+the poles genuinely help --- and infeasible at $(1,9)$: no
+$\theta \in \Q^5$ satisfies the contract.  The six-row certificate has
+multipliers $(280,280,2268,2115,404,252)/5599$, and its binding row is a
+$\tau{=}2$ \emph{deep-jump} one-edge (the mod-9 trap of \S\ref{sec:model}:
+$\nuthree(c-1)$ jumps $1 \to 8$ at cost $\kappa = +1$), which pins the pole
+coefficient.
+\end{theorem}
+
+The numerical sweep extends the picture (tier T2; exact certificates at
+every dead point):
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+class & $m=1$ (35-bit start) & $m=2$ (73-bit faithful start)\\
+\midrule
+linear $(1, j, \size)$ & alive $Q \le 7$ / dead $Q \ge 8$ & alive $Q\le16$ / dead $Q\ge17$\\
+$+$ poles $\nuthree(c\mp1)$ & alive $Q \le 8$ / dead $Q \ge 9$ & alive $Q\le18$ / dead $Q\ge20$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+The mechanism is uniform: the poles' budget grows like
+$(Q + 2)\,|\theta_{\mathrm{pole}}|$, but deep-jump trap edges cap
+$|\theta_{\mathrm{pole}}|$, so the enrichment is asymptotically worthless.
+Honest scope: these theorems kill \emph{feature-linear} classes against the
+potential contract of Theorem~\ref{thm:potential-method}; a non-linear
+integer potential always exists when the barrier is true (the exact value
+function --- e.g.\ the certified $(1,8)$ barrier itself,
+\lean{Cert\_m1\_Q8\_S216\_Barrier}).  The content is that no \emph{closed
+form} of these shapes reaches it.
+
+% =====================================================================
+\section{The cycle half: the Eliahou--Hercher pipeline, formalized}
+\label{sec:cycles}
+
+The cycle half of the programme formalizes the classical reduction
+\cite{Eliahou1993,SimonsDeWeger2005,Hercher2023} in elementary,
+kernel-checkable form.  Throughout, a (Syracuse) $m$-cycle is
+$\Syr^{[m]}(a_0) = a_0$ on odd $a_0 > 1$ with period $m \ge 1$.
+
+\begin{theorem}[small periods, unconditionally;
+\lean{syr\_no\_nontrivial\_fixedpoint} through \lean{syr\_no\_nontrivial\_4cycle}]
+There is no nontrivial Syracuse cycle of period $m \le 4$.
+\end{theorem}
+
+\begin{theorem}[the bilateral window; \lean{syr\_cycle\_window}]
+\label{thm:window}
+Every nontrivial $m$-cycle satisfies $m\log_2 3 < A < 2m$, where
+$A = \sum_{i<m} \nutwo(3a_i + 1)$.
+\end{theorem}
+
+The upper half comes from the multiplicative telescope
+$2^{A}\prod a_i = \prod(3a_i+1)$ (\lean{syr\_cycle\_mul\_equation}) and
+$3a+1 \le 4a$; it needs no real analysis.  A by-product worth recording is a
+\emph{master corridor} requiring no cycle hypothesis at all
+(\lean{syr\_master\_corridor}):
+\[
+3^q\,a_0 \;<\; 2^{A_q}\,\Syr^{[q]}(a_0) \;\le\; 4^q\,a_0
+\qquad (a_0 \ge 1,\ q \ge 1),
+\]
+one inequality whose two shadows are the cycle window and the trivial growth
+baseline.
+
+The reduction machinery then follows the literature's shape: the gap
+identity for $|2^A - 3^m|$ (\lean{syr\_cycle\_gap\_eq}), the coupling of
+cycle elements to a \emph{verification frontier} (\lean{SyrVerifiedUpTo} as
+an explicit hypothesis; \lean{syr\_cycle\_elements\_above\_frontier},
+\lean{syr\_cycle\_gap\_mul\_frontier\_lt}), and the continued-fraction
+\emph{mediant exclusion}: for a unimodular convergent pair
+$L/\Lambda < \log_2 3 < U/\Upsilon$, the pure-$\N$ identity
+$m = \Lambda(U m - A\Upsilon) + \Upsilon(A\Lambda - L m)$
+(\lean{mediant\_period\_bound}) turns the window into a period bound
+(\lean{syr\_mediant\_exclusion}).
+
+\begin{theorem}[kernel-checked instances;
+\lean{syr\_no\_cycle\_below\_359}, \lean{syr\_no\_cycle\_below\_16266},
+\lean{collatz\_no\_cycle\_below\_359}, \lean{collatz\_no\_cycle\_below\_16266}]
+\label{thm:cycle-instances}
+Conditional on orbit verification up to $2^{20}$ (resp.\ $2^{29}$), there is
+no nontrivial Syracuse cycle of period below $359$ (resp.\ $16\,266$), via
+the convergent pairs $84/53 < \log_2 3 < 485/306$ and
+$1054/665 < \log_2 3 < 24727/15601$.  The same conclusions hold from
+verification of the standard (full) Collatz map, through the bridge
+\lean{syrVerified\_of\_collatzVerified}.
+\end{theorem}
+
+The $16\,266$ instance involves $\sim$150\,000-digit integers; a fuel-based
+binary-powering function (\lean{fastPowAux}, \lean{fastPow\_eq}) makes the
+comparisons kernel-reducible at logarithmic recursion depth, so the whole
+pipeline is checked by the proof kernel with no compiled oracle.  Convergent
+pairs are now mechanical; the ceiling of the method --- closing \emph{all}
+periods --- is the open archimedean question (\S\ref{sec:difficulty}), for
+which the artifact provides a named socket (\lean{EffectiveLinearForm}): any
+future effective linear-forms-in-logarithms bound plugs in as a hypothesis,
+not an axiom.  (For comparison, the current literature record excludes
+$k$-cycles for $k \le 91$ \cite{Hercher2023}, using the verification
+frontier $\approx 704\cdot2^{60}$ \cite{Barina2021}; our instances
+demonstrate the verified pipeline at deliberately small frontiers.)
+
+% =====================================================================
+\section{The difficulty, named --- and the function-field control}
+\label{sec:ff}\label{sec:difficulty}
+
+\subsection{One object behind four walls}
+The residual obstructions of \S\S\ref{sec:circular}--\ref{sec:cycles} are
+not four problems but one.  The slack of $\size(3n+1) \ge \size(n)+1$ ---
+equivalently the carry pattern of base-$2$/base-$3$ interaction --- is the
+Sturmian process of rotation number $\log_2 3$: the sequence
+$\size(3^k) - \lfloor k\log_2 3\rfloor$ and its orbit-level analogues.  The
+wall of Theorem~\ref{thm:wall} sits where the linear bit budget meets this
+slack; the cycle ceiling of \S\ref{sec:cycles} is the effective rational
+approximation of $\log_2 3$; the continuity no-go of
+Theorem~\ref{thm:nogo-cont} reflects that the carry process is invisible
+$3$-adically.  Effective results on this object are scarce; the only
+unconditional anchor we know is Stewart's theorem on digits in two bases
+\cite{Stewart1980} (see also \cite{SengeStraus1973}), and the Collatz
+process is known to embed base conversion \cite{SterinWoods2020}.
+
+\begin{question}[carry Mason--Stothers, weak form]\label{q:cms}
+Is there an effective $\delta > 0$ and $k_0$ such that for all $k \ge k_0$,
+the number of carries in the base-$2$ addition $3^k \to 3^k + 2\cdot3^{k-1}+
+\cdots$ (equivalently, a positive-density carry bound along
+$n \mapsto 3n+1$ orbits) is at least $\delta k$?  Any such bound extends
+Theorem~\ref{thm:phibitlen} past $Q \sim 22m$ and breaks the wall of
+Theorem~\ref{thm:wall} from outside the linear class.
+\end{question}
+
+\subsection{The $\F_2[x]$ twin, formalized end-to-end}
+The control experiment makes the diagnosis precise.  On $\F_2[x]$ the
+Collatz analogue of Hicks--Mullen--Yucas--Zavislak \cite{HMYZ2008}
+(see also \cite{BehajainaParan2024} for recent function-field developments)
+\[
+T(f) = f/x \ \ (f(0)=0), \qquad T(f) = (x+1)f + 1 \ \ (f(0)=1)
+\]
+is a theorem: every nonzero $f$ reaches $1$.  We formalized it completely
+(\lean{F2Collatz.lean}; to our knowledge the first formalization), with the
+exact local laws displayed against their lossy integer twins:
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+$\F_2[x]$ (exact; Lean theorem) & $\Z$ (lossy; all difficulty here)\\
+\midrule
+$\deg((x{+}1)f{+}1) = \deg f + 1$\ (\lean{oddStep\_natDegree}) &
+$\size(3n{+}1) \ge \size(n)+1$\\
+$\deg(f/x) = \deg f - 1$\ (\lean{evenStep\_natDegree}) &
+$\size(n/2^{\tau}) = \size(n) - \tau$\\
+odd step lands even\ (\lean{oddStep\_coeff\_zero}) & $3n+1$ even\\
+$\deg(T^{[k]}f) \le \deg f + 1\ \forall k$\ (\lean{collatzT\_iterate\_natDegree\_le}) &
+\emph{no integer counterpart}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{theorem}[the HMYZ theorem; \lean{collatz\_F2X}]\label{thm:f2x}
+For every $f \in \F_2[x]$, $f \ne 0$, there is $k$ with $T^{[k]}f = 1$.
+\end{theorem}
+
+Our proof improves on the original plateau argument.  The two-step plateau
+map on odd $f$ satisfies the \emph{plateau telescope}
+(\lean{plateau\_step\_identity})
+\[
+x\,\bigl(T^{2}f + 1\bigr) \;=\; (x+1)\,(f+1):
+\]
+in the $f+1$ coordinate the plateau is multiplication by $(x{+}1)/x$, so each
+plateau step consumes exactly one trailing factor $x$ of $f+1$, and the
+plateau exits within $\operatorname{ord}_x(f_0+1) - 1 \le \deg f_0 - 1$
+steps (\lean{plateau\_exit}) --- pure ring algebra, no multiplicative-order
+or Frobenius argument needed.
+
+The moral is sharpened by a falsity: the naive function-field analogue of
+Baker's theorem fails over $\F_2[x]$ (the Frobenius unit gaps
+$x^{2^k} + (x+1)^{2^k} = 1$ give infinitely many ``small'' gaps), and yet
+Theorem~\ref{thm:f2x} stands.  The integer difficulty is therefore \emph{not}
+reducible to ``effective Baker is missing'': what the function field has and
+$\Z$ lacks is carry-freeness of the size function.  Question~\ref{q:cms} is
+the precise residue of the comparison.
+
+% =====================================================================
+\section{Related work}\label{sec:related}
+
+Surveys and general background: \cite{Lagarias1985,Lagarias2010,Wirsching1998}.
+Forward-density and stochastic results: \cite{Terras1976,Everett1977,
+KrasikovLagarias2003,Tao2019}; our \lean{SyracuseMeasure.lean} formalizes the
+support analysis of the Syracuse $2$-adic law used in \cite{Tao2019}.
+Cycles: \cite{Eliahou1993,SimonsDeWeger2005,Hercher2023}; verification:
+\cite{OliveiraESilva2010,Barina2021}.  Undecidability of generalizations:
+\cite{Conway1972,KurtzSimon2007}.  Function fields:
+\cite{HMYZ2008,BehajainaParan2024}; base conversion: \cite{SterinWoods2020};
+two-base digit results: \cite{SengeStraus1973,Stewart1980}.  Formalization:
+Lean~4 \cite{Lean4} and Mathlib \cite{Mathlib2020}; we are not aware of
+prior machine-checked obstruction maps for Collatz strategies, nor of prior
+formalizations of \cite{HMYZ2008} or of the Eliahou-style cycle reduction.
+
+% =====================================================================
+\section{Methodology, evidence tiers, and axiom hygiene}\label{sec:methodology}
+
+The collaboration ran as a funnel with three evidence tiers, and we report
+every claim with its tier:
+
+\begin{itemize}
+\item[\textbf{T1}] \emph{Lean theorems} over Mathlib, zero \texttt{sorry},
+  axiom set exactly $\{\lean{propext}, \lean{Classical.choice},
+  \lean{Quot.sound}\}$ (verified per headline theorem with
+  \lean{\#print axioms}; Appendix~\ref{app:axioms}).  All theorems cited in
+  \S\S\ref{sec:model}--\ref{sec:ff} are T1.
+\item[\textbf{T1$'$}] Lean theorems whose proofs invoke the compiled
+  evaluator (\lean{native\_decide}), used \emph{only} in legacy per-instance
+  BFS certificate modules (\lean{Cert\_m1\_Q8/Q10\_S216\_Barrier}); the
+  trusted base there includes the Lean compiler.  No theorem in this paper's
+  main line depends on them; nine former \lean{native\_decide} anchors were
+  re-proved kernel-only during the programme.
+\item[\textbf{T2}] Exact-rational tool verdicts: LP Farkas certificates
+  re-derived in exact arithmetic and re-verified against the model by an
+  independent code path (the GATE-H sweep of \S\ref{sec:positive}; two
+  representative certificates promoted to T1).
+\item[\textbf{T3}] Numerical gates (profiles, frontiers, shape diagnostics)
+  guiding the search; never load-bearing for a stated theorem.
+\end{itemize}
+
+The working method --- a numerical gate first, adversarial verification
+second (two plausible intermediate claims produced by exploratory runs were
+\emph{refuted} at this stage and never entered the corpus), Lean
+authentication last --- kept the formal artifact small relative to the
+search space explored.  The division of labour: the human author set the
+programme, the targets and the acceptance criteria; the AI assistant
+proposed and executed proofs, gates and refactors; everything that survived
+is machine-checked, so trust reduces to the Lean kernel plus the stated
+axioms, not to either author.
+
+Reproducibility: the repository contains the full Lean source (64 modules),
+the gate scripts and their JSON outputs (\texttt{tools/}), and build
+instructions (narrow \texttt{lake build} targets; only the legacy T1$'$
+certificates are slow).  A tagged commit accompanies the arXiv version.
+
+% =====================================================================
+\section{Open problems}\label{sec:open}
+
+\begin{enumerate}
+\item \textbf{CMS} (Question~\ref{q:cms}), weak and orbit forms --- the
+  named residue of the whole map.  Any effective carry density extends the
+  closed-form barrier past the wall.
+\item \textbf{The split crux}: a non-canonical construction of
+  \lean{BlockBoundaryExists} surviving Theorem~\ref{thm:ladder}, or a proof
+  that no choice function over paths can supply it.
+\item \textbf{Uniformity of the LP wall}: the GATE-H mechanism is identical
+  at $m=1,2$; a uniform-in-$m$ Lean theorem (``for every $m$, the hybrid
+  class dies at $Q = O(m)$'') looks within reach by hand.
+\item \textbf{The cycle ceiling}: any effective linear-form bound plugs into
+  \lean{EffectiveLinearForm}; short of that, pushing convergent pairs is
+  mechanical but unbounded.
+\item \textbf{Beyond feature-linearity}: the obstruction map is design
+  information --- it says any viable potential must be non-linear in
+  $(\size, j)$, $3$-adically discontinuous, and immune to the deep-jump
+  trap.  Characterizing the minimal such class is open.
+\item \textbf{Function-field bonus}: the Frobenius--Catalan classification
+  $x^A + (x+1)^m = 1 \iff A = m = 2^k$ over $\F_2[x]$, a clean candidate for
+  Mathlib.
+\end{enumerate}
+
+\appendix
+
+% =====================================================================
+\section{Axiom audit}\label{app:axioms}
+
+Every theorem named in this paper was audited with \lean{\#print axioms}
+at its commit; each reports exactly
+$\{\lean{propext}, \lean{Classical.choice}, \lean{Quot.sound}\}$ ---
+the three standard Lean axioms --- with the single exception class noted as
+T1$'$ in \S\ref{sec:methodology} (legacy BFS certificates, not used here).
+Selected audit rows:
+
+\begin{center}
+\small
+\begin{tabular}{ll}
+\toprule
+theorem & module\\
+\midrule
+\lean{uniform\_slope\_barrier\_of\_block} & \lean{KappaSplitReduction}\\
+\lean{not\_firstMPrecisionSuffixPositive}, \lean{not\_blockBoundaryExists} & \lean{LadderExists}\\
+\lean{invReachable\_units} & \lean{ReachUnits}\\
+\lean{no\_decaying\_modulus\_corrector} & \lean{AttractorNoGo}\\
+\lean{kappa\_bounded\_barrier\_bitlen}, \lean{kappa\_barrier\_m1\_Q7} & \lean{BitlenPotential}\\
+\lean{kappa\_barrier\_at\_m2\_Q16}, \lean{kappa\_barrier\_at\_m3\_Q23} & \lean{FaithfulBarrier}\\
+\lean{no\_linear\_size\_potential\_m1\_Q8}, \lean{no\_hybrid\_potential\_m1\_Q9} & \lean{HybridPotentialNoGo}\\
+\lean{syr\_cycle\_window}, \lean{syr\_master\_corridor} & \lean{CycleReduction}\\
+\lean{syr\_no\_cycle\_below\_16266} & \lean{CycleReduction}\\
+\lean{collatz\_no\_cycle\_below\_359/16266} & \lean{CollatzBridge}\\
+\lean{collatz\_F2X}, \lean{plateau\_exit} & \lean{F2Collatz}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% =====================================================================
+\section{The Lean module map}\label{app:modules}
+
+The artifact comprises 64 modules.  Main groups (full map in the repository
+\texttt{README}): the graph model and word correspondence
+(\lean{AdmissibleBasic}, \lean{InverseGraph}, \lean{S202Cylinders},
+\lean{PathWordCorrespondence}, \lean{S212Forward}, \lean{AnalyticBarrier});
+the obstruction map (\lean{KappaSplitReduction}, \lean{LadderExists},
+\lean{LadderRefutation}, \lean{ReachUnits}, \lean{OneEdgeMod9},
+\lean{AttractorNoGo}, \lean{HybridPotentialNoGo}); the positive frontier
+(\lean{BitlenPotential}, \lean{FaithfulBarrier}, \lean{AS202Lift});
+arithmetic infrastructure (\lean{DiscreteLog}, \lean{LTEBound},
+\lean{RhoTransitionLaws}, \lean{BridgeTruth}, \lean{ClosedWalk});
+the cycle half (\lean{CycleEquation}, \lean{CycleReduction},
+\lean{CollatzBridge}); the function-field twin (\lean{F2Collatz});
+the measure-theoretic support analysis (\lean{SyracuseMeasure}); and the
+legacy certificate modules (\lean{Cert\_*}, tier T1$'$).
+Build: \texttt{lake build CollatzLean4.<Module>} per module; the
+T1$'$ certificates are the only slow targets.
+
+% =====================================================================
+\section{Numerical gates: scripts and data}\label{app:gates}
+
+The \texttt{tools/} directory (committed, with JSON outputs) contains the
+gate scripts behind the T2/T3 claims, including:
+\texttt{phi\_realkam\_lp.py} (the Hölder-corrector LP with ultrametric
+dendrogram hops and exact witness re-verification),
+\texttt{phi\_hybrid\_gate.py} (the GATE-H constraint-generation LP; exact
+rational Farkas certificates; the source of
+Theorems~\ref{thm:wall}--\ref{thm:hybrid}),
+\texttt{phi\_hybrid\_interior.py} (pole-set robustness),
+\texttt{phi\_tropical\_*.py} (the tropical refutation and its witness),
+\texttt{sturmian\_gate.py}, and the $\sim$75 archived research probes whose
+verdicts shaped the programme.  Each script documents the epistemic status
+of each possible outcome.
+
+% =====================================================================
+\begin{thebibliography}{99}
+\footnotesize
+
+\bibitem{Barina2021}
+D.~Barina, \emph{Convergence verification of the Collatz problem},
+J.~Supercomput.\ \textbf{77} (2021), 2681--2688.
+
+\bibitem{BehajainaParan2024}
+A.~Behajaina and E.~Paran, \emph{On the Collatz problem in function fields},
+preprint (2023--2025).  [TODO: fix exact reference before submission.]
+
+\bibitem{Conway1972}
+J.~H. Conway, \emph{Unpredictable iterations}, Proc.\ 1972 Number Theory
+Conference, Univ.\ Colorado, Boulder (1972), 49--52.
+
+\bibitem{Eliahou1993}
+S.~Eliahou, \emph{The $3x+1$ problem: new lower bounds on nontrivial cycle
+lengths}, Discrete Math.\ \textbf{118} (1993), 45--56.
+
+\bibitem{Everett1977}
+C.~J. Everett, \emph{Iteration of the number-theoretic function
+$f(2n)=n$, $f(2n+1)=3n+2$}, Adv.\ Math.\ \textbf{25} (1977), 42--45.
+
+\bibitem{Hercher2023}
+C.~Hercher, \emph{There are no Collatz $m$-cycles with $m \le 91$},
+J.~Integer Seq.\ \textbf{26} (2023), Article 23.3.5.
+
+\bibitem{HMYZ2008}
+K.~Hicks, G.~L. Mullen, J.~L. Yucas and R.~Zavislak, \emph{A polynomial
+analogue of the $3n+1$ problem}, Amer.\ Math.\ Monthly \textbf{115} (2008),
+no.~7, 615--622.
+
+\bibitem{KrasikovLagarias2003}
+I.~Krasikov and J.~C. Lagarias, \emph{Bounds for the $3x+1$ problem using
+difference inequalities}, Acta Arith.\ \textbf{109} (2003), 237--258.
+
+\bibitem{KurtzSimon2007}
+S.~A. Kurtz and J.~Simon, \emph{The undecidability of the generalized
+Collatz problem}, Proc.\ TAMC 2007, LNCS 4484, 542--553.
+
+\bibitem{Lagarias1985}
+J.~C. Lagarias, \emph{The $3x+1$ problem and its generalizations},
+Amer.\ Math.\ Monthly \textbf{92} (1985), 3--23.
+
+\bibitem{Lagarias2010}
+J.~C. Lagarias (ed.), \emph{The Ultimate Challenge: The $3x+1$ Problem},
+Amer.\ Math.\ Soc., 2010.
+
+\bibitem{Lean4}
+L.~de~Moura and S.~Ullrich, \emph{The Lean 4 theorem prover and programming
+language}, CADE-28, LNCS 12699 (2021), 625--635.
+
+\bibitem{Mathlib2020}
+The mathlib Community, \emph{The Lean mathematical library},
+Proc.\ CPP 2020, 367--381.
+
+\bibitem{OliveiraESilva2010}
+T.~Oliveira~e~Silva, \emph{Empirical verification of the $3x+1$ and related
+conjectures}, in \cite{Lagarias2010}, 189--207.
+
+\bibitem{SengeStraus1973}
+H.~G. Senge and E.~G. Straus, \emph{PV-numbers and sets of multiplicity},
+Period.\ Math.\ Hungar.\ \textbf{3} (1973), 93--100.
+
+\bibitem{SimonsDeWeger2005}
+J.~Simons and B.~de~Weger, \emph{Theoretical and computational bounds for
+$m$-cycles of the $3n+1$ problem}, Acta Arith.\ \textbf{117} (2005),
+51--70.
+
+\bibitem{Stewart1980}
+C.~L. Stewart, \emph{On the representation of an integer in two different
+bases}, J.~Reine Angew.\ Math.\ \textbf{319} (1980), 63--72.
+
+\bibitem{SterinWoods2020}
+T.~Stérin and D.~Woods, \emph{The Collatz process embeds a base conversion
+algorithm}, Proc.\ RP 2020, LNCS 12448, 131--147.
+
+\bibitem{Tao2019}
+T.~Tao, \emph{Almost all orbits of the Collatz map attain almost bounded
+values}, Forum Math.\ Pi \textbf{10} (2022), e12.
+
+\bibitem{Terras1976}
+R.~Terras, \emph{A stopping time problem on the positive integers},
+Acta Arith.\ \textbf{30} (1976), 241--252.
+
+\bibitem{Wirsching1998}
+G.~J. Wirsching, \emph{The Dynamical System Generated by the $3n+1$
+Function}, Lecture Notes in Math.\ 1681, Springer, 1998.
+
+\end{thebibliography}
+
+\end{document}

@@ -1,3 +1,5 @@
+# Paper 1 (outline) — DRAFT v0 WRITTEN: see `paper1/main.tex` (S243, all 112 cited Lean names verified against the corpus by `paper1/check_paper.py`; compiles on Overleaf/arXiv — no local LaTeX)
+
 # Paper 1 (outline) — Machine-checked obstructions and closed-form barriers for the Collatz inverse tree
 
 **Working title:** *Machine-checked obstructions for potential-based approaches to the

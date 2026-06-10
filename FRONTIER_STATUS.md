@@ -85,6 +85,22 @@ impedir el teorema: la dificultad entera NO es solo "falta Baker efectivo".
    {propext, Classical.choice, Quot.sound}. El experimento de control queda
    teorema-vs-teorema dentro del propio repo.
 2. Paper 1 (obstrucciones machine-checked) — outline en `PAPER1_OUTLINE.md`.
-3. Gate híbrido (1 run de agente) — brasa lenta.
+3. ~~Gate híbrido~~ ✅ **EJECUTADO Y AUTENTICADO** (S243, GATE H +
+   `HybridPotentialNoGo.lean`): el LP con generación de restricciones (sin
+   enumerar la región ⟹ alcanza el muro) decide la clase híbrida
+   `θ₀+θ₁j+θ₂·size+θ₃·ν₃(c−1)+θ₄·ν₃(c+1)` contra el contrato de potencial
+   acotado. VEREDICTO: los polos atractores compran EXACTAMENTE +1 zero-edge
+   (m=1: vivo Q≤8, muerto Q≥9) / +2 (m=2: vivo Q≤18, muerto Q≥20), con
+   certificados Farkas racionales EXACTOS en cada punto muerto (re-verificados
+   contra la aritmética modular cruda). En Lean: `no_linear_size_potential_m1_Q8`
+   (el muro de la clase (1,j,size) EXACTO en el criterio de bits, complementando
+   `kappa_barrier_m1_Q7`: Q=7 demostrable, Q=8 imposible — 4 filas) y
+   `no_hybrid_potential_m1_Q9` (los polos mueren un paso después — 6 filas; la
+   fila asesina es la arista deep-jump del trap mod-9, conectando las dos
+   familias de obstrucciones). El perfil interior con polos corregidos (P1/P2,
+   incl. −1) confirma que la muerte de "Green+Hölder" es robusta al conjunto de
+   polos. El mapa de obstrucciones de la ruta B queda CERRADO también en la
+   esquina archimediano+singular (alcance honesto: clases lineales en features;
+   el potencial no-lineal exacto siempre existe cuando la barrera es cierta).
 4. Bonus 𝔽₂[x] (opcional): `gap_isUnit_iff` — la clasificación Frobenius–Catalan
    `x^A + (x+1)^m = 1 ⟺ A = m = 2^k` (candidata a PR de Mathlib).

@@ -61,3 +61,4 @@ import CollatzLean4.BitlenPotential
 import CollatzLean4.FaithfulBarrier
 import CollatzLean4.AttractorNoGo
 import CollatzLean4.F2Collatz
+import CollatzLean4.HybridPotentialNoGo

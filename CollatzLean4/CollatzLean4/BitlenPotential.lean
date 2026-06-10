@@ -153,6 +153,62 @@ def PhiBitlen (m Q : Nat) (v : InvVertex) : Int :=
   (((Nat.size (v.c % 3 ^ (22 * m + 2 + v.j)) - 1) / 4 : ℕ) : Int)
     + (v.j : Int) - (Q : Int)
 
+/-- **The PhiBitlen κ-edge inequality** (start-independent). -/
+theorem phiBitlen_edge (m Q : Nat) :
+    ∀ v v' κ, v.j ≤ Q → v'.j ≤ Q →
+      InvKappaPreciseEdge (22 * m + 2) v v' κ →
+      PhiBitlen m Q v ≤ κ + PhiBitlen m Q v' := by
+  intro v v' κ _ _ hedge
+  rcases hedge with ⟨ω, he, hκ⟩ | ⟨ω, he, hτ, hκ⟩ | ⟨ω, he, hτ, hκ⟩
+  · -- one-edge, κ = +1
+    have hj : v'.j = v.j := he.1
+    have hb : 1 ≤ Nat.size (v'.c % 3 ^ (22 * m + 2 + v.j)) := by
+      have hne : v'.c % 3 ^ (22 * m + 2 + v.j) ≠ 0 :=
+        canon_ne_zero_of_InX he.2.1 (by omega)
+      have := Nat.size_pos.mpr (Nat.pos_of_ne_zero hne)
+      omega
+    have hsize := oneEdge_size_le (by omega) he
+    unfold PhiBitlen
+    rw [hj, hκ]
+    omega
+  · -- zero-edge, τ = 1, κ = −1
+    have hj : v'.j = v.j + 1 := he.1
+    have hsize := zeroEdge_size_le (by omega) he
+    rw [hτ] at hsize
+    unfold PhiBitlen
+    rw [hj, hκ]
+    rw [hj] at hsize
+    omega
+  · -- zero-edge, τ ≥ 2, κ = 0
+    have hj : v'.j = v.j + 1 := he.1
+    have hb : 1 ≤ Nat.size (v'.c % 3 ^ (22 * m + 2 + v'.j)) := by
+      have hne : v'.c % 3 ^ (22 * m + 2 + v'.j) ≠ 0 :=
+        canon_ne_zero_of_InX he.2.1 (by omega)
+      have := Nat.size_pos.mpr (Nat.pos_of_ne_zero hne)
+      omega
+    have hsize := zeroEdge_size_le (by omega) he
+    have hτ4 : tau v'.c ≤ 4 := tau_le_four v'.c
+    unfold PhiBitlen
+    rw [hκ]
+    rw [hj] at hsize hb ⊢
+    omega
+
+/-- **The PhiBitlen goal bound** (start-independent). -/
+theorem phiBitlen_goal (m Q : Nat) :
+    ∀ v, InvVertex.IsGoal v (22 * m + 2) → v.j ≤ Q → PhiBitlen m Q v ≤ 0 := by
+  intro v hgoal hjQ
+  have hM : 1 < 3 ^ (22 * m + 2 + v.j) := by
+    have h31 : (3 : ℕ) ^ 1 ≤ 3 ^ (22 * m + 2 + v.j) :=
+      Nat.pow_le_pow_right (by norm_num) (by omega)
+    have h3 : (3 : ℕ) ^ 1 = 3 := pow_one 3
+    omega
+  have h1 : v.c % 3 ^ (22 * m + 2 + v.j) = 1 := by
+    have h : v.c % 3 ^ (22 * m + 2 + v.j) = 1 % 3 ^ (22 * m + 2 + v.j) := hgoal
+    rwa [Nat.mod_eq_of_lt hM] at h
+  unfold PhiBitlen
+  rw [h1, Nat.size_one]
+  omega
+
 /-- **The closed-form bounded κ barrier.**  Whenever the start has enough bits
 (`4(m+Q)+1 ≤ size(aS202 mod 3^(22m+2))`), the bounded κ-precise barrier holds — with no
 search, no certificate table, no `native_decide`. -/
@@ -160,54 +216,8 @@ theorem kappa_bounded_barrier_bitlen (m Q : Nat)
     (h0 : 4 * (m + Q) + 1 ≤ Nat.size (aS202 % 3 ^ (22 * m + 2))) :
     S202_kappa_precise_barrier_bounded m Q := by
   apply S202_kappa_precise_barrier_bounded_from_potential m Q (PhiBitlen m Q)
-  · -- the κ-edge inequality
-    intro v v' κ _ _ hedge
-    rcases hedge with ⟨ω, he, hκ⟩ | ⟨ω, he, hτ, hκ⟩ | ⟨ω, he, hτ, hκ⟩
-    · -- one-edge, κ = +1
-      have hj : v'.j = v.j := he.1
-      have hb : 1 ≤ Nat.size (v'.c % 3 ^ (22 * m + 2 + v.j)) := by
-        have hne : v'.c % 3 ^ (22 * m + 2 + v.j) ≠ 0 :=
-          canon_ne_zero_of_InX he.2.1 (by omega)
-        have := Nat.size_pos.mpr (Nat.pos_of_ne_zero hne)
-        omega
-      have hsize := oneEdge_size_le (by omega) he
-      unfold PhiBitlen
-      rw [hj, hκ]
-      omega
-    · -- zero-edge, τ = 1, κ = −1
-      have hj : v'.j = v.j + 1 := he.1
-      have hsize := zeroEdge_size_le (by omega) he
-      rw [hτ] at hsize
-      unfold PhiBitlen
-      rw [hj, hκ]
-      rw [hj] at hsize
-      omega
-    · -- zero-edge, τ ≥ 2, κ = 0
-      have hj : v'.j = v.j + 1 := he.1
-      have hb : 1 ≤ Nat.size (v'.c % 3 ^ (22 * m + 2 + v'.j)) := by
-        have hne : v'.c % 3 ^ (22 * m + 2 + v'.j) ≠ 0 :=
-          canon_ne_zero_of_InX he.2.1 (by omega)
-        have := Nat.size_pos.mpr (Nat.pos_of_ne_zero hne)
-        omega
-      have hsize := zeroEdge_size_le (by omega) he
-      have hτ4 : tau v'.c ≤ 4 := tau_le_four v'.c
-      unfold PhiBitlen
-      rw [hκ]
-      rw [hj] at hsize hb ⊢
-      omega
-  · -- the goal bound
-    intro v hgoal hjQ
-    have hM : 1 < 3 ^ (22 * m + 2 + v.j) := by
-      have h31 : (3 : ℕ) ^ 1 ≤ 3 ^ (22 * m + 2 + v.j) :=
-        Nat.pow_le_pow_right (by norm_num) (by omega)
-      have h3 : (3 : ℕ) ^ 1 = 3 := pow_one 3
-      omega
-    have h1 : v.c % 3 ^ (22 * m + 2 + v.j) = 1 := by
-      have h : v.c % 3 ^ (22 * m + 2 + v.j) = 1 % 3 ^ (22 * m + 2 + v.j) := hgoal
-      rwa [Nat.mod_eq_of_lt hM] at h
-    unfold PhiBitlen
-    rw [h1, Nat.size_one]
-    omega
+  · exact phiBitlen_edge m Q
+  · exact phiBitlen_goal m Q
   · -- the start bound
     unfold PhiBitlen
     have hj0 : (InvStart m).j = 0 := rfl
@@ -218,6 +228,48 @@ theorem kappa_bounded_barrier_bitlen (m Q : Nat)
       rw [Nat.add_zero, Nat.mod_mod_of_dvd _ (dvd_refl _)]
     rw [hmm]
     omega
+
+/-- **The generic-start closed-form barrier** — the socket for the faithful per-`m` tower
+(the Caveat-C migration): every κ-precise path from ANY vertex `v₀` with enough bits
+(`4(m+Q)+1 ≤ size(canon v₀) + 4·v₀.j`) to a goal in the `Q`-slice has κ-cost `≥ m`.
+The current `InvStart` instantiates it with 35 bits at `j = 0`; a faithful `aS202_at m`
+start (B₀ ≈ 34.9·m bits) would unlock `Q ≲ 7.7m`. -/
+theorem kappa_bounded_barrier_bitlen_from (m Q : Nat) (v₀ : InvVertex)
+    (h0 : 4 * (m + Q) + 1 ≤ Nat.size (v₀.c % 3 ^ (22 * m + 2 + v₀.j)) + 4 * v₀.j) :
+    ∀ {goal : InvVertex} {κ : Int} {vs : List InvVertex},
+      InvVertex.IsGoal goal (22 * m + 2) → goal.j ≤ Q →
+      WPath (InvKappaPreciseEdge (22 * m + 2)) v₀ goal κ vs →
+      (m : Int) ≤ κ := by
+  intro goal κ vs hg hgQ hpath
+  have hmono := WPath_kappa_j_monotone hpath
+  have hv₀Q : v₀.j ≤ Q := le_trans hmono.1 hgQ
+  have hvs : ∀ x ∈ vs, x.j ≤ Q := fun x hx => le_trans (hmono.2 x hx) hgQ
+  have htele := WPath_kappa_weight_ge_potential_bounded (PhiBitlen m Q)
+    (phiBitlen_edge m Q) hv₀Q hgQ hvs hpath
+  have hgoal := phiBitlen_goal m Q goal hg hgQ
+  have hstart : (m : Int) ≤ PhiBitlen m Q v₀ := by
+    unfold PhiBitlen
+    omega
+  linarith
+
+/-- **Uniform closed-form corollary** (current Caveat-C start, 35 bits): the bounded κ
+barrier holds for ALL `m ≥ 1`, `Q` with `m + Q ≤ 8` — covering `m=2, Q≤6`; `m=3, Q≤5`;
+…; `m=7, Q≤1` in one stroke, each previously requiring its own certificate. -/
+theorem kappa_barrier_of_sum_le_eight (m Q : Nat) (hm : 1 ≤ m) (hmQ : m + Q ≤ 8) :
+    S202_kappa_precise_barrier_bounded m Q := by
+  apply kappa_bounded_barrier_bitlen m Q
+  have hlt : aS202 < 3 ^ (22 * m + 2) := by
+    rw [aS202_decomp]
+    have h23 : (3 : ℕ) ^ 23 ≤ 3 ^ (22 * m + 2) :=
+      Nat.pow_le_pow_right (by norm_num) (by omega)
+    have h1 : 1 + 3 ^ 22 < 3 ^ 23 := by norm_num
+    omega
+  rw [Nat.mod_eq_of_lt hlt]
+  have h32 : (2 : ℕ) ^ 32 ≤ aS202 := by
+    rw [aS202_decomp]
+    norm_num
+  have := Nat.lt_size.mpr h32
+  omega
 
 /-- **Headline instance**: the closed-form barrier at `m = 1` up to `Q = 7` — subsuming
 the κ-range of the per-instance certificates (`Cert_m1_Q*_kappa`, `Q ≤ 3`) and the

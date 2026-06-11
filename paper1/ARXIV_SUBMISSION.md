@@ -31,7 +31,7 @@ Machine-checked obstructions for potential-based approaches to the Collatz conje
 **Authors**
 
 ```
-Benet Andújar Mata
+Benet Andújar Guardado
 ```
 
 **Abstract** (TeX math allowed in this field; ~1700 chars, under the 1920 limit)
@@ -88,7 +88,8 @@ you want maximal reuse from day one (harder to undo). Recommendation:
 
 ## 3. Submission steps (manual, ~10 minutes)
 
-1. Log in at arxiv.org (create the account with bandujar@xtec.cat if needed).
+1. Log in at arxiv.org (account: bandujar@edutac.es — matches the paper's
+   contact email).
 2. *Endorsement*: first-time submitters to math.NT may be asked for an
    endorsement. If the form shows an endorsement code, the standard route is
    to ask a colleague who has published in math.NT; the request email arXiv

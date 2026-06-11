@@ -1,0 +1,110 @@
+# arXiv submission sheet — Paper 1 (v1, June 2026)
+
+Everything below is ready to paste into https://arxiv.org/submit.
+The only steps Claude cannot do for you are logging in and pressing Submit.
+
+## 0. Pre-flight (done)
+
+- Source compiles standalone (tectonic 0.16.9 locally; standard pdflatex
+  toolchain on arXiv — amsart, no figures, no shell-escape, bibliography
+  inline). 15 pages, 0 errors, 0 undefined references.
+- All 115 substantive Lean names cited in the text verified to exist in the
+  repository (`check_paper.py`).
+- Bibliography verified against the live records (Hercher JIS 26 23.3.5;
+  HMYZ AMM 115(7); Behajaina–Paran FFA 91 (2023) 102265 + arXiv:2312.00390;
+  Alon–Behajaina–Paran arXiv:2401.03210).
+- Repo tag for the artifact snapshot: `arxiv-v1`.
+
+## 1. What to upload
+
+Upload **only** `paper1/main.tex` (or the zip `paper1-arxiv-v1.zip`, same
+content). No ancillary files needed — the Lean artifact is linked by URL.
+
+## 2. Metadata (copy–paste)
+
+**Title**
+
+```
+Machine-checked obstructions for potential-based approaches to the Collatz conjecture, with closed-form bounded barriers
+```
+
+**Authors**
+
+```
+Benet Andújar Mata
+```
+
+**Abstract** (TeX math allowed in this field; ~1700 chars, under the 1920 limit)
+
+```
+We formalize, in Lean 4 over a single verified graph model -- the admissible
+inverse cylinder tree of the accelerated Syracuse map -- a complete
+obstruction map for the natural "local potential" proof strategies aimed at
+the divergence half of the Collatz problem, together with the strongest
+closed-form positive results those obstructions permit. The negative results
+are theorems, not heuristics: the per-block induction is provably circular;
+no congruence invariant separates start from goal at any finite modulus
+(every unit cylinder is reachable); no 3-adically continuous potential -- in
+any codomain -- certifies the barrier; and the linear bit-length class,
+which does certify the barrier in closed form up to an exact bit criterion,
+dies at the very next step, even after being enriched with singular poles at
+the two attractors (an LP-duality argument whose rational Farkas
+certificates are themselves checked in Lean). The positive results include a
+closed-form bit-length potential proving the bounded $\kappa$-barrier
+without search, and a machine-checked formalization of the
+Eliahou--Simons--de Weger--Hercher cycle pipeline. The residual difficulty
+is isolated as a single named phenomenon -- the archimedean Sturmian carry
+process of rotation number $\log_2 3$ -- for which the function-field
+analogue over $\mathbb{F}_2[x]$, here formalized end-to-end including a new
+sharper "plateau telescope" proof, serves as a control experiment. All
+headline theorems depend only on the three standard Lean axioms. The Collatz
+conjecture itself remains, of course, wide open; the contribution is a
+machine-checked map of where its difficulty does and does not live.
+```
+
+**Primary classification**: `math.NT` (Number Theory)
+
+**Cross-list**: `math.LO` (Logic) — alternatively or additionally `cs.LO`
+(Logic in Computer Science), where most Lean/Mathlib formalization papers
+also live. Recommended: cross-list both `math.LO` and `cs.LO`.
+
+**MSC classes**
+
+```
+11B83 (Primary), 68V20, 11Y50, 03B35 (Secondary)
+```
+
+**Comments field**
+
+```
+15 pages. Lean 4 artifact (zero sorry; axiom audit per theorem):
+https://github.com/benetandujar72/collatz-admissible-tree, tag arxiv-v1
+```
+
+**License**: the default arXiv non-exclusive license is fine and keeps all
+options open for journal submission later. Choose CC BY 4.0 instead only if
+you want maximal reuse from day one (harder to undo). Recommendation:
+**arXiv non-exclusive** for v1.
+
+## 3. Submission steps (manual, ~10 minutes)
+
+1. Log in at arxiv.org (create the account with bandujar@xtec.cat if needed).
+2. *Endorsement*: first-time submitters to math.NT may be asked for an
+   endorsement. If the form shows an endorsement code, the standard route is
+   to ask a colleague who has published in math.NT; the request email arXiv
+   generates contains everything they need. (This is the one step that can
+   add a day or two.)
+3. Start New Submission → license → upload `main.tex` → let AutoTeX process
+   (it will produce the PDF; check the log shows no errors) → preview the
+   PDF.
+4. Paste the metadata above. Submit.
+5. Announcement: submissions complete before 14:00 ET on a weekday are
+   announced the next business day at ~20:00 ET. The arXiv ID
+   (2506.NNNNN) is assigned at submission.
+
+## 4. After the ID arrives
+
+- Add the arXiv badge/ID + link to the repository README.
+- `git tag arxiv-2506.NNNNN && git push --tags` (optional convenience tag).
+- The paper's §9 invites re-checking; expect (and welcome) issues opened
+  against the repo.

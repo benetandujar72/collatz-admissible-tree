@@ -1,0 +1,180 @@
+# formalization.yaml --- machine-generated disclosure manifest.
+# Regenerate: python tools/gen_formalization_yaml.py  (see its docstring).
+# Generated 2026-06-12 at commit 71ce5df11659.
+
+project:
+  name: collatz-admissible-tree
+  title: >-
+    Machine-checked obstructions for potential-based approaches to the
+    Collatz conjecture, with closed-form bounded barriers
+  repository: https://github.com/benetandujar72/collatz-admissible-tree
+  paper: paper1/main.pdf  # 15 pp; arXiv submission tag arxiv-v1
+  status: complete (paper v1); research programme ongoing
+
+authors:
+  - name: Benet Andújar Guardado
+    role: >-
+      sole human author; set the programme, the targets and the acceptance
+      criteria; validated all mathematical content; takes full responsibility
+    email: bandujar@edutac.es
+ai_assistance:
+  tool: Claude (Anthropic), Opus-class and successor models, sessions 2025-2026
+  role: >-
+    drafted Lean proofs, numerical gates and refactors under the funnel
+    methodology (numerical gate -> adversarial verification -> Lean
+    authentication); two plausible AI-produced intermediate claims were
+    refuted at the adversarial stage and never entered the corpus
+  disclosure: >-
+    every commit carries a Co-Authored-By trailer; the paper discloses the
+    collaboration in the acknowledgements and in Section 9 (methodology,
+    evidence tiers T1/T1'/T2/T3)
+  trust_basis: >-
+    correctness rests on the Lean kernel and the stated axioms, not on
+    either collaborator
+
+toolchain:
+  lean: leanprover/lean4:v4.30.0-rc2
+  mathlib: 60da1e5a69cf0c50bf54dc78c634d27a4ff86984
+  build: lake build CollatzLean4.<Module>   # narrow targets; see appendix B
+
+verification:
+  modules: 65
+  sorry_count: 0   # comment-stripped scan, tools/gen_formalization_yaml.py
+  axiom_policy: >-
+    every declaration cited in the paper must depend on at most
+    {propext, Classical.choice, Quot.sound}; verified per declaration by
+    CollatzLean4/AxiomAudit.lean (machine-generated, see below)
+  native_decide:
+    policy: >-
+      quarantined to legacy exploratory strata and per-instance certificate
+      modules (paper evidence tier T1'); nothing cited in the paper depends
+      on them (see audit)
+    modules_using_it:
+      - BinaryTensor
+      - BridgeTruth
+      - Cert_m1_Q10_S216
+      - Cert_m1_Q1_kappa
+      - Cert_m1_Q3
+      - Cert_m1_Q3_S216
+      - Cert_m1_Q3_kappa
+      - Cert_m1_Q5
+      - Cert_m1_Q5_S216
+      - Cert_m1_Q8_S216
+      - Defect
+      - PeriodicBlocks
+      - Potential
+      - Reachability
+      - S202Cylinders
+      - ThreeAdic
+
+axiom_audit:
+  method: >-
+    lake build CollatzLean4.AxiomAudit emits one "#print axioms" per cited
+    declaration; this file records the result verbatim
+  declarations_audited: 84
+  declarations_clean: 84   # axioms subset of the standard trio
+  declarations_flagged: 0
+  clean:
+    - CollatzLean4.Admissible.BlockBoundaryExists
+    - CollatzLean4.Admissible.EffectiveLinearForm
+    - CollatzLean4.Admissible.InX
+    - CollatzLean4.Admissible.InvEdgeOne
+    - CollatzLean4.Admissible.InvEdgeZero
+    - CollatzLean4.Admissible.InvKappaPreciseEdge
+    - CollatzLean4.Admissible.InvPathCounts.weight_lower_bound
+    - CollatzLean4.Admissible.InvStart
+    - CollatzLean4.Admissible.InvVertex
+    - CollatzLean4.Admissible.InvVertex.IsGoal
+    - CollatzLean4.Admissible.PhiBitlen
+    - CollatzLean4.Admissible.S202_kappa_precise_barrier_bounded
+    - CollatzLean4.Admissible.S202_kappa_precise_barrier_bounded_from_potential
+    - CollatzLean4.Admissible.S202_slope_barrier_from_kappa_precise_potential_bounded
+    - CollatzLean4.Admissible.S202_translation_identity
+    - CollatzLean4.Admissible.S212_forward
+    - CollatzLean4.Admissible.SyrVerifiedUpTo
+    - CollatzLean4.Admissible.aS202
+    - CollatzLean4.Admissible.aS202_at
+    - CollatzLean4.Admissible.aS202_decomp
+    - CollatzLean4.Admissible.attractor_chain
+    - CollatzLean4.Admissible.closed_oneWalk_weight_ge_order
+    - CollatzLean4.Admissible.collatz_no_cycle_below_16266
+    - CollatzLean4.Admissible.collatz_no_cycle_below_359
+    - CollatzLean4.Admissible.deep_edge
+    - CollatzLean4.Admissible.evalWord
+    - CollatzLean4.Admissible.fastPowAux
+    - CollatzLean4.Admissible.fastPow_eq
+    - CollatzLean4.Admissible.invReachable_hits_trap
+    - CollatzLean4.Admissible.invReachable_units
+    - CollatzLean4.Admissible.invReachable_zero_lift
+    - CollatzLean4.Admissible.kappaPathSplit_of_block
+    - CollatzLean4.Admissible.kappa_barrier_at_m2_Q16
+    - CollatzLean4.Admissible.kappa_barrier_at_m3_Q23
+    - CollatzLean4.Admissible.kappa_barrier_m1_Q7
+    - CollatzLean4.Admissible.kappa_barrier_of_sum_le_eight
+    - CollatzLean4.Admissible.kappa_bounded_barrier_bitlen
+    - CollatzLean4.Admissible.kappa_bounded_barrier_bitlen_from
+    - CollatzLean4.Admissible.ladder_exists
+    - CollatzLean4.Admissible.mediant_period_bound
+    - CollatzLean4.Admissible.mod6_of_two_pow_mod9_seven
+    - CollatzLean4.Admissible.no_decaying_modulus_corrector
+    - CollatzLean4.Admissible.no_hybrid_potential_m1_Q9
+    - CollatzLean4.Admissible.no_linear_size_potential_m1_Q8
+    - CollatzLean4.Admissible.not_blockBoundaryExists
+    - CollatzLean4.Admissible.not_firstMPrecisionSuffixPositive
+    - CollatzLean4.Admissible.nu3_aS202_sub_one
+    - CollatzLean4.Admissible.oneEdge_deepjump_iff
+    - CollatzLean4.Admissible.oneEdge_deepjump_source_four
+    - CollatzLean4.Admissible.oneEdge_size_le
+    - CollatzLean4.Admissible.oneEdge_source_mod9_in_four_seven
+    - CollatzLean4.Admissible.orderOf_two_zmod_three_pow
+    - CollatzLean4.Admissible.outerBlockIncrement_false
+    - CollatzLean4.Admissible.size_three_mul_add_one
+    - CollatzLean4.Admissible.size_two_pow_mul
+    - CollatzLean4.Admissible.syrVerified_of_collatzVerified
+    - CollatzLean4.Admissible.syr_cycle_elements_above_frontier
+    - CollatzLean4.Admissible.syr_cycle_gap_eq
+    - CollatzLean4.Admissible.syr_cycle_gap_mul_frontier_lt
+    - CollatzLean4.Admissible.syr_cycle_mul_equation
+    - CollatzLean4.Admissible.syr_cycle_window
+    - CollatzLean4.Admissible.syr_master_corridor
+    - CollatzLean4.Admissible.syr_mediant_exclusion
+    - CollatzLean4.Admissible.syr_no_cycle_below_16266
+    - CollatzLean4.Admissible.syr_no_cycle_below_359
+    - CollatzLean4.Admissible.syr_no_nontrivial_4cycle
+    - CollatzLean4.Admissible.syr_no_nontrivial_fixedpoint
+    - CollatzLean4.Admissible.tau
+    - CollatzLean4.Admissible.tau1_attractor
+    - CollatzLean4.Admissible.tau1_attractor_nu3
+    - CollatzLean4.Admissible.tau2_attractor
+    - CollatzLean4.Admissible.tau2_attractor_nu3
+    - CollatzLean4.Admissible.tau_le_four
+    - CollatzLean4.Admissible.two_pow_tau_mul_mod9
+    - CollatzLean4.Admissible.uniform_kappa_barrier_of_block
+    - CollatzLean4.Admissible.uniform_slope_barrier_of_block
+    - CollatzLean4.Admissible.zeroEdge_size_le
+    - CollatzLean4.F2.collatzT_iterate_natDegree_le
+    - CollatzLean4.F2.collatz_F2X
+    - CollatzLean4.F2.evenStep_natDegree
+    - CollatzLean4.F2.oddStep_coeff_zero
+    - CollatzLean4.F2.oddStep_natDegree
+    - CollatzLean4.F2.plateau_exit
+    - CollatzLean4.F2.plateau_step_identity
+
+key_results:  # informal statement -> Lean name (all audited above)
+  - { lean: collatz_F2X, informal: "every nonzero f in F2[x] reaches 1 under the Collatz analogue (HMYZ 2008); believed first formalization" }
+  - { lean: kappa_barrier_m1_Q7, informal: "closed-form bit-length potential proves the bounded kappa-barrier, m=1, Q<=7" }
+  - { lean: no_linear_size_potential_m1_Q8, informal: "no rational linear (1,j,size) potential satisfies the contract at (1,8): the wall is exact" }
+  - { lean: no_hybrid_potential_m1_Q9, informal: "adding singular attractor poles nu3(c-+1) buys exactly one step and dies at (1,9)" }
+  - { lean: invReachable_units, informal: "every unit cylinder mod 3^t is reachable: no separating congruence invariant exists" }
+  - { lean: no_decaying_modulus_corrector, informal: "no 3-adically continuous real potential satisfies the contract (m <= omega(22+Q))" }
+  - { lean: not_blockBoundaryExists, informal: "the canonical split devices for the per-block induction are refuted (astronomical one-edge ladder)" }
+  - { lean: syr_cycle_window, informal: "every nontrivial Syracuse m-cycle has m*log2(3) < A < 2m" }
+  - { lean: syr_no_cycle_below_16266, informal: "conditional on verification up to 2^29: no Syracuse cycle of period < 16266 (Eliahou-Hercher pipeline, kernel-checked)" }
+
+honest_scope: >-
+  The paper claims no progress on the Collatz conjecture itself.  Its content
+  is a machine-checked obstruction map for potential-based strategies on the
+  inverse cylinder tree, the strongest closed-form barriers those
+  obstructions permit, a verified cycle pipeline, and the function-field
+  control experiment.
+

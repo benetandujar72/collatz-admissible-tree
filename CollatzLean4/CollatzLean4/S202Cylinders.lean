@@ -113,7 +113,7 @@ The user's parametrization `22m + 2`:
 So `m = 1` is the genuine entry point to the alternative theorem. -/
 
 /-- The S202 fixed point has the closed form `a_S202 = 1 + 3^22`. -/
-theorem aS202_decomp : aS202 = 1 + 3 ^ 22 := by native_decide
+theorem aS202_decomp : aS202 = 1 + 3 ^ 22 := by decide
 
 /-- **Trivial regime** (k ≤ 22): for every modulus `3^k` with `k ≤ 22`,
 the empty word reaches the S202 cylinder, since `aS202 ≡ 1 (mod 3^k)`

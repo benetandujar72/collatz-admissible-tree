@@ -24,7 +24,7 @@ theorem S206_fixed_point_mod :
     = (BS202 : ZMod (3 ^ 24)) := by
   native_decide
 
-theorem S206_a_mod9 : aS202 % 9 = 1 := by native_decide
+theorem S206_a_mod9 : aS202 % 9 = 1 := by decide
 
 /-- Replaying `wS202` from n = 251 keeps q = 22… -/
 theorem S206_repeat_from_251_q : (evalWordFrom 251 wS202).q = 22 := by

@@ -58,7 +58,7 @@ def BS202 : Nat := 919447060349
 def nS202 : Nat := 251
 
 theorem S202_translation_identity :
-    3 ^ qS202 * nS202 + BS202 = 2 ^ AS202 := by native_decide
+    3 ^ qS202 * nS202 + BS202 = 2 ^ AS202 := by decide
 
 theorem S202_resonance :
     BS202 % (3 ^ qS202) = (2 ^ AS202) % (3 ^ qS202) := by native_decide

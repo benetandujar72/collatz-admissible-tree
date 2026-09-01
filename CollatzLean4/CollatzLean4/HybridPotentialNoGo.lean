@@ -20,21 +20,26 @@ of the rows is contradictory — so NO parameter choice satisfies the contract.
     start + goal + one τ=1 zero-edge + one τ=4 one-edge, multipliers
     (2, 2, 16, 17)/37.
 
-  * `no_hybrid_potential_m1_Q9` — **the hybrid class with singular attractor
-    poles dies one step later, at Q = 9**: adding the two Green-style features
-    `ν₃(c−1)` and `ν₃(c+1)` (the poles at the τ=2 attractor `c ≡ 1`, identity
-    `4(y−1) = 3(c−1)`, and the τ=1 filament attractor `c ≡ −1`, identity
-    `2(y+1) = 3(c+1)`) buys EXACTLY one extra zero-edge (the LP is feasible at
-    Q = 8) and no more.  Six rows, multipliers (280, 280, 2268, 2115, 404,
-    252)/5599.  The killer row is the τ=2 DEEP-JUMP one-edge (κ = +1, the
-    ν₃-jump ≥ 2 trap of `OneEdgeMod9.lean`: target ≡ 1 mod 9), which gains 7
-    pole digits in one κ=+1 step and pins the pole coefficient.
+  * `linear_size_potential_m1_Q7` — the linear relaxation of `PhiBitlen`,
+    `θ = (−29/4, 1, 1/4, 0, 0)`, satisfies the universal contract at (1, 7): the wall of
+    the linear class is machine-checked on BOTH sides.
 
-Numerical context (GATE H sweep, exact rational Farkas at every dead point):
-m = 1: restricted class alive Q ≤ 7 / dead Q ≥ 8; hybrid alive Q ≤ 8 / dead Q ≥ 9.
-m = 2 (73-bit faithful start): restricted alive Q ≤ 16 / dead Q ≥ 17 (bit
-criterion `Q ≤ 16.5`); hybrid alive Q ≤ 18 / dead Q ≥ 20.  The poles' budget
-`(Q + 2)·|θ_pole|` is capped by the deep-jump trap edges, hence asymptotic death.
+  * `no_hybrid_potential_m1_Q8` — **the singular attractor poles do not move the wall**:
+    adding the two Green-style features `ν₃(c−1)` and `ν₃(c+1)` (the poles at the τ=2
+    attractor `c ≡ 1`, identity `4(y−1) = 3(c−1)`, and the τ=1 filament attractor
+    `c ≡ −1`, identity `2(y+1) = 3(c+1)`) leaves the class dead at the SAME step
+    (1, 8).  Six rows, multipliers (1798, 1798, 14877, 13888, 496, 564)/33421.  The
+    decisive row is the goal's own one-edge predecessor `(8,4) → (8,1)`: the mod-9 trap
+    (source class 4) sits next to the goal and `ν₃(c−1)` jumps `1 → 32` at κ = +1.
+    (`no_hybrid_potential_m1_Q9`, the earlier six-row certificate at (1, 9), is kept; it
+    is implied by monotonicity in Q.)
+
+Numerical context (GATE H sweep with universal in-slice rows, exact rational Farkas at
+every dead point): both classes are alive Q ≤ 7 / dead Q ≥ 8 at m = 1 and alive Q ≤ 16 /
+dead Q ≥ 17 at m = 2 (73-bit faithful start) — exactly the bit criterion.  A first
+version of the separation oracle harvested only start-reachable edges and reported the
+enriched class alive one step longer; the explicit in-slice families (notably the
+goal-adjacent trap edge) corrected this — a survivor verdict is never a feasibility proof.
 
 SCOPE (honest): these theorems kill the LINEAR-feature classes against the
 bounded-slice potential contract (the shape every Lean potential lemma in this
@@ -47,6 +52,7 @@ Axioms target: {propext, Classical.choice, Quot.sound}.  Builds narrow.
 -/
 
 import CollatzLean4.AnalyticBarrier
+import CollatzLean4.BitlenPotential
 
 namespace CollatzLean4.Admissible
 
@@ -160,7 +166,156 @@ theorem no_linear_size_potential_m1_Q8 :
   push_cast at h_start hG hE1 hE2
   linarith
 
-/-! ### Theorem 2 — the hybrid class with attractor poles is dead at (m, Q) = (1, 9) -/
+/-! ### Theorem 1′ — the linear class is ALIVE at (m, Q) = (1, 7): the wall is exact
+
+The linear relaxation of `PhiBitlen`, `θ = (−29/4, 1, 1/4, 0, 0)`, satisfies the universal
+contract at `(1, 7)` directly from the size laws (`oneEdge_size_le`, `zeroEdge_size_le`,
+`tau_le_four`).  Together with `no_linear_size_potential_m1_Q8` this pins the wall of the
+linear class machine-checked on BOTH sides: alive at `Q = 7`, dead at `Q = 8`. -/
+
+theorem phiLin_edge :
+    ∀ (v v' : InvVertex) (κ : Int), v.j ≤ 7 → v'.j ≤ 7 →
+      InvKappaPreciseEdge 24 v v' κ →
+      PhiHyb (-29/4) 1 (1/4) 0 0 v ≤ (κ : ℚ) + PhiHyb (-29/4) 1 (1/4) 0 0 v' := by
+  intro v v' κ _ _ hedge
+  unfold PhiHyb
+  rcases hedge with ⟨ω, he, hκ⟩ | ⟨ω, he, hτ, hκ⟩ | ⟨ω, he, hτ, hκ⟩
+  · -- one-edge: same level, size drops by at most 4, κ = +1
+    have hj : v'.j = v.j := he.1
+    have hs := oneEdge_size_le (R := 24) (by norm_num) he
+    subst hκ
+    rw [hj]
+    have hs' : (Nat.size (v.c % 3 ^ (24 + v.j)) : ℚ)
+        ≤ (Nat.size (v'.c % 3 ^ (24 + v.j)) : ℚ) + 4 := by exact_mod_cast hs
+    push_cast
+    linarith
+  · -- zero-edge, τ = 1: κ = −1, size does not grow
+    have hj : v'.j = v.j + 1 := he.1
+    have hs := zeroEdge_size_le (R := 24) (by norm_num) he
+    rw [hτ] at hs
+    subst hκ
+    have hs' : (Nat.size (v.c % 3 ^ (24 + v.j)) : ℚ) + 1
+        ≤ (Nat.size (v'.c % 3 ^ (24 + v'.j)) : ℚ) + 1 := by exact_mod_cast hs
+    have hjq : (v'.j : ℚ) = (v.j : ℚ) + 1 := by rw [hj]; push_cast; ring
+    push_cast
+    linarith
+  · -- zero-edge, τ ≥ 2: κ = 0, size grows by at most τ − 1 ≤ 3
+    have hj : v'.j = v.j + 1 := he.1
+    have hs := zeroEdge_size_le (R := 24) (by norm_num) he
+    have ht4 := tau_le_four v'.c
+    subst hκ
+    have hs' : (Nat.size (v.c % 3 ^ (24 + v.j)) : ℚ) + 1
+        ≤ (Nat.size (v'.c % 3 ^ (24 + v'.j)) : ℚ) + 4 := by
+      have : Nat.size (v.c % 3 ^ (24 + v.j)) + 1
+          ≤ Nat.size (v'.c % 3 ^ (24 + v'.j)) + 4 := by omega
+      exact_mod_cast this
+    have hjq : (v'.j : ℚ) = (v.j : ℚ) + 1 := by rw [hj]; push_cast; ring
+    push_cast
+    linarith
+
+theorem phiLin_goal :
+    ∀ v : InvVertex, InvVertex.IsGoal v 24 → v.j ≤ 7 →
+      PhiHyb (-29/4) 1 (1/4) 0 0 v ≤ 0 := by
+  intro v hg hj
+  have hc : v.c % 3 ^ (24 + v.j) = 1 := by
+    have hg' : v.c % 3 ^ (24 + v.j) = 1 % 3 ^ (24 + v.j) := hg
+    have h1 : (1 : ℕ) % 3 ^ (24 + v.j) = 1 :=
+      Nat.mod_eq_of_lt (Nat.one_lt_pow (by omega) (by norm_num))
+    exact hg'.trans h1
+  have hs1 : Nat.size 1 = 1 := by decide
+  unfold PhiHyb
+  rw [hc, hs1]
+  have hjq : (v.j : ℚ) ≤ 7 := by exact_mod_cast hj
+  push_cast
+  linarith
+
+theorem phiLin_start : (1 : ℚ) ≤ PhiHyb (-29/4) 1 (1/4) 0 0 (InvStart 1) := by
+  rw [show InvStart 1 = (⟨0, 31381059610⟩ : InvVertex) from by decide,
+      PhiHyb_eval (-29/4) 1 (1/4) 0 0 0 31381059610 35 22 0
+        (by decide) (by decide) (by decide)]
+  norm_num
+
+/-- **The linear class is alive at `(1, 7)`**: the linear relaxation of `PhiBitlen` satisfies
+the universal contract.  With `no_linear_size_potential_m1_Q8`, the wall is exact. -/
+theorem linear_size_potential_m1_Q7 :
+    ∃ θ0 θ1 θ2 : ℚ,
+      (∀ (v v' : InvVertex) (κ : Int), v.j ≤ 7 → v'.j ≤ 7 →
+          InvKappaPreciseEdge 24 v v' κ →
+          PhiHyb θ0 θ1 θ2 0 0 v ≤ (κ : ℚ) + PhiHyb θ0 θ1 θ2 0 0 v') ∧
+      (∀ v : InvVertex, InvVertex.IsGoal v 24 → v.j ≤ 7 →
+          PhiHyb θ0 θ1 θ2 0 0 v ≤ 0) ∧
+      ((1 : ℚ) ≤ PhiHyb θ0 θ1 θ2 0 0 (InvStart 1)) :=
+  ⟨-29/4, 1, 1/4, phiLin_edge, phiLin_goal, phiLin_start⟩
+
+/-! ### Theorem 2 — the hybrid class with attractor poles is ALREADY dead at (m, Q) = (1, 8)
+
+The universal contract quantifies over EVERY edge of the slice `j ≤ Q`, reachable or
+not.  Four explicit in-slice edges settle the pole-enriched class one step EARLIER than
+the reachable-region oracle first suggested: the τ=4 one-edge `(0,112) → (0,7)` (the
+`θ₂ ≤ 1/4` enforcer), a τ=1 zero-edge (`θ₁ ≥ 1 + θ₄`), the τ=2 zero-edge off the deep
+`−1` shell `(5, 2·3²⁸−1) → (6, (3²⁹−1)/2)` (pins `θ₄`), and — the decisive row — the
+goal's own one-edge predecessor `(8,4) → (8,1)`: the mod-9 trap (source class `4`,
+`oneEdge_deepjump_source_four`) sits immediately next to the goal, and along that single
+κ=+1 edge `ν₃(c−1)` jumps from `1` to the full depth `32`, so any negative pole weight
+`θ₃` is capped by `2θ₂ − 31θ₃ ≤ 1`.  Multipliers `(1798, 1798, 14877, 13888, 496, 564)/33421`.
+Consequence: the wall of the enriched class coincides EXACTLY with the wall of the
+linear class (Theorem 1) — the attractor poles buy nothing under the universal contract. -/
+
+theorem trapA_edge1 : InvKappaPreciseEdge 24 ⟨0, 112⟩ ⟨0, 7⟩ 1 :=
+  Or.inl ⟨4, by unfold InvEdgeOne InX; decide, rfl⟩
+
+theorem trapA_edge2 : InvKappaPreciseEdge 24 ⟨0, 17⟩ ⟨1, 26⟩ (-1) :=
+  Or.inr (Or.inl ⟨-1, by unfold InvEdgeZero InX; decide, by decide, rfl⟩)
+
+/-- The τ=2 zero-edge leaving the deep `−1` shell: `c = 2·3²⁸ − 1 ≡ −1 (mod 3²⁸)`,
+`4c' = 3c + 1` with `c' = (3²⁹ − 1)/2`; `ν₃(c+1)` crashes from `28` to `0`. -/
+theorem trapA_edge3 :
+    InvKappaPreciseEdge 24 ⟨5, 45753584909921⟩ ⟨6, 34315188682441⟩ 0 :=
+  Or.inr (Or.inr ⟨0, by unfold InvEdgeZero InX; decide, by decide, rfl⟩)
+
+/-- The goal's one-edge predecessor at level 8: `4 = 2² · 1`, κ = +1; `ν₃(c−1)`: `1 → 32`. -/
+theorem trapA_edge4 : InvKappaPreciseEdge 24 ⟨8, 4⟩ ⟨8, 1⟩ 1 :=
+  Or.inl ⟨2, by unfold InvEdgeOne InX; decide, rfl⟩
+
+/-- **The attractor poles buy nothing.**  No rational potential
+`θ₀ + θ₁·j + θ₂·size + θ₃·ν₃(c−1) + θ₄·ν₃(c+1)` satisfies the bounded-slice contract at
+`(m, Q) = (1, 8)` — the same step at which the linear class dies
+(`no_linear_size_potential_m1_Q8`).  Six rows, the decisive one being the goal-adjacent
+trap edge `trapA_edge4`. -/
+theorem no_hybrid_potential_m1_Q8 :
+    ¬ ∃ θ0 θ1 θ2 θ3 θ4 : ℚ,
+      (∀ (v v' : InvVertex) (κ : Int), v.j ≤ 8 → v'.j ≤ 8 →
+          InvKappaPreciseEdge 24 v v' κ →
+          PhiHyb θ0 θ1 θ2 θ3 θ4 v ≤ (κ : ℚ) + PhiHyb θ0 θ1 θ2 θ3 θ4 v') ∧
+      (∀ v : InvVertex, InvVertex.IsGoal v 24 → v.j ≤ 8 →
+          PhiHyb θ0 θ1 θ2 θ3 θ4 v ≤ 0) ∧
+      ((1 : ℚ) ≤ PhiHyb θ0 θ1 θ2 θ3 θ4 (InvStart 1)) := by
+  rintro ⟨θ0, θ1, θ2, θ3, θ4, h_edge, h_goal, h_start⟩
+  rw [show InvStart 1 = (⟨0, 31381059610⟩ : InvVertex) from by decide,
+      PhiHyb_eval θ0 θ1 θ2 θ3 θ4 0 31381059610 35 22 0
+        (by decide) (by decide) (by decide)] at h_start
+  have hG := h_goal ⟨8, 1⟩ rfl (by decide)
+  rw [PhiHyb_eval θ0 θ1 θ2 θ3 θ4 8 1 1 32 0
+        (by decide) (by decide) (by decide)] at hG
+  have hE1 := h_edge _ _ _ (by decide) (by decide) trapA_edge1
+  rw [PhiHyb_eval θ0 θ1 θ2 θ3 θ4 0 112 7 1 0 (by decide) (by decide) (by decide),
+      PhiHyb_eval θ0 θ1 θ2 θ3 θ4 0 7 3 1 0 (by decide) (by decide) (by decide)] at hE1
+  have hE2 := h_edge _ _ _ (by decide) (by decide) trapA_edge2
+  rw [PhiHyb_eval θ0 θ1 θ2 θ3 θ4 0 17 5 0 2 (by decide) (by decide) (by decide),
+      PhiHyb_eval θ0 θ1 θ2 θ3 θ4 1 26 5 0 3 (by decide) (by decide) (by decide)] at hE2
+  have hE3 := h_edge _ _ _ (by decide) (by decide) trapA_edge3
+  rw [PhiHyb_eval θ0 θ1 θ2 θ3 θ4 5 45753584909921 46 0 28
+        (by decide) (by decide) (by decide),
+      PhiHyb_eval θ0 θ1 θ2 θ3 θ4 6 34315188682441 45 1 0
+        (by decide) (by decide) (by decide)] at hE3
+  have hE4 := h_edge _ _ _ (by decide) (by decide) trapA_edge4
+  rw [PhiHyb_eval θ0 θ1 θ2 θ3 θ4 8 4 3 1 0 (by decide) (by decide) (by decide),
+      PhiHyb_eval θ0 θ1 θ2 θ3 θ4 8 1 1 32 0 (by decide) (by decide) (by decide)] at hE4
+  push_cast at h_start hG hE1 hE2 hE3 hE4
+  linarith
+
+/-! ### Theorem 2′ — the earlier six-row certificate at (m, Q) = (1, 9) (kept: true, not sharp) -/
+
 
 /-- **The attractor poles buy exactly one zero-edge.**  No rational potential
 `θ₀ + θ₁·j + θ₂·size + θ₃·ν₃(c−1) + θ₄·ν₃(c+1)` (poles at the two attractors,

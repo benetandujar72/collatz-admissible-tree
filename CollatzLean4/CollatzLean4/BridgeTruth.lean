@@ -220,7 +220,7 @@ gives `ν₃ = ν₃(3^22) + ν₃(251) = 22 + 0 = 22`. This is the value the `2
 theorem nu3_two_pow_AS202_sub_BS202 :
     padicValNat 3 (2 ^ AS202 - BS202) = 22 := by
   -- 2^A − B = 3^q · n = 3^22 · 251 (translation identity, n = 251 ≠ 1).
-  have hsub : 2 ^ AS202 - BS202 = 3 ^ 22 * 251 := by native_decide
+  have hsub : 2 ^ AS202 - BS202 = 3 ^ 22 * 251 := by decide
   rw [hsub]
   have h3 : (3 : ℕ) ^ 22 ≠ 0 := by positivity
   have h251 : (251 : ℕ) ≠ 0 := by norm_num

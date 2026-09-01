@@ -22,12 +22,13 @@ degree laws are EXACT equalities.  This module formalizes the full development
     `deg(T^[k] f) ≤ deg f + 1` for ALL `k` — the statement that provably does NOT hold
     for the integer size (where two worst-case steps can gain a bit).
 
-Part II (this file, below): the PLATEAU TELESCOPE — sharper than the literature's
-multiplicative-order/Frobenius argument.  In the `f+1` coordinate the two-step plateau
-map is multiplication by `(x+1)/x` (`plateau_step_identity`), so each plateau step
-consumes exactly one trailing factor `x` of `f+1` and the plateau exits in at most
-`ord_x(f₀+1) − 1 ≤ deg f₀ − 1` steps (`plateau_exit`, pure ring algebra — no group
-theory).  Headline: `collatz_F2X : ∀ f ≠ 0, ∃ k, T^[k] f = 1`.
+Part II (this file, below): the plateau telescope.  In the `f+1` coordinate the two-step
+plateau map is multiplication by `(x+1)/x` (`plateau_step_identity`), so with
+`v = ord_x(f₀+1)` the iterates `T^[2i] f₀` (`i < v`) are odd of constant degree, `T^[2v] f₀`
+is even, and the degree drops at step `2v+1`.  This is the trailing-coefficient argument of
+Snapp–Tracy (J. Integer Seq. 11 (2008), Art. 08.4.7), concurrent with HMYZ; `plateau_exit`
+formalizes its existential form (some iterate has strictly smaller degree), pure ring
+algebra.  Headline: `collatz_F2X : ∀ f ≠ 0, ∃ k, T^[k] f = 1`.
 
 Axioms target: {propext, Classical.choice, Quot.sound}.  Builds narrow.
 -/
@@ -173,15 +174,15 @@ theorem collatzT_iterate_natDegree_le (f : F2X) (hf : f ≠ 0) :
 /-! ### Part II — the plateau telescope and the main theorem
 
 The plateau (an odd `f` whose two-step image `T²f = ((x+1)f+1)/x` is odd again, at the
-same degree) exits by a TELESCOPING identity, sharper than the literature's
-multiplicative-order argument: in the `f+1` coordinate the plateau map is
-multiplication by `(x+1)/x` —
+same degree) exits by a telescoping identity — the trailing-coefficient argument of
+Snapp–Tracy (2008): in the `f+1` coordinate the plateau map is multiplication by
+`(x+1)/x` —
 
     `x·(T²f + 1) = (x+1)·(f+1)`,
 
-so each plateau step consumes exactly one factor `x` of `f+1`: after at most
-`ord_x(f₀+1) − 1` steps the iterate is even (or has become `1`), and the degree drops.
-Pure ring algebra; no group theory needed. -/
+so each plateau step consumes exactly one factor `x` of `f+1`: with `v = ord_x(f₀+1)`,
+`T^[2v] f₀` is even (or the orbit has reached `1` earlier), and the degree then drops.
+Pure ring algebra. -/
 
 /-- Iterates of a nonzero polynomial are nonzero. -/
 theorem collatzT_iterate_ne_zero {f : F2X} (hf : f ≠ 0) :
@@ -299,8 +300,9 @@ theorem plateau_exit : ∀ v : ℕ, ∀ f : F2X, f.coeff 0 = 1 → f ≠ 1 →
 
 /-- **The Hicks–Mullen–Yucas–Zavislak theorem** (*Amer. Math. Monthly* 115(7), 2008):
 every nonzero polynomial over `𝔽₂` reaches `1` under the Collatz map
-`T(f) = f/x | (x+1)f + 1`.  Believed to be the first formalization.  The proof is
-strong induction on the degree, with the plateau telescope supplying the exit. -/
+`T(f) = f/x | (x+1)f + 1` (also Snapp–Tracy, JIS 2008).  Believed to be the first
+formalization.  The proof is strong induction on the degree, with the plateau telescope
+supplying the exit. -/
 theorem collatz_F2X (f : F2X) (hf : f ≠ 0) : ∃ k, collatzT^[k] f = 1 := by
   suffices h : ∀ n : ℕ, ∀ f : F2X, f ≠ 0 → f.natDegree = n →
       ∃ k, collatzT^[k] f = 1 from h f.natDegree f hf rfl

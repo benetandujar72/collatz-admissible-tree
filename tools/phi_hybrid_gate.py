@@ -39,7 +39,13 @@ But the LP has only d=5 unknowns, so CONSTRAINT GENERATION decides it:
       - capped low-kappa Dijkstra bursts (real min-kappa structure + goals),
       - random admissible walks.
     No violation found under budget => "SURVIVOR at (m,Q)" (epistemically: not
-    refuted at this oracle budget — the standard gate convention).
+    refuted at this oracle budget — the standard gate convention).  SURVIVOR is
+    NOT a feasibility proof: the S245 audit showed the walk-based oracle alone
+    missed in-slice edges (notably the goal-adjacent trap edge (j,4)->(j,1))
+    that kill the pole-enriched class at the SAME step as the linear class;
+    `add_universal_rows` now seeds those families explicitly.  Genuine
+    feasibility at (1,7)/(2,16) follows from the linear PhiBitlen relaxation
+    theta = (c0, 1, 1/4, 0, 0), valid by the Lean size lemmas.
 CONTROL: the restricted class th_p1 = th_pm1 = 0 (the (bitlen, j)-linear class)
 must die by Q ~ 18-24; if the oracle cannot kill it there, the oracle is too
 weak to trust a full-class survival.
@@ -379,6 +385,34 @@ def violated(rows, theta, tol=1e-7):
     return out
 
 
+
+def add_universal_rows(eng, rs: RowSet, Q: int) -> int:
+    """The contract (E) quantifies over EVERY edge of the slice j <= Q, reachable from
+    the start or not.  The walk-based oracle only harvests start-reachable edges, so
+    we add explicit in-slice families that the audit (S245) showed to be decisive:
+      * (j,4) -> (j,1): the goal's own one-edge predecessor (tau=2, kappa=+1); the mod-9
+        trap sits next to the goal and nu3(c-1) jumps 1 -> full depth on a kappa=+1 edge;
+      * (j, 2*3^(R+j-1)-1) -> its zero-edges: leaving the deep -1 shell (nu3(c+1) crash);
+      * (0,112) -> (0,7) (tau=4 one-edge, the theta_size <= 1/4 enforcer) and
+        (0,17) -> (1,26) (tau=1 zero-edge, kappa=-1).
+    All rows are true edges (checked by outgoing_edges); returns the number added."""
+    R = eng.R
+    added = 0
+    for j in range(Q + 1):
+        u = State(j, 4)
+        for (tgt, w) in eng.outgoing_edges(u):
+            if tgt == State(j, 1):
+                added += rs.add_edge(u, tgt, w)
+        if j < Q:
+            u = State(j, 2 * 3 ** (R + j - 1) - 1)
+            for (tgt, w) in eng.outgoing_edges(u):
+                added += rs.add_edge(u, tgt, w)
+    for (u, v) in [(State(0, 112), State(0, 7)), (State(0, 17), State(1, 26))]:
+        for (tgt, w) in eng.outgoing_edges(u):
+            if tgt == v:
+                added += rs.add_edge(u, tgt, w)
+    return added
+
 def run(m, Q, restrict, max_rounds=14, budget_s=420):
     label = "RESTRICTED (bitlen,j)" if restrict else "FULL hybrid (+nu3 poles)"
     print(f"--- m={m} Q={Q}  [{label}] ---", flush=True)
@@ -387,6 +421,7 @@ def run(m, Q, restrict, max_rounds=14, budget_s=420):
     rs.add_start()
     for j in range(Q + 1):
         rs.add_goal(j)
+    add_universal_rows(eng, rs, Q)
     orc = Oracle(eng, m, Q)
     theta = None
     t0 = time.time()

@@ -1,6 +1,6 @@
 # formalization.yaml --- machine-generated disclosure manifest.
 # Regenerate: python tools/gen_formalization_yaml.py  (see its docstring).
-# Generated 2026-06-12 at commit 71ce5df11659.
+# Generated 2026-09-02 at commit e0d4b9b6ddfd.
 
 project:
   name: collatz-admissible-tree
@@ -8,7 +8,7 @@ project:
     Machine-checked obstructions for potential-based approaches to the
     Collatz conjecture, with closed-form bounded barriers
   repository: https://github.com/benetandujar72/collatz-admissible-tree
-  paper: paper1/main.pdf  # 15 pp; arXiv submission tag arxiv-v1
+  paper: paper1/main.pdf  # arXiv submission tag arxiv-v1
   status: complete (paper v1); research programme ongoing
 
 authors:
@@ -38,7 +38,7 @@ toolchain:
   build: lake build CollatzLean4.<Module>   # narrow targets; see appendix B
 
 verification:
-  modules: 65
+  modules: 68
   sorry_count: 0   # comment-stripped scan, tools/gen_formalization_yaml.py
   axiom_policy: >-
     every declaration cited in the paper must depend on at most
@@ -51,7 +51,6 @@ verification:
       on them (see audit)
     modules_using_it:
       - BinaryTensor
-      - BridgeTruth
       - Cert_m1_Q10_S216
       - Cert_m1_Q1_kappa
       - Cert_m1_Q3
@@ -71,23 +70,28 @@ axiom_audit:
   method: >-
     lake build CollatzLean4.AxiomAudit emits one "#print axioms" per cited
     declaration; this file records the result verbatim
-  declarations_audited: 84
-  declarations_clean: 84   # axioms subset of the standard trio
+  declarations_audited: 92
+  declarations_clean: 92   # axioms subset of the standard trio
   declarations_flagged: 0
   clean:
     - CollatzLean4.Admissible.BlockBoundaryExists
     - CollatzLean4.Admissible.EffectiveLinearForm
+    - CollatzLean4.Admissible.FirstMPrecisionSuffixPositive
     - CollatzLean4.Admissible.InX
     - CollatzLean4.Admissible.InvEdgeOne
     - CollatzLean4.Admissible.InvEdgeZero
     - CollatzLean4.Admissible.InvKappaPreciseEdge
+    - CollatzLean4.Admissible.InvPathCounts
     - CollatzLean4.Admissible.InvPathCounts.weight_lower_bound
     - CollatzLean4.Admissible.InvStart
+    - CollatzLean4.Admissible.InvStartAt
     - CollatzLean4.Admissible.InvVertex
     - CollatzLean4.Admissible.InvVertex.IsGoal
+    - CollatzLean4.Admissible.KappaPathSplit
     - CollatzLean4.Admissible.PhiBitlen
     - CollatzLean4.Admissible.S202_kappa_precise_barrier_bounded
     - CollatzLean4.Admissible.S202_kappa_precise_barrier_bounded_from_potential
+    - CollatzLean4.Admissible.S202_one_edge_count_conjecture_iff_defect_barrier
     - CollatzLean4.Admissible.S202_slope_barrier_from_kappa_precise_potential_bounded
     - CollatzLean4.Admissible.S202_translation_identity
     - CollatzLean4.Admissible.S212_forward
@@ -107,6 +111,7 @@ axiom_audit:
     - CollatzLean4.Admissible.invReachable_units
     - CollatzLean4.Admissible.invReachable_zero_lift
     - CollatzLean4.Admissible.kappaPathSplit_of_block
+    - CollatzLean4.Admissible.kappaPathSplit_yields_piecewise_bounds
     - CollatzLean4.Admissible.kappa_barrier_at_m2_Q16
     - CollatzLean4.Admissible.kappa_barrier_at_m3_Q23
     - CollatzLean4.Admissible.kappa_barrier_m1_Q7
@@ -114,9 +119,11 @@ axiom_audit:
     - CollatzLean4.Admissible.kappa_bounded_barrier_bitlen
     - CollatzLean4.Admissible.kappa_bounded_barrier_bitlen_from
     - CollatzLean4.Admissible.ladder_exists
+    - CollatzLean4.Admissible.linear_size_potential_m1_Q7
     - CollatzLean4.Admissible.mediant_period_bound
     - CollatzLean4.Admissible.mod6_of_two_pow_mod9_seven
     - CollatzLean4.Admissible.no_decaying_modulus_corrector
+    - CollatzLean4.Admissible.no_hybrid_potential_m1_Q8
     - CollatzLean4.Admissible.no_hybrid_potential_m1_Q9
     - CollatzLean4.Admissible.no_linear_size_potential_m1_Q8
     - CollatzLean4.Admissible.not_blockBoundaryExists
@@ -164,7 +171,8 @@ key_results:  # informal statement -> Lean name (all audited above)
   - { lean: collatz_F2X, informal: "every nonzero f in F2[x] reaches 1 under the Collatz analogue (HMYZ 2008); believed first formalization" }
   - { lean: kappa_barrier_m1_Q7, informal: "closed-form bit-length potential proves the bounded kappa-barrier, m=1, Q<=7" }
   - { lean: no_linear_size_potential_m1_Q8, informal: "no rational linear (1,j,size) potential satisfies the contract at (1,8): the wall is exact" }
-  - { lean: no_hybrid_potential_m1_Q9, informal: "adding singular attractor poles nu3(c-+1) buys exactly one step and dies at (1,9)" }
+  - { lean: linear_size_potential_m1_Q7, informal: "the linear relaxation of PhiBitlen satisfies the universal contract at (1,7): the wall is exact on both sides" }
+  - { lean: no_hybrid_potential_m1_Q8, informal: "adding singular attractor poles nu3(c-+1) does not move the wall: the enriched class is already dead at (1,8)" }
   - { lean: invReachable_units, informal: "every unit cylinder mod 3^t is reachable: no separating congruence invariant exists" }
   - { lean: no_decaying_modulus_corrector, informal: "no 3-adically continuous real potential satisfies the contract (m <= omega(22+Q))" }
   - { lean: not_blockBoundaryExists, informal: "the canonical split devices for the per-block induction are refuted (astronomical one-edge ladder)" }

@@ -39,17 +39,22 @@ open CollatzLean4.Admissible CollatzLean4.F2 in
 section
 #print axioms BlockBoundaryExists
 #print axioms EffectiveLinearForm
+#print axioms FirstMPrecisionSuffixPositive
 #print axioms InX
 #print axioms InvEdgeOne
 #print axioms InvEdgeZero
 #print axioms InvKappaPreciseEdge
+#print axioms InvPathCounts
 #print axioms InvPathCounts.weight_lower_bound
 #print axioms InvStart
+#print axioms InvStartAt
 #print axioms InvVertex
 #print axioms InvVertex.IsGoal
+#print axioms KappaPathSplit
 #print axioms PhiBitlen
 #print axioms S202_kappa_precise_barrier_bounded
 #print axioms S202_kappa_precise_barrier_bounded_from_potential
+#print axioms S202_one_edge_count_conjecture_iff_defect_barrier
 #print axioms S202_slope_barrier_from_kappa_precise_potential_bounded
 #print axioms S202_translation_identity
 #print axioms S212_forward
@@ -72,6 +77,7 @@ section
 #print axioms invReachable_units
 #print axioms invReachable_zero_lift
 #print axioms kappaPathSplit_of_block
+#print axioms kappaPathSplit_yields_piecewise_bounds
 #print axioms kappa_barrier_at_m2_Q16
 #print axioms kappa_barrier_at_m3_Q23
 #print axioms kappa_barrier_m1_Q7
@@ -79,9 +85,11 @@ section
 #print axioms kappa_bounded_barrier_bitlen
 #print axioms kappa_bounded_barrier_bitlen_from
 #print axioms ladder_exists
+#print axioms linear_size_potential_m1_Q7
 #print axioms mediant_period_bound
 #print axioms mod6_of_two_pow_mod9_seven
 #print axioms no_decaying_modulus_corrector
+#print axioms no_hybrid_potential_m1_Q8
 #print axioms no_hybrid_potential_m1_Q9
 #print axioms no_linear_size_potential_m1_Q8
 #print axioms not_blockBoundaryExists

@@ -1,11 +1,13 @@
-# Estado de fronteras — programa S189–S242
+# Estado de fronteras — programa S189–S244
 
-**Fecha:** 2026-06-01 (consolidación S240–S242; sustituye íntegramente la versión 2026-05-14)
+**Fecha:** 2026-06-12 (consolidación S240–S244; sustituye íntegramente la versión 2026-05-14)
 **Resumen:** el arco S240–S242 cerró la frontera computacional por **forma cerrada**
 (ya no hay tabla de certificados que escalar), cartografió con teoremas la muerte de la
-κ-ruta, completó el pipeline de ciclos de Hercher, y aisló la dificultad del problema
-con nombre propio. 26 commits verificados, 0 `sorry`; 9 anclas `native_decide`
-**eliminadas** del corpus (AS202Lift des-anclado).
+κ-ruta, formalizó la reducción de ciclos de Eliahou, y aisló la dificultad del problema
+con nombre propio. 0 `sorry`; 13 anclas `native_decide` **eliminadas** del corpus
+(AS202Lift + `aS202_decomp`/`S206_a_mod9`/`S202_translation_identity`/BridgeTruth
+des-ancladas en S244); las 84 declaraciones citadas en el Paper 1 auditadas por máquina
+(`formalization.yaml`): solo {propext, Classical.choice, Quot.sound}.
 
 ## 1. Barrera de divergencia (Wall-B): estado final del arco
 
@@ -15,8 +17,8 @@ con nombre propio. 26 commits verificados, 0 `sorry`; 9 anclas `native_decide`
 |---|---|---|
 | Barrera κ acotada, criterio de bits `4(m+Q)+1 ≤ size(start)` | `kappa_bounded_barrier_bitlen` (BitlenPotential) | limpio |
 | Start genérico (zócalo para cualquier representante) | `kappa_bounded_barrier_bitlen_from` | limpio, sin anclas |
-| Uniforme `m+Q ≤ 8` (start Caveat-C) | `kappa_barrier_of_sum_le_eight` | + ancla aS202 |
-| m=1 hasta Q=7 | `kappa_barrier_m1_Q7` | + ancla aS202 |
+| Uniforme `m+Q ≤ 8` (start Caveat-C) | `kappa_barrier_of_sum_le_eight` | limpio, sin anclas (S244) |
+| m=1 hasta Q=7 | `kappa_barrier_m1_Q7` | limpio, sin anclas (S244) |
 | **FIEL m=2 hasta Q=16** (antes "⛔ bloqueado") | `kappa_barrier_at_m2_Q16` (FaithfulBarrier) | **limpio, sin anclas** |
 | **FIEL m=3 hasta Q=23** | `kappa_barrier_at_m3_Q23` | **limpio, sin anclas** |
 
@@ -27,28 +29,35 @@ m=3: Q≤23 ⊃ Q≤6) sin coste computacional.
 
 ### El mapa de obstrucciones (todo machine-checked)
 
-* La κ-inducción por bloques es **CIRCULAR** (`KappaPathSplit ⟺ barrier(m+1)`, IVT discreto).
-* El dispositivo canonical-first-split es **FALSO** (`not_firstMPrecisionSuffixPositive`,
-  `not_blockBoundaryExists` — la escalera de ~10²¹ aristas existe por argumento cerrado).
+* La ruta de inducción por bloques está **CERRADA** (corregido en S245): la forma ingenua
+  de conteo es circular (`S202_one_edge_count_conjecture_iff_defect_barrier`, ⟺ con la
+  barrera); la reducción no-circular (`KappaPathSplit`, `kappaPathSplit_yields_piecewise_bounds`)
+  tiene un único crux `BlockBoundaryExists` que está **REFUTADO** para todo m,Q≥1
+  (`not_blockBoundaryExists`; a fortiori `not_firstMPrecisionSuffixPositive` — la escalera de
+  ~10²² aristas existe por argumento cerrado). NOTA: el corpus NO contiene un teorema
+  `KappaPathSplit ⟺ barrier(m+1)` (la memoria S240 lo daba por probado; es un argumento IVT
+  elemental no formalizado, y el crux útil es el m-preciso, que es falso).
 * **No hay invariante de congruencia** a ningún módulo: `invReachable_units` (ReachUnits)
   — todo cilindro unidad es alcanzable a toda precisión (pieza C cerrada en positivo).
-* **Ningún potencial 3-ádicamente continuo** certifica la barrera, en NINGÚN codominio:
-  colapso ℤ (S241) + `no_decaying_modulus_corrector` (AttractorNoGo, vía los atractores
-  ±1 y `ν₃(aS202−1) = 22`): todo módulo de continuidad ω cumple `m ≤ ω(22+Q)`.
+* **Ningún potencial con módulo de continuidad 3-ádico independiente de Q** certifica la
+  barrera uniformemente en Q, en NINGÚN codominio: `no_decaying_modulus_corrector`
+  (AttractorNoGo, vía los atractores ±1 y `ν₃(aS202−1) = 22`): todo módulo ω cumple
+  `m ≤ ω(22+Q)` (a (m,Q) fijos, una Φ con ω(22+Q) ≥ m NO queda excluida — la función valor).
 * Clase tropical/Green **refutada** con testigo (gate de cociente); reducción Sturmiana
   **muerta** (los caminos óptimos son el filamento τ=1, `min-κ(j) = −j`).
-* Muro real del potencial de bits: `Q ~ 22m` (toda Φ lineal en (bitlen, j) muere ahí).
+* Muro real del potencial de bits: el criterio de bits, `Q ≈ 7.7m` en la torre fiel (toda Φ
+  lineal en (bitlen, j) muere justo ahí — y con polos ν₃(c∓1) también; ver §4.3).
 
 ### Lo que queda abierto (con nombre)
 
-1. **Rincón híbrido**: parte singular Green + resto Hölder (acotado `L ≥ 2·3^{5α}`,
-   vivo; el gate `phi_realkam_lp.py` se extiende reponderando aristas).
-2. **CMS ("Mason–Stothers de acarreos")**: cualquier δ′>0 efectivo en el conteo de
-   acarreos por palabra admisible extiende PhiBitlen más allá de Q~22m. Único
-   incondicional conocido: Stewart 1980 (log log — la pared Baker disfrazada).
+1. ~~Rincón híbrido~~ CERRADO (S245, ver §4.3): los polos atractores no mueven el muro.
+2. **CMS ("Mason–Stothers de acarreos")**: densidad efectiva δ>0 de pasos de acarreo
+   (`size(3c+1) = size(c)+2`) medida contra q (zero-steps) a lo largo de palabras admisibles;
+   afinaría la ley de tamaño de zero-edge y el presupuesto de bits; si basta para pasar el
+   muro Q≈7.7m es parte de la pregunta. Único incondicional conocido: Stewart 1980.
 3. Migración Caveat-C a nivel de PALABRAS (`S216BarrierForWords` con `aS202_at`).
 
-## 2. Mitad de ciclos (Wall-A): pipeline Hercher completo
+## 2. Mitad de ciclos (Wall-A): la reducción de Eliahou, formalizada
 
 | Resultado | Estado |
 |---|---|
@@ -59,6 +68,7 @@ m=3: Q≤23 ⊃ Q≤6) sin coste computacional.
 | Sin ciclo de período < 16 266 | condicional a `SyrVerifiedUpTo 2²⁹` (≈5·10⁸) |
 | Puente literatura: `CollatzVerifiedUpTo (3X+1) → SyrVerifiedUpTo X` | probado (CollatzBridge) |
 | Techo general | **ABIERTO** (ni Baker efectivo lo cierra; ratchet = ecuación + cómputo + convergentes) |
+| Comparación literatura (S245) | Eliahou con la frontera actual: K > 7.2·10¹⁰ elementos impares (Hercher–Puchert, JIS 2023 §1); el "m ≤ 91" de Hercher cuenta MÍNIMOS LOCALES, no el período — no comparable |
 
 `fastPowAux` (potencia binaria con fuel) desbloquea pares de convergentes arbitrarios:
 el techo de M₀ lo pone el tiempo de multiplicación GMP del kernel, no la recursión.
@@ -79,28 +89,28 @@ impedir el teorema: la dificultad entera NO es solo "falta Baker efectivo".
    completo `collatz_F2X : ∀ f ≠ 0, ∃ k, T^[k] f = 1`, primera formalización conocida.
    Las leyes de grado EXACTAS (gemelas de `size_two_pow_mul`/`size_three_mul_add_one`),
    la no-divergencia puntual `deg(T^[k]f) ≤ deg f + 1`, y la salida de meseta por el
-   **telescopio de meseta** `x·(T²f+1) = (x+1)·(f+1)` (más fino que el argumento de
-   orden multiplicativo de la literatura: cada paso de meseta consume exactamente un
-   factor `x` de `f+1` — álgebra de anillos pura, sin Frobenius). Axiomas:
+   **telescopio de meseta** `x·(T²f+1) = (x+1)·(f+1)` — que la auditoría S245 identificó
+   como el argumento del coeficiente inicial de **Snapp–Tracy (JIS 11, 2008, 08.4.7)**,
+   concurrente con HMYZ: NO es nuevo (el paper ya lo acredita). Axiomas:
    {propext, Classical.choice, Quot.sound}. El experimento de control queda
    teorema-vs-teorema dentro del propio repo.
-2. Paper 1 (obstrucciones machine-checked) — outline en `PAPER1_OUTLINE.md`.
-3. ~~Gate híbrido~~ ✅ **EJECUTADO Y AUTENTICADO** (S243, GATE H +
-   `HybridPotentialNoGo.lean`): el LP con generación de restricciones (sin
-   enumerar la región ⟹ alcanza el muro) decide la clase híbrida
-   `θ₀+θ₁j+θ₂·size+θ₃·ν₃(c−1)+θ₄·ν₃(c+1)` contra el contrato de potencial
-   acotado. VEREDICTO: los polos atractores compran EXACTAMENTE +1 zero-edge
-   (m=1: vivo Q≤8, muerto Q≥9) / +2 (m=2: vivo Q≤18, muerto Q≥20), con
-   certificados Farkas racionales EXACTOS en cada punto muerto (re-verificados
-   contra la aritmética modular cruda). En Lean: `no_linear_size_potential_m1_Q8`
-   (el muro de la clase (1,j,size) EXACTO en el criterio de bits, complementando
-   `kappa_barrier_m1_Q7`: Q=7 demostrable, Q=8 imposible — 4 filas) y
-   `no_hybrid_potential_m1_Q9` (los polos mueren un paso después — 6 filas; la
-   fila asesina es la arista deep-jump del trap mod-9, conectando las dos
-   familias de obstrucciones). El perfil interior con polos corregidos (P1/P2,
-   incl. −1) confirma que la muerte de "Green+Hölder" es robusta al conjunto de
-   polos. El mapa de obstrucciones de la ruta B queda CERRADO también en la
-   esquina archimediano+singular (alcance honesto: clases lineales en features;
-   el potencial no-lineal exacto siempre existe cuando la barrera es cierta).
+2. Paper 1 (obstrucciones machine-checked) — `paper1/main.tex` (18 pp), auditado adversarialmente en S245 (9 dimensiones, 3 lentes por hallazgo); paquete arXiv en `paper1/ARXIV_SUBMISSION.md`.
+3. ~~Gate híbrido~~ ✅ **EJECUTADO, AUDITADO Y CORREGIDO** (S243–S245, GATE H +
+   `HybridPotentialNoGo.lean`): el LP con generación de restricciones decide la clase
+   híbrida `θ₀+θ₁j+θ₂·size+θ₃·ν₃(c−1)+θ₄·ν₃(c+1)` contra el contrato universal (todas las
+   aristas de la rebanada, alcanzables o no). VEREDICTO CORREGIDO por la auditoría S245:
+   **los polos atractores no mueven el muro** — ambas clases viven Q≤7 / mueren Q≥8 (m=1)
+   y viven Q≤16 / mueren Q≥17 (m=2), exactamente el criterio de bits, con certificados
+   Farkas racionales exactos. (Una primera versión del oráculo solo cosechaba aristas
+   alcanzables desde el start y reportó la clase enriquecida viva un paso más; las familias
+   universales explícitas — sobre todo la arista `(j,4)→(j,1)`, el predecesor del goal, que
+   ES el trap mod-9 — lo corrigieron: un SURVIVOR nunca es prueba de factibilidad.)
+   En Lean: `linear_size_potential_m1_Q7` (la relajación lineal de PhiBitlen satisface el
+   contrato: viva en 7), `no_linear_size_potential_m1_Q8` (4 filas), y
+   `no_hybrid_potential_m1_Q8` (6 filas, multiplicadores (1798,1798,14877,13888,496,564)/33421,
+   fila decisiva `(8,4)→(8,1)`); `no_hybrid_potential_m1_Q9` se conserva (implicado por
+   monotonía). El mapa de obstrucciones de la ruta B queda cerrado también en la esquina
+   arquimediano+singular (alcance honesto: clases lineales en features; el potencial
+   no-lineal exacto siempre existe cuando la barrera es cierta).
 4. Bonus 𝔽₂[x] (opcional): `gap_isUnit_iff` — la clasificación Frobenius–Catalan
    `x^A + (x+1)^m = 1 ⟺ A = m = 2^k` (candidata a PR de Mathlib).

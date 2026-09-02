@@ -173,7 +173,10 @@ def write_yaml(audit):
     A('  build: lake build CollatzLean4.<Module>   # narrow targets; see appendix B')
     A('')
     A('verification:')
-    A('  modules: %d' % len(glob.glob(os.path.join(LEAN_DIR, '*.lean'))))
+    tracked = subprocess.run(['git', 'ls-files', 'CollatzLean4/CollatzLean4/*.lean'], cwd=ROOT,
+                             capture_output=True, text=True).stdout.split()
+    A('  modules: %d   # git-tracked .lean files (untracked work-in-progress excluded)'
+      % len(tracked))
     A('  sorry_count: %d   # comment-stripped scan, tools/gen_formalization_yaml.py'
       % sorry_count())
     A('  axiom_policy: >-')
@@ -215,7 +218,7 @@ def write_yaml(audit):
     A('  - { lean: no_decaying_modulus_corrector, informal: "no 3-adically continuous real potential satisfies the contract (m <= omega(22+Q))" }')
     A('  - { lean: not_blockBoundaryExists, informal: "the canonical split devices for the per-block induction are refuted (astronomical one-edge ladder)" }')
     A('  - { lean: syr_cycle_window, informal: "every nontrivial Syracuse m-cycle has m*log2(3) < A < 2m" }')
-    A('  - { lean: syr_no_cycle_below_16266, informal: "conditional on verification up to 2^29: no Syracuse cycle of period < 16266 (Eliahou-Hercher pipeline, kernel-checked)" }')
+    A('  - { lean: syr_no_cycle_below_16266, informal: "conditional on Syracuse-orbit verification up to 2^29: no Syracuse cycle of period < 16266 (Eliahou continued-fraction reduction, kernel-checked)" }')
     A('')
     A('honest_scope: >-')
     A('  The paper claims no progress on the Collatz conjecture itself.  Its content')

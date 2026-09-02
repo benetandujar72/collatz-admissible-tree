@@ -119,8 +119,8 @@ theorem-level reasons.
 Why publish negative results?  Because rigorous obstruction knowledge
 redirects effort: a verified ``this cannot work, and here is the
 certificate'' spares a community years of unrecorded failed attempts, as
-recent machine-assisted refutations in extremal combinatorics have
-illustrated.  The Collatz literature is dense with potential and invariant
+machine-assisted refutations in extremal combinatorics have illustrated
+\cite{Wagner2021}.  The Collatz literature is dense with potential and invariant
 attempts; the map below makes a large class of them obsolete \emph{as
 theorems}, each failure carrying a finite, independently re-checkable
 witness.
@@ -246,7 +246,8 @@ accumulated action is affine: a word with parameters $(A, q, B)$ ---
 $A = \sum \tau$, $q$ the number of zeros --- maps
 $n_0 \mapsto (2^{A} n_0 - B)/3^{q}$, and words run from $n_0 = 1$ satisfy
 the \emph{translation identity} $3^{q} n + B = 2^{A}$
-(\lean{evalWord}, \lean{S202\_translation\_identity}).
+(\lean{evalWord}, \lean{evalWord\_translation\_identity}; the $W_{202}$
+instance is \lean{S202\_translation\_identity}).
 
 The programme's organizing example is the $26$-letter word $W_{202}$ with
 $(A, q) = (43, 22)$, $B_{202} = 919\,447\,060\,349$ and final value
@@ -276,19 +277,19 @@ The tower $C_m$ is thus the canonical \emph{cycle-resonant direction} of the
 inverse tree: the region where cheap (low-defect) inverse returns to $1$
 would concentrate if they existed.  The corpus records the resulting
 dichotomy as the (open) \emph{S202 alternative}
-(\lean{S202Cylinders.lean}): either every $C_m$ is accessible from $1$ at
-defect cost $o(m)$ --- giving admissible families of subcritical slope
-$\liminf A/q \le 43/22 < 2$ --- or accessibility fails infinitely often and
-a new $3$-adic obstruction governs the admissible inverse cover.  The
-barriers studied below are the quantitative, budget-bounded face of the
-second horn: they assert that within a zero-step budget $Q$ there are
-\emph{no} cheap returns along this tower.  We emphasize the honest scope:
-$C_m$ is a model family --- the hardest natural direction first --- and
-barriers on it are neither necessary nor sufficient for Collatz; their role
-is that every potential or induction strategy on the inverse tree must
-already succeed here, which is what makes the obstruction map of
-\S\S\ref{sec:circular}--\ref{sec:positive} informative for strategy design
-at large.
+(\lean{S202Cylinders.lean}, a conjectured dichotomy): either every $C_m$ is
+accessible from $1$ at defect cost $o(m)$ --- giving admissible families of
+subcritical slope $\liminf A/q \le 43/22 < 2$ --- or accessibility at cost
+$o(m)$ fails from some $m$ on and a new $3$-adic obstruction governs the
+admissible inverse cover.  The barriers studied below are the quantitative,
+budget-bounded face of the second horn: they assert that within a zero-step
+budget $Q$ there are \emph{no} cheap returns along this tower.  We emphasize
+the honest scope: $C_m$ is a model family --- the hardest natural direction
+first --- and barriers on it are neither necessary nor sufficient for
+Collatz; their role is that a potential or induction strategy on the inverse
+tree should be expected to succeed here first, which is what makes the
+obstruction map of \S\S\ref{sec:circular}--\ref{sec:positive} informative
+for strategy design at large.
 
 \subsection{The start, the goal, and the barrier}
 In the artifact the graph-level start is
@@ -313,7 +314,8 @@ to a goal with at most $Q$ zero-edges has total $\kappa \ge m$.
 The semantic content on the forward side is the \emph{slope barrier}: every
 admissible word $u$ with $q(u) \le Q$ landing in the cylinder of
 $\InvStart(m)$ has defect $D(u) \ge m$
-(\lean{S202\_slope\_barrier\_from\_kappa\_precise\_potential\_bounded},
+(\lean{S202\_actual\_edge\_count\_bounded\_of\_kappa\_precise\_barrier\_bounded}
+followed by \lean{S202\_slope\_barrier\_from\_actual\_edge\_count\_bounded},
 via the verified forward--inverse correspondence \lean{S212\_forward}).
 Informally: there are no cheap inverse returns along this resonant $3$-adic
 direction.  These are finite, decidable-in-principle statements; their
@@ -323,12 +325,20 @@ below aim at.
 
 \begin{theorem}[the potential method; \lean{S202\_kappa\_precise\_barrier\_bounded\_from\_potential}]
 \label{thm:potential-method}
-Let $\Phi$ be any function from vertices to $\Z$ (or $\Q$, $\R$) such that
+Let $\Phi$ be any function from vertices to $\Z$ such that
 \emph{(E)} $\Phi(v) \le \kappa(e) + \Phi(v')$ for every edge $e: v \to v'$ in
 the slice $j \le Q$; \emph{(G)} $\Phi(g) \le 0$ for every goal $g$ with
 $g.j \le Q$; and \emph{(S)} $\Phi(\InvStart(m)) \ge m$.  Then the bounded
 $\kappa$-barrier holds at $(m,Q)$.
 \end{theorem}
+
+\begin{remark}
+The Lean statement is for $\Z$-valued $\Phi$; the telescoping it rests on
+(\lean{WPath\_kappa\_weight\_ge\_potential\_bounded}) is valid verbatim over
+any ordered abelian group.  Below, the contract (E), (G), (S) over $\Q$ or
+$\R$ is the hypothesis shape of the no-go theorems, each of which states it
+directly over its own codomain.
+\end{remark}
 
 Everything in \S\S\ref{sec:circular}--\ref{sec:positive} is about which
 $\Phi$ can exist.
@@ -383,8 +393,9 @@ reduction must therefore couple the split point to the $m$-level structure:
 Let \lean{BlockBoundaryExists}$(m,Q)$ be the statement: every level-$(m{+}1)$
 $\kappa$-path from the start to a goal of depth $\le Q$ admits a split point
 $\mathrm{mid}$ that is $m$-precise (its prefix projects onto an $m$-goal)
-and whose suffix has $\kappa_2 \ge 1$.  Then a base barrier at level $m_0$
-together with \lean{BlockBoundaryExists} at every level $\ge m_0$ yields the
+and whose suffix has $\kappa_2 \ge 1$.  Then, for $m_0 \ge 1$, a base
+barrier at level $m_0$ together with \lean{BlockBoundaryExists} at every
+level $\ge m_0$ yields the
 bounded $\kappa$-barrier --- and hence the slope barrier $D \ge m$ --- at
 every level $m \ge m_0$.
 \end{theorem}
@@ -467,7 +478,7 @@ $22 + Q \ge t_0$.  The general case rests on two exact identities.
 \begin{proposition}[the attractor identities; \lean{tau2\_attractor},
 \lean{tau1\_attractor}, \lean{tau2\_attractor\_nu3}, \lean{tau1\_attractor\_nu3}]
 Along a $\tau=2$ zero-edge with target $y$, $4(y-1) = 3(c-1)$, so
-$\nuthree(y-1) = \nuthree(c-1)+1$; along a $\tau=1$ zero-edge,
+$\nuthree(y-1) = \nuthree(c-1)+1$ for $c > 1$; along a $\tau=1$ zero-edge,
 $2(y+1) = 3(c+1)$, so $\nuthree(y+1) = \nuthree(c+1)+1$.
 \end{proposition}
 
@@ -594,7 +605,11 @@ capping any pole weight.
 
 (An earlier six-row certificate at $(1,9)$,
 \lean{no\_hybrid\_potential\_m1\_Q9}, remains in the artifact; it is implied
-by Theorem~\ref{thm:hybrid} by monotonicity.)
+by Theorem~\ref{thm:hybrid} by monotonicity.)  Both wall theorems are stated
+over $\Q$ to match the Lean statements; each certificate is a nonnegative
+rational combination of finitely many true rows yielding $0 \le -1/37$
+(resp.\ $0 \le -245/33421$), a contradiction in every ordered field, so no
+real $\theta$ satisfies the contract either.
 
 The numerical sweep extends the picture (tier T2: exact certificates at
 every dead point; ``alive'' means the LP over the harvested rows is feasible
@@ -673,20 +688,23 @@ an explicit hypothesis; \lean{syr\_cycle\_elements\_above\_frontier},
 \lean{syr\_cycle\_gap\_mul\_frontier\_lt}), and the continued-fraction
 \emph{mediant exclusion}: for a unimodular convergent pair
 $L/\Lambda < \log_2 3 < U/\Upsilon$, the pure-$\N$ identity
-$m = \Lambda(U m - A\Upsilon) + \Upsilon(A\Lambda - L m)$
-(\lean{mediant\_period\_bound}) turns the window into a period bound
-(\lean{syr\_mediant\_exclusion}).
+$m = \Lambda(U m - A\Upsilon) + \Upsilon(A\Lambda - L m)$ yields
+$\Lambda + \Upsilon \le m$ (\lean{mediant\_period\_bound}), turning the
+window into a period bound (\lean{syr\_mediant\_exclusion}).
 
 \begin{theorem}[kernel-checked instances;
 \lean{syr\_no\_cycle\_below\_359}, \lean{syr\_no\_cycle\_below\_16266},
 \lean{collatz\_no\_cycle\_below\_359}, \lean{collatz\_no\_cycle\_below\_16266}]
 \label{thm:cycle-instances}
-Conditional on orbit verification up to $2^{20}$ (resp.\ $2^{29}$), there is
-no nontrivial Syracuse cycle of period below $359$ (resp.\ $16\,266$), via
-the convergent pairs $84/53 < \log_2 3 < 485/306$ and
-$1054/665 < \log_2 3 < 24727/15601$.  The same conclusions hold from
-verification of the standard (full) Collatz map, through the bridge
-\lean{syrVerified\_of\_collatzVerified}.
+Conditional on Syracuse-orbit verification up to $2^{20}$ (resp.\
+$2^{29}$), there is no nontrivial Syracuse cycle of period below $359$
+(resp.\ $16\,266$), via the convergent pairs $84/53 < \log_2 3 < 485/306$
+and $1054/665 < \log_2 3 < 24727/15601$.  The same conclusions follow from
+verification of the standard (full) Collatz map up to $3\cdot 2^{20}+1$
+(resp.\ $3\cdot 2^{29}+1$), through the bridge
+\lean{syrVerified\_of\_collatzVerified} (\lean{CollatzVerifiedUpTo}$(3X+1)$
+implies \lean{SyrVerifiedUpTo}$(X)$: odd $n$ directly, even $n$ via its
+first step $3n+1$).
 \end{theorem}
 
 The $16\,266$ instance involves $\sim$150\,000-digit integers; a fuel-based
@@ -743,7 +761,7 @@ Collatz analogue of Hicks--Mullen--Yucas--Zavislak \cite{HMYZ2008} and
 Snapp--Tracy \cite{SnappTracy2008}
 (see \cite{BehajainaParan2023,BehajainaParan2023b,AlonBehajainaParan2024}
 for recent function-field developments, including general coefficient rings,
-completions, and sharp stopping times)
+completions, and improved stopping-time bounds)
 \[
 T(f) = f/x \ \ (f(0)=0), \qquad T(f) = (x+1)f + 1 \ \ (f(0)=1)
 \]
@@ -827,8 +845,8 @@ every claim with its tier:
 
 \begin{itemize}
 \item[\textbf{T1}] \emph{Lean theorems} over Mathlib, zero \texttt{sorry},
-  axiom set exactly \{\lean{propext}, \lean{Classical.choice},
-  \lean{Quot.sound}\} (verified per headline theorem with
+  axiom set contained in \{\lean{propext}, \lean{Classical.choice},
+  \lean{Quot.sound}\} (verified per cited declaration with
   \lean{\#print axioms}; Appendix~\ref{app:axioms}).  All theorems cited in
   \S\S\ref{sec:model}--\ref{sec:ff} are T1.
 \item[\textbf{T1$'$}] Lean theorems whose proofs invoke the compiled
@@ -840,8 +858,9 @@ every claim with its tier:
   (\lean{AxiomAudit.lean}, regenerated by
   \texttt{tools/gen\_formalization\_yaml.py}) runs \lean{\#print axioms} on
   every declaration cited in this paper and verifies that each depends on
-  at most the three standard axioms; thirteen former \lean{native\_decide}
-  anchors were re-proved kernel-only during the programme.
+  at most the three standard axioms; the former \lean{native\_decide}
+  anchors on the paper's chain were re-proved kernel-only during the
+  programme.
 \item[\textbf{T2}] Exact-rational tool verdicts: LP Farkas certificates
   re-derived in exact arithmetic and re-verified against the model by an
   independent code path (the GATE-H sweep of \S\ref{sec:positive}; the
@@ -860,7 +879,8 @@ proposed and executed proofs, gates and refactors; everything that survived
 is machine-checked, so trust reduces to the Lean kernel plus the stated
 axioms, not to either author.
 
-Reproducibility: the repository contains the full Lean source (65 modules),
+Reproducibility: the repository contains the full Lean source (65 modules,
+including the machine-generated \lean{AxiomAudit}),
 the gate scripts and their JSON outputs (\texttt{tools/}), and build
 instructions (narrow \texttt{lake build} targets; only the legacy T1$'$
 certificates are slow).  A tagged commit accompanies the arXiv version.
@@ -914,9 +934,10 @@ Every declaration named in this paper is audited with \lean{\#print axioms}
 by the machine-generated module \lean{AxiomAudit.lean} (regenerated from the
 manuscript itself by \texttt{tools/gen\_formalization\_yaml.py}; results
 recorded in \texttt{formalization.yaml} at the repository root).  Each
-reports exactly
+reports a subset of
 \{\lean{propext}, \lean{Classical.choice}, \lean{Quot.sound}\} ---
-the three standard Lean axioms.  The legacy modules that still use the
+the three standard Lean axioms (definitions and some lemmas need fewer;
+every headline theorem in the table below reports the full trio).  The legacy modules that still use the
 compiled evaluator (tier T1$'$ of \S\ref{sec:methodology}) are inventoried
 in the same file; nothing cited here depends on them.  Selected audit rows:
 
@@ -995,8 +1016,8 @@ J.~Supercomput.\ \textbf{77} (2021), 2681--2688.
 
 \bibitem{AlonBehajainaParan2024}
 G.~Alon, A.~Behajaina and E.~Paran, \emph{On the stopping time of the
-Collatz map in $\F_2[x]$}, Finite Fields Appl.\ (2024), Art.~102473;
-arXiv:2401.03210.
+Collatz map in $\F_2[x]$}, Finite Fields Appl.\ \textbf{99} (2024),
+Art.~102473; arXiv:2401.03210.
 
 \bibitem{BehajainaParan2023}
 A.~Behajaina and E.~Paran, \emph{The Collatz problem in $\F_p[x]$ and
@@ -1004,7 +1025,8 @@ $\F_p[[x]]$}, Finite Fields Appl.\ \textbf{91} (2023), Art.~102265.
 
 \bibitem{BehajainaParan2023b}
 A.~Behajaina and E.~Paran, \emph{The Collatz map analogue in polynomial
-rings and in completions}, Discrete Math.\ (2025); arXiv:2312.00390.
+rings and in completions}, Discrete Math.\ \textbf{348} (2025), no.~1,
+Art.~114273; arXiv:2312.00390.
 
 \bibitem{Conway1972}
 J.~H. Conway, \emph{Unpredictable iterations}, Proc.\ 1972 Number Theory
@@ -1066,7 +1088,7 @@ Period.\ Math.\ Hungar.\ \textbf{3} (1973), 93--100.
 
 \bibitem{SimonsDeWeger2005}
 J.~Simons and B.~de~Weger, \emph{Theoretical and computational bounds for
-$m$-cycles of the $3n+1$ problem}, Acta Arith.\ \textbf{117} (2005),
+$m$-cycles of the $3n+1$-problem}, Acta Arith.\ \textbf{117} (2005),
 51--70.
 
 \bibitem{Stewart1980}
@@ -1088,6 +1110,10 @@ values}, Forum Math.\ Pi \textbf{10} (2022), e12.
 \bibitem{Terras1976}
 R.~Terras, \emph{A stopping time problem on the positive integers},
 Acta Arith.\ \textbf{30} (1976), 241--252.
+
+\bibitem{Wagner2021}
+A.~Z. Wagner, \emph{Constructions in combinatorics via neural networks},
+arXiv:2104.14516 (2021).
 
 \bibitem{Wirsching1998}
 G.~J. Wirsching, \emph{The Dynamical System Generated by the $3n+1$

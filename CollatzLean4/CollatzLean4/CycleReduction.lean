@@ -2,9 +2,10 @@
 S240 — Cycle reduction (the elementary foundation of the Hercher-style finite cycle bound).
 
 Per the S240 Rhin–Viola scoping verdict: the Collatz cycle half is genuinely OPEN; the transcendence
-route does NOT close it; the world-record FINITE bounds (no nontrivial Syracuse cycle of period below
-~10^19, Hercher 2022) come from the CYCLE EQUATION + the computational verification frontier + a
-continued-fraction ratchet — NOT from transcendence. This file builds the ELEMENTARY, unconditional
+route does NOT close it; the literature's FINITE period bounds (no nontrivial cycle with fewer than
+7.2·10^10 odd elements — Hercher–Puchert, via Eliahou's continued-fraction method; NOTE: Hercher's
+"no m-cycles with m ≤ 91" counts LOCAL MINIMA, a different parameter) come from the CYCLE EQUATION +
+the computational verification frontier + a continued-fraction ratchet — NOT from transcendence. This file builds the ELEMENTARY, unconditional
 foundation of that route (step 1 of the recommended program), on top of `CycleEquation.lean`.
 
 THE GAP `g := 2^{A_m} − 3^m`.  Step 1 = the subtractive cycle equation `g · a₀ = C_m`: the gap times

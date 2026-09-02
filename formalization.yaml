@@ -1,6 +1,6 @@
 # formalization.yaml --- machine-generated disclosure manifest.
 # Regenerate: python tools/gen_formalization_yaml.py  (see its docstring).
-# Generated 2026-09-02 at commit e0d4b9b6ddfd.
+# Generated 2026-09-02 at commit 53ffb837c324.
 
 project:
   name: collatz-admissible-tree
@@ -38,7 +38,7 @@ toolchain:
   build: lake build CollatzLean4.<Module>   # narrow targets; see appendix B
 
 verification:
-  modules: 68
+  modules: 65   # git-tracked .lean files (untracked work-in-progress excluded)
   sorry_count: 0   # comment-stripped scan, tools/gen_formalization_yaml.py
   axiom_policy: >-
     every declaration cited in the paper must depend on at most
@@ -70,11 +70,12 @@ axiom_audit:
   method: >-
     lake build CollatzLean4.AxiomAudit emits one "#print axioms" per cited
     declaration; this file records the result verbatim
-  declarations_audited: 92
-  declarations_clean: 92   # axioms subset of the standard trio
+  declarations_audited: 96
+  declarations_clean: 96   # axioms subset of the standard trio
   declarations_flagged: 0
   clean:
     - CollatzLean4.Admissible.BlockBoundaryExists
+    - CollatzLean4.Admissible.CollatzVerifiedUpTo
     - CollatzLean4.Admissible.EffectiveLinearForm
     - CollatzLean4.Admissible.FirstMPrecisionSuffixPositive
     - CollatzLean4.Admissible.InX
@@ -89,13 +90,15 @@ axiom_audit:
     - CollatzLean4.Admissible.InvVertex.IsGoal
     - CollatzLean4.Admissible.KappaPathSplit
     - CollatzLean4.Admissible.PhiBitlen
+    - CollatzLean4.Admissible.S202_actual_edge_count_bounded_of_kappa_precise_barrier_bounded
     - CollatzLean4.Admissible.S202_kappa_precise_barrier_bounded
     - CollatzLean4.Admissible.S202_kappa_precise_barrier_bounded_from_potential
     - CollatzLean4.Admissible.S202_one_edge_count_conjecture_iff_defect_barrier
-    - CollatzLean4.Admissible.S202_slope_barrier_from_kappa_precise_potential_bounded
+    - CollatzLean4.Admissible.S202_slope_barrier_from_actual_edge_count_bounded
     - CollatzLean4.Admissible.S202_translation_identity
     - CollatzLean4.Admissible.S212_forward
     - CollatzLean4.Admissible.SyrVerifiedUpTo
+    - CollatzLean4.Admissible.WPath_kappa_weight_ge_potential_bounded
     - CollatzLean4.Admissible.aS202
     - CollatzLean4.Admissible.aS202_at
     - CollatzLean4.Admissible.aS202_decomp
@@ -105,6 +108,7 @@ axiom_audit:
     - CollatzLean4.Admissible.collatz_no_cycle_below_359
     - CollatzLean4.Admissible.deep_edge
     - CollatzLean4.Admissible.evalWord
+    - CollatzLean4.Admissible.evalWord_translation_identity
     - CollatzLean4.Admissible.fastPowAux
     - CollatzLean4.Admissible.fastPow_eq
     - CollatzLean4.Admissible.invReachable_hits_trap
@@ -177,7 +181,7 @@ key_results:  # informal statement -> Lean name (all audited above)
   - { lean: no_decaying_modulus_corrector, informal: "no 3-adically continuous real potential satisfies the contract (m <= omega(22+Q))" }
   - { lean: not_blockBoundaryExists, informal: "the canonical split devices for the per-block induction are refuted (astronomical one-edge ladder)" }
   - { lean: syr_cycle_window, informal: "every nontrivial Syracuse m-cycle has m*log2(3) < A < 2m" }
-  - { lean: syr_no_cycle_below_16266, informal: "conditional on verification up to 2^29: no Syracuse cycle of period < 16266 (Eliahou-Hercher pipeline, kernel-checked)" }
+  - { lean: syr_no_cycle_below_16266, informal: "conditional on Syracuse-orbit verification up to 2^29: no Syracuse cycle of period < 16266 (Eliahou continued-fraction reduction, kernel-checked)" }
 
 honest_scope: >-
   The paper claims no progress on the Collatz conjecture itself.  Its content

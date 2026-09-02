@@ -92,22 +92,22 @@ you want maximal reuse from day one (harder to undo). Recommendation:
 
 1. Log in at arxiv.org (account: bandujar@edutac.es — matches the paper's
    contact email).
-2. *Endorsement*: first-time submitters to math.NT may be asked for an
-   endorsement. If the form shows an endorsement code, the standard route is
-   to ask a colleague who has published in math.NT; the request email arXiv
-   generates contains everything they need. (This is the one step that can
-   add a day or two.)
+2. *Endorsement*: a first submission to math.NT REQUIRES an endorsement by
+   an established author of that archive (arXiv policy since January 2026).
+   The form gives you an endorsement code and link; send it privately to a
+   colleague who has published in math.NT (the Zulip #maths community and
+   the authors you cite are natural candidates). Budget one to several days.
 3. Start New Submission → license → upload `main.tex` → let AutoTeX process
    (it will produce the PDF; check the log shows no errors) → preview the
    PDF.
 4. Paste the metadata above. Submit.
 5. Announcement: submissions complete before 14:00 ET on a weekday are
    announced the next business day at ~20:00 ET. The arXiv ID
-   (2506.NNNNN) is assigned at submission.
+   (YYMM.NNNNN, e.g. 2609.NNNNN) is assigned when the paper is announced.
 
 ## 4. After the ID arrives
 
 - Add the arXiv badge/ID + link to the repository README.
-- `git tag arxiv-2506.NNNNN && git push --tags` (optional convenience tag).
+- `git tag arxiv-YYMM.NNNNN && git push --tags` (optional convenience tag).
 - The paper's §9 invites re-checking; expect (and welcome) issues opened
   against the repo.

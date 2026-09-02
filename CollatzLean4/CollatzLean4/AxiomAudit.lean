@@ -38,6 +38,7 @@ import CollatzLean4.SyracuseMeasure
 open CollatzLean4.Admissible CollatzLean4.F2 in
 section
 #print axioms BlockBoundaryExists
+#print axioms CollatzVerifiedUpTo
 #print axioms EffectiveLinearForm
 #print axioms FirstMPrecisionSuffixPositive
 #print axioms InX
@@ -52,13 +53,15 @@ section
 #print axioms InvVertex.IsGoal
 #print axioms KappaPathSplit
 #print axioms PhiBitlen
+#print axioms S202_actual_edge_count_bounded_of_kappa_precise_barrier_bounded
 #print axioms S202_kappa_precise_barrier_bounded
 #print axioms S202_kappa_precise_barrier_bounded_from_potential
 #print axioms S202_one_edge_count_conjecture_iff_defect_barrier
-#print axioms S202_slope_barrier_from_kappa_precise_potential_bounded
+#print axioms S202_slope_barrier_from_actual_edge_count_bounded
 #print axioms S202_translation_identity
 #print axioms S212_forward
 #print axioms SyrVerifiedUpTo
+#print axioms WPath_kappa_weight_ge_potential_bounded
 #print axioms aS202
 #print axioms aS202_at
 #print axioms aS202_decomp
@@ -70,6 +73,7 @@ section
 #print axioms collatz_no_cycle_below_359
 #print axioms deep_edge
 #print axioms evalWord
+#print axioms evalWord_translation_identity
 #print axioms evenStep_natDegree
 #print axioms fastPowAux
 #print axioms fastPow_eq
